@@ -1,10 +1,18 @@
 package triedb
 
 import (
+	"fmt"
 	"testing"
 )
 
 func Test_Cache_Expire(t *testing.T) {
+
+	var x []byte = nil
+
+	fmt.Println(len(x))
+
+	//x := ([32]byte(*n.Child_nodes_hash))
+	//result = append(result, x[:]...)
 
 	// result, err := hex.DecodeString("A")
 	// fmt.Println(err)
