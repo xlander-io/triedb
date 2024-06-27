@@ -1,4 +1,4 @@
-package triedb
+package util
 
 import (
 	"encoding/hex"
@@ -20,17 +20,17 @@ func hash(input []byte) []byte {
 
 // case 1 , input is nil , return const of empty hash
 // case 2 , input is longer then 32 , return the first 32 bytes of hash
-func newHashFromBytes(input []byte) (result Hash) {
+func NewHashFromBytes(input []byte) *Hash {
+	var result Hash
 	if len(input) > 32 {
 		copy(result[0:32], input[len(input)-32:])
-		return
 	} else {
 		copy(result[32-len(input):], input)
-		return
 	}
+	return &result
 }
 
-func newHashFromString(input string) Hash {
+func NewHashFromString(input string) *Hash {
 	input_ := input
 	if len(input) >= 2 && input[0] == '0' && (input[1] == 'x' || input[1] == 'X') {
 		input_ = input[2:]
@@ -40,5 +40,5 @@ func newHashFromString(input string) Hash {
 	}
 
 	h, _ := hex.DecodeString(input_)
-	return newHashFromBytes(h)
+	return NewHashFromBytes(h)
 }
