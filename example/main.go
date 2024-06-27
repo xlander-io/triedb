@@ -1,11 +1,10 @@
 package main
 
-import (
-	"fmt"
-)
+import "fmt"
 
 func main() {
-	fmt.Println([]byte("aA"))
-	fmt.Println([]byte("Aa"))
+	x := []byte{1, 2, 3}
+
+	fmt.Println(x[1:3])
 
 }
