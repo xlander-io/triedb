@@ -1,5 +1,5 @@
-github.com/xlander-io/cache v0.0.0-20240624033141-4a697c3bc4cc h1:3C6kP68+VDu0Ro8qU91ZsTjnHBnvLONFfnOvs40742c=
-github.com/xlander-io/cache v0.0.0-20240624033141-4a697c3bc4cc/go.mod h1:4a2iKNpRPUrWl2harrSmmnqrL2KcEOhEb7uf9IUrAKo=
+github.com/xlander-io/cache v0.0.0-20240627134257-65d8b27d5348 h1:q5yQSYOVTS4pIkbm06ze83YyC2J0WmHxmemhVbDQn3w=
+github.com/xlander-io/cache v0.0.0-20240627134257-65d8b27d5348/go.mod h1:4a2iKNpRPUrWl2harrSmmnqrL2KcEOhEb7uf9IUrAKo=
 github.com/xlander-io/kv v0.0.0-20240627123727-434d0569d2e2 h1:KHAHyCXiWyFBkMbpmXtMgB5tNUhP+8CjBBWyRWSYsiU=
 github.com/xlander-io/kv v0.0.0-20240627123727-434d0569d2e2/go.mod h1:Zb7e/Z1K3g8RjYptlUKP2h3R+iHHZF7Z03jPYFTYdN0=
 golang.org/x/crypto v0.24.0 h1:mnl8DM0o513X8fdIkmyFE/5hTYxbwYOjDS/+rK6qpRI=
