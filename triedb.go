@@ -99,6 +99,7 @@ func (trie_db *TrieDB) Get(key []byte) ([]byte, error) {
 }
 
 //to think , any lock over Get ? any lock over update?
+//answer : GET, Update, Commit all use the same lock
 
 // return error may be caused by kvdb io as get reading may happen inside update
 func (trie_db *TrieDB) Update(key []byte, val []byte) error {

@@ -2,7 +2,6 @@ package triedb
 
 import (
 	"encoding/binary"
-	"sync"
 
 	"github.com/xlander-io/triedb/util"
 )
@@ -96,7 +95,7 @@ func (n *Node) cal_val_hash(prefix []byte) {
 
 type Nodes struct {
 	full_path  []byte
-	path_index sync.Map //map[byte]*Node //byte can only ranges from '0' to 'f' total 16 different values
+	path_index map[byte]*Node //byte can only ranges from '0' to 'f' total 16 different values
 
 	parent_node *Node
 
@@ -106,25 +105,16 @@ type Nodes struct {
 
 // serialize to nodes_bytes
 func (n *Nodes) serialize() {
-
-	var path_index_len uint8 = 0
 	var result []byte = []byte{}
-
-	n.path_index.Range(func(key, value interface{}) bool {
-		//
-		path_index_len++
-		//
-		node_ := value.(*Node)
-		result = append(result, (node_.node_hash)[:]...)
+	result = append(result, uint8(len(n.path_index)))
+	for _, node := range n.path_index {
+		result = append(result, (*node.node_hash)[:]...)
 		path_len_bytes := make([]byte, 16)
-		binary.LittleEndian.PutUint16(path_len_bytes, uint16(len(node_.path)))
+		binary.LittleEndian.PutUint16(path_len_bytes, uint16(len(node.path)))
 		result = append(result, path_len_bytes...)
-		result = append(result, node_.path...)
-		//
-		return true
-	})
-
-	n.nodes_bytes = append([]byte{path_index_len}, result...)
+		result = append(result, node.path...)
+	}
+	n.nodes_bytes = result
 }
 
 func (n *Nodes) deserialize() {
@@ -132,7 +122,7 @@ func (n *Nodes) deserialize() {
 	path_index_len := int(uint8(n.nodes_bytes[0]))
 	deserialize_offset++
 	if path_index_len == 0 {
-		n.path_index = sync.Map{} //replace
+		n.path_index = make(map[byte]*Node)
 	} else {
 		for i := 0; i < path_index_len; i++ {
 			node_ := Node{}
@@ -142,7 +132,7 @@ func (n *Nodes) deserialize() {
 			deserialize_offset += 16
 			node_.path = n.nodes_bytes[deserialize_offset : deserialize_offset+path_len]
 			deserialize_offset += path_len
-			n.path_index.Store(node_.path[0], &node_)
+			n.path_index[node_.path[0]] = &node_
 		}
 	}
 }
