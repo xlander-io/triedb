@@ -40,6 +40,8 @@ type TrieDB struct {
 	cache                  *cache.Cache
 	cache_default_ttl_secs int64
 	lock                   sync.Mutex
+
+	attached_hash map[string]struct{} //hash => struct{}{} , all related hash in the trie
 }
 
 func NewTrieDB(kvdb_ kv.KVDB, cache_ *cache.Cache, cache_default_ttl_secs_ int64, root_hash *util.Hash) (*TrieDB, error) {
@@ -88,8 +90,13 @@ func NewTrieDB(kvdb_ kv.KVDB, cache_ *cache.Cache, cache_default_ttl_secs_ int64
 		trie_db.root_node.node_bytes = root_node_bytes
 		trie_db.root_node.deserialize()
 
+		trie_db.attachHash(root_hash_copy)
 		return &trie_db, nil
 	}
+}
+
+func (trie_db *TrieDB) attachHash(hash *util.Hash) {
+	trie_db.attached_hash[string((*hash)[:])] = struct{}{}
 }
 
 // get first from cache then from kvdb
@@ -140,11 +147,16 @@ func (trie_db *TrieDB) recover_child_nodes(node *Node) error {
 		}
 
 		child_nodes_.deserialize()
-
+		//
+		for _, c_n := range child_nodes_.path_index {
+			trie_db.attachHash(c_n.node_hash)
+		}
+		trie_db.attachHash(node.child_nodes_hash)
+		//
 		return nil
 
 	} else {
-
+		//
 		return nil
 	}
 }
@@ -233,15 +245,127 @@ func (trie_db *TrieDB) target_node(target_node *Node, left_path []byte, val []by
 	if bytes.Equal(target_node.path, left_path) {
 		if val == nil {
 			//del this node
-			delete(target_node.parent_nodes.path_index, target_node.path[0])
+			target_node.val = nil
+			target_node.val_hash = nil
+			//should remove this node when any child_node exist
+			if target_node.child_nodes == nil {
+				delete(target_node.parent_nodes.path_index, target_node.path[0])
+			}
 		} else {
+			//update this node
 			target_node.val = val
 			target_node.val_hash = nil
 		}
 		trie_db.recursive_mark_dirty(target_node)
 		return nil
-	}
 
-	return nil
+	} else if (len(left_path) > len(target_node.path)) && bytes.Equal(target_node.path, left_path[0:len(target_node.path)]) {
+		// left_path start with target_node.path
+		if target_node.child_nodes != nil {
+			///
+			return trie_db.target_nodes(target_node.child_nodes, left_path[len(target_node.path):], val)
+		} else {
+			///
+			if target_node.child_nodes_hash != nil {
+				recover_err := trie_db.recover_child_nodes(target_node)
+				if recover_err != nil {
+					return errors.New("target_node recover_child_nodes err:" + recover_err.Error())
+				}
+			}
+			// nothing to do with nil (del action)
+			if target_node.child_nodes == nil && val == nil {
+				return nil
+			}
+
+			// new nodes that dynamically created
+			if target_node.child_nodes == nil {
+				target_node.child_nodes = &Nodes{
+					path_index:  make(map[byte]*Node),
+					parent_node: target_node,
+				}
+			}
+
+			return trie_db.target_nodes(target_node.child_nodes, left_path[len(target_node.path):], val)
+
+		}
+
+	} else if (len(left_path) < len(target_node.path)) && bytes.Equal(left_path, target_node.path[0:len(left_path)]) {
+		// target_node.path start with left_path
+
+		// nothing to do with nil (del action)
+		if val == nil {
+			return nil
+		}
+
+		new_node := Node{
+			path:         left_path[:],
+			parent_nodes: (*target_node).parent_nodes,
+			child_nodes:  &Nodes{},
+			val:          val,
+		}
+
+		new_node.child_nodes = &Nodes{
+			path_index:  make(map[byte]*Node),
+			parent_node: &new_node,
+		}
+
+		(*target_node).path = target_node.path[len(left_path):]
+		(*target_node).parent_nodes.path_index[new_node.path[0]] = &new_node
+		(*target_node).parent_nodes = new_node.child_nodes
+		trie_db.recursive_mark_dirty(target_node)
+
+		return nil
+
+	} else {
+
+		// nothing to do with nil (del action)
+		if val == nil {
+			return nil
+		}
+
+		////////// find the common bytes prefix
+		min_len := len(left_path)
+		node_path_len := len(target_node.path)
+		if node_path_len < min_len {
+			min_len = node_path_len
+		}
+
+		common_prefix_bytes := []byte{}
+		for i := 0; i < min_len; i++ {
+			if left_path[i] == target_node.path[i] {
+				common_prefix_bytes = append(common_prefix_bytes, left_path[i])
+			} else {
+				break
+			}
+		}
+		common_prefix_bytes_len := len(common_prefix_bytes)
+		///////////
+
+		new_node := Node{
+			path:         common_prefix_bytes[:],
+			parent_nodes: (*target_node).parent_nodes,
+			child_nodes:  &Nodes{},
+		}
+
+		new_node.child_nodes = &Nodes{
+			path_index:  make(map[byte]*Node),
+			parent_node: &new_node,
+		}
+
+		new_node.child_nodes.path_index[left_path[common_prefix_bytes_len]] = &Node{
+			path:         left_path[common_prefix_bytes_len:],
+			parent_nodes: new_node.child_nodes,
+			val:          val,
+		}
+
+		new_node.child_nodes.path_index[target_node.path[common_prefix_bytes_len]] = target_node
+
+		target_node.path = target_node.path[common_prefix_bytes_len:]
+		target_node.parent_nodes.path_index[new_node.path[0]] = &new_node
+		target_node.parent_nodes = new_node.child_nodes
+		trie_db.recursive_mark_dirty(target_node)
+
+		return nil
+	}
 
 }
