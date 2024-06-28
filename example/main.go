@@ -3,8 +3,7 @@ package main
 import "fmt"
 
 func main() {
-	x := []byte{1, 2, 3}
-
-	fmt.Println(x[1:3])
-
+	x := []byte{111, 2, 3}
+	z := (x[0] & 0xF0) >> 4
+	fmt.Println(fmt.Sprintf("%x", z))
 }

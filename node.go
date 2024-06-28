@@ -7,19 +7,19 @@ import (
 )
 
 type Node struct {
-	full_path []byte //nil for root node
-	path      []byte //nil for root node
+	path []byte //nil for root node
 
 	parent_nodes *Nodes //nil for root node
 
 	child_nodes      *Nodes
 	child_nodes_hash *util.Hash //nil for new node or dirty node
 
-	val      []byte
-	val_hash *util.Hash
+	val      []byte     //always nil for root node
+	val_hash *util.Hash //always nil for root node
 
 	node_bytes []byte     //serialize(self) , nil for new node or dirty node
 	node_hash  *util.Hash //hash(self.node_bytes) , nil for new node or dirty node
+
 }
 
 // serialize to node_bytes
@@ -75,11 +75,29 @@ func (n *Node) deserialize() {
 
 }
 
+// return nil for root empty node
+func (n *Node) get_full_path() []byte {
+	if n.path == nil {
+		//may happen in root node
+		return nil
+	}
+	//
+	full_path := n.path
+	parent_nodes := n.parent_nodes
+
+	//when parent_nodes != nil always -> parent_nodes.parent_node !=nil
+	for parent_nodes != nil && parent_nodes.parent_node.path != nil {
+		full_path = append(parent_nodes.parent_node.path, full_path...)
+	}
+
+	return full_path
+}
+
 // calculate node_hash
 func (n *Node) cal_node_hash(prefix []byte) {
 	result := []byte{}
 	result = append(result, prefix...)
-	result = append(result, n.full_path...)
+	result = append(result, n.get_full_path()...)
 	result = append(result, n.node_bytes...)
 	n.node_hash = util.NewHashFromBytes(result)
 }
@@ -88,19 +106,17 @@ func (n *Node) cal_node_hash(prefix []byte) {
 func (n *Node) cal_val_hash(prefix []byte) {
 	result := []byte{}
 	result = append(result, prefix...)
-	result = append(result, n.full_path...)
+	result = append(result, n.get_full_path()...)
 	result = append(result, n.val...)
 	n.val_hash = util.NewHashFromBytes(result)
 }
 
 type Nodes struct {
-	full_path  []byte
-	path_index map[byte]*Node //byte can only ranges from '0' to 'f' total 16 different values
-
+	path_index  map[byte]*Node //byte can only ranges from '0' to 'f' total 16 different values
 	parent_node *Node
-
 	nodes_bytes []byte     //serialize(self) , nil for new node or dirty node
 	nodes_hash  *util.Hash //hash(self) , nil for new node or dirty node
+
 }
 
 // serialize to nodes_bytes
@@ -141,7 +157,7 @@ func (n *Nodes) deserialize() {
 func (n *Nodes) cal_nodes_hash(prefix []byte) {
 	result := []byte{}
 	result = append(result, prefix...)
-	result = append(result, n.full_path...)
+	result = append(result, n.parent_node.path...)
 	result = append(result, n.nodes_bytes...)
 	n.nodes_hash = util.NewHashFromBytes(result)
 }
