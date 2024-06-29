@@ -10,6 +10,19 @@ import (
 	"github.com/xlander-io/triedb/util"
 )
 
+/*
+ *		Trie implementation
+ *		1. For the root node, its val_hash is always nil
+ *		2. for a nodes, its parent_node is always not nil
+ *		3. cache is always sync with disk kv db
+ *		4. attached_hash stores all the kv k hash related in the trie, attached_hash will be checked
+ *		   what key hash will be removed in commit
+ *		5. Get,Put,Commit use the same lock to prevent data inconsistence
+ *
+ *
+ *
+ */
+
 const NODE_PREFIX = "node_prefix"
 const NODE_VAL_PREFIX = "node_val_prefix"
 const NODES_PREFIX = "nodes_prefix"
