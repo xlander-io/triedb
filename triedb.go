@@ -381,6 +381,8 @@ func (trie_db *TrieDB) target_node(target_node *Node, left_path []byte, val []by
 
 	} else {
 
+		// target_node.path, left_path, they have common prefix path
+
 		// nothing to do with nil (del action)
 		if val == nil {
 			return nil
