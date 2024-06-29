@@ -175,6 +175,20 @@ func (trie_db *TrieDB) recursive_mark_dirty(node *Node) {
 	}
 }
 
+func (trie_db *TrieDB) recursive_del(node *Node) {
+	if node == nil || node.child_nodes != nil || node.val_hash != nil || node.parent_nodes == nil {
+		return
+	}
+
+	delete(node.parent_nodes.path_index, node.path[0])
+
+	if len(node.parent_nodes.path_index) == 0 {
+		node.parent_nodes.parent_node.child_nodes = nil
+		trie_db.recursive_del(node.parent_nodes.parent_node)
+	}
+
+}
+
 // full_path len !=0 is required
 // val == nil stands for del
 // return error may be caused by kvdb io as get reading may happen inside update
@@ -247,10 +261,8 @@ func (trie_db *TrieDB) target_node(target_node *Node, left_path []byte, val []by
 			//del this node
 			target_node.val = nil
 			target_node.val_hash = nil
-			//should remove this node when any child_node exist
-			if target_node.child_nodes == nil {
-				delete(target_node.parent_nodes.path_index, target_node.path[0])
-			}
+			trie_db.recursive_del(target_node)
+
 		} else {
 			//update this node
 			target_node.val = val
@@ -273,16 +285,26 @@ func (trie_db *TrieDB) target_node(target_node *Node, left_path []byte, val []by
 				}
 			}
 			// nothing to do with nil (del action)
-			if target_node.child_nodes == nil && val == nil {
-				return nil
-			}
-
-			// new nodes that dynamically created
 			if target_node.child_nodes == nil {
-				target_node.child_nodes = &Nodes{
-					path_index:  make(map[byte]*Node),
-					parent_node: target_node,
+				if val == nil {
+					return nil
 				}
+
+				if target_node.val_hash == nil {
+					//simple merge
+					target_node.val = val
+					target_node.path = left_path
+					trie_db.recursive_mark_dirty(target_node)
+					return nil
+
+				} else {
+					// new nodes that dynamically created
+					target_node.child_nodes = &Nodes{
+						path_index:  make(map[byte]*Node),
+						parent_node: target_node,
+					}
+				}
+
 			}
 
 			return trie_db.target_nodes(target_node.child_nodes, left_path[len(target_node.path):], val)
