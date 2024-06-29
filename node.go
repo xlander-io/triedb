@@ -6,6 +6,10 @@ import (
 	"github.com/xlander-io/triedb/util"
 )
 
+var HASH_NODE_PREFIX []byte = []byte("hash_node_prefix")
+var HASH_NODE_VAL_PREFIX []byte = []byte("hash_node_val_prefix")
+var HASH_NODES_PREFIX []byte = []byte("hash_nodes_prefix")
+
 type Node struct {
 	path []byte //nil for root node
 
@@ -93,22 +97,22 @@ func (n *Node) get_full_path() []byte {
 	return full_path
 }
 
-// calculate node_hash
-func (n *Node) cal_node_hash(prefix []byte) {
-	result := []byte{}
-	result = append(result, prefix...)
-	result = append(result, n.get_full_path()...)
-	result = append(result, n.node_bytes...)
-	n.node_hash = util.NewHashFromBytes(result)
-}
-
 // calculate val_hash
-func (n *Node) cal_val_hash(prefix []byte) {
+func (n *Node) cal_node_val_hash() {
 	result := []byte{}
-	result = append(result, prefix...)
+	result = append(result, HASH_NODE_VAL_PREFIX...)
 	result = append(result, n.get_full_path()...)
 	result = append(result, n.val...)
 	n.val_hash = util.NewHashFromBytes(result)
+}
+
+// calculate node_hash
+func (n *Node) cal_node_hash() {
+	result := []byte{}
+	result = append(result, HASH_NODE_PREFIX...)
+	result = append(result, n.get_full_path()...)
+	result = append(result, n.node_bytes...)
+	n.node_hash = util.NewHashFromBytes(result)
 }
 
 type Nodes struct {
@@ -154,10 +158,10 @@ func (n *Nodes) deserialize() {
 }
 
 // calculate nodes_hash
-func (n *Nodes) cal_nodes_hash(prefix []byte) {
+func (n *Nodes) cal_nodes_hash() {
 	result := []byte{}
-	result = append(result, prefix...)
-	result = append(result, n.parent_node.path...)
+	result = append(result, HASH_NODES_PREFIX...)
+	result = append(result, n.parent_node.get_full_path()...)
 	result = append(result, n.nodes_bytes...)
 	n.nodes_hash = util.NewHashFromBytes(result)
 }
