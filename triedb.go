@@ -188,16 +188,44 @@ func (trie_db *TrieDB) recursive_mark_dirty(node *Node) {
 	}
 }
 
+// recursive_del will be called when del val happen
 func (trie_db *TrieDB) recursive_del(node *Node) {
-	if node == nil || node.child_nodes != nil || node.val_hash != nil || node.parent_nodes == nil {
+
+	//root node do nothing
+	if node == nil || node.parent_nodes == nil || node.val != nil {
 		return
 	}
 
-	delete(node.parent_nodes.path_index, node.path[0])
+	if node.child_nodes == nil {
+		delete(node.parent_nodes.path_index, node.path[0])
+		//what is left in parent_nodes
+		if len(node.parent_nodes.path_index) == 0 {
+			//
+			node.parent_nodes.parent_node.child_nodes = nil
+			trie_db.recursive_del(node.parent_nodes.parent_node)
+			//
+		} else if len(node.parent_nodes.path_index) == 1 {
+			//  do simplification if possible
 
-	if len(node.parent_nodes.path_index) == 0 {
-		node.parent_nodes.parent_node.child_nodes = nil
-		trie_db.recursive_del(node.parent_nodes.parent_node)
+			var left_node *Node = nil
+			for _, c_node_ := range node.parent_nodes.path_index {
+				left_node = c_node_
+			}
+
+			if left_node.parent_nodes.parent_node.val == nil && left_node.parent_nodes.parent_node.parent_nodes != nil {
+				delete(left_node.parent_nodes.path_index, left_node.path[0])
+				left_node.parent_nodes.parent_node.path = append(left_node.parent_nodes.parent_node.path, left_node.path...)
+				left_node.parent_nodes.parent_node.child_nodes = left_node.child_nodes
+				left_node.parent_nodes.parent_node.val = left_node.val
+				left_node.parent_nodes.parent_node.val_hash = nil
+			}
+
+		} else {
+			//more then 1 node in parent nodes nothing to do
+		}
+
+	} else {
+		//nothing to do
 	}
 
 }
