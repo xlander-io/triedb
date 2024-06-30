@@ -484,7 +484,7 @@ func (trie_db *TrieDB) get_recursive(target_node *Node, left_path []byte) (*Node
 
 	//
 	if bytes.Equal(target_node.path, left_path) {
-		trie_db.recover_node(target_node)
+		trie_db.recover_node_val(target_node)
 		return target_node, nil
 	}
 
