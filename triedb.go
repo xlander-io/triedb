@@ -116,20 +116,36 @@ func (trie_db *TrieDB) recover_node(node *Node) error {
 	if node == nil {
 		return errors.New("recover_node err, node nil")
 	}
-
-	//already read in the past
+	//already read in the past or new created
 	if node.node_hash == nil {
 		return nil
 	}
 
-	root_node_bytes, root_node_err := trie_db.getFromCacheKVDB(node.node_hash[:])
-	if root_node_err != nil {
-		return errors.New("recover_node err, " + root_node_err.Error())
+	node_bytes, node_err := trie_db.getFromCacheKVDB(node.node_hash[:])
+	if node_err != nil {
+		return errors.New("recover_node getFromCacheKVDB(node_hash) err, " + node_err.Error())
 	}
 	//
-	node.node_bytes = root_node_bytes
+	node.node_bytes = node_bytes
 	node.deserialize()
+
 	//
+	nodes_bytes, err := trie_db.getFromCacheKVDB(node.child_nodes_hash[:])
+	if err != nil {
+		return errors.New("recover_child_nodes getFromCacheKVDB(child_nodes_hash) err :" + err.Error())
+	}
+	child_nodes_ := Nodes{
+		nodes_bytes: nodes_bytes,
+		nodes_hash:  node.child_nodes_hash,
+	}
+	child_nodes_.deserialize()
+
+	//
+	for _, c_n := range child_nodes_.path_index {
+		trie_db.attachHash(c_n.node_hash)
+	}
+	//
+	trie_db.attachHash(node.child_nodes_hash)
 	trie_db.attachHash(node.node_hash)
 	//delete to prevent double recover
 	node.node_hash = nil
@@ -138,40 +154,44 @@ func (trie_db *TrieDB) recover_node(node *Node) error {
 }
 
 func (trie_db *TrieDB) recover_child_nodes(node *Node) error {
-
-	if node == nil {
-		return errors.New("recover_child_nodes err, node nil")
-	}
-
-	if node.child_nodes == nil && node.child_nodes_hash != nil {
-
-		nodes_bytes, err := trie_db.getFromCacheKVDB(node.child_nodes_hash[:])
-		if err != nil {
-			return errors.New("recover_child_nodes err :" + err.Error())
-		}
-
-		child_nodes_ := Nodes{
-			nodes_bytes: nodes_bytes,
-			nodes_hash:  node.child_nodes_hash,
-		}
-
-		//
-		child_nodes_.deserialize()
-		//
-		for _, c_n := range child_nodes_.path_index {
-			trie_db.attachHash(c_n.node_hash)
-		}
-		trie_db.attachHash(node.child_nodes_hash)
-		//delete to prevent double recover
-		node.child_nodes_hash = nil
-		//
-		return nil
-
-	} else {
-		//
-		return nil
-	}
+	return trie_db.recover_node(node)
 }
+
+// func (trie_db *TrieDB) recover_child_nodes(node *Node) error {
+
+// 	if node == nil {
+// 		return errors.New("recover_child_nodes err, node nil")
+// 	}
+
+// 	if node.child_nodes == nil && node.child_nodes_hash != nil {
+
+// 		nodes_bytes, err := trie_db.getFromCacheKVDB(node.child_nodes_hash[:])
+// 		if err != nil {
+// 			return errors.New("recover_child_nodes err :" + err.Error())
+// 		}
+
+// 		child_nodes_ := Nodes{
+// 			nodes_bytes: nodes_bytes,
+// 			nodes_hash:  node.child_nodes_hash,
+// 		}
+
+// 		//
+// 		child_nodes_.deserialize()
+// 		//
+// 		for _, c_n := range child_nodes_.path_index {
+// 			trie_db.attachHash(c_n.node_hash)
+// 		}
+// 		trie_db.attachHash(node.child_nodes_hash)
+// 		//delete to prevent double recover
+// 		node.child_nodes_hash = nil
+// 		//
+// 		return nil
+
+// 	} else {
+// 		//
+// 		return nil
+// 	}
+// }
 
 // recursive_del will be called when del val happen
 func (trie_db *TrieDB) update_recursive_del(node *Node) {

@@ -22,11 +22,16 @@ func main() {
 	tdb.Update([]byte("45"), []byte("val45"))
 	tdb.Update([]byte("123"), []byte("val123"))
 	tdb.Update([]byte("4"), nil)
-	tdb.Update([]byte("45"), nil)
+
 	tdb.Update([]byte("12"), nil)
 	//tdb.Update([]byte("123"), nil)
 
 	get_result, get_err := tdb.Get([]byte("123"))
+
+	fmt.Println(string(get_result))
+	fmt.Println(get_err)
+
+	get_result, get_err = tdb.Get([]byte("45"))
 
 	fmt.Println(string(get_result))
 	fmt.Println(get_err)
