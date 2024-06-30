@@ -123,29 +123,12 @@ func (trie_db *TrieDB) recover_node(node *Node) error {
 
 	node_bytes, node_err := trie_db.getFromCacheKVDB(node.node_hash[:])
 	if node_err != nil {
-		return errors.New("recover_node getFromCacheKVDB(node_hash) err, " + node_err.Error())
+		return errors.New("recover_node getFromCacheKVDB  err, " + node_err.Error())
 	}
 	//
 	node.node_bytes = node_bytes
 	node.deserialize()
 
-	//
-	nodes_bytes, err := trie_db.getFromCacheKVDB(node.child_nodes_hash[:])
-	if err != nil {
-		return errors.New("recover_child_nodes getFromCacheKVDB(child_nodes_hash) err :" + err.Error())
-	}
-	child_nodes_ := Nodes{
-		nodes_bytes: nodes_bytes,
-		nodes_hash:  node.child_nodes_hash,
-	}
-	child_nodes_.deserialize()
-
-	//
-	for _, c_n := range child_nodes_.path_index {
-		trie_db.attachHash(c_n.node_hash)
-	}
-	//
-	trie_db.attachHash(node.child_nodes_hash)
 	trie_db.attachHash(node.node_hash)
 	//delete to prevent double recover
 	node.node_hash = nil
@@ -153,45 +136,66 @@ func (trie_db *TrieDB) recover_node(node *Node) error {
 	return nil
 }
 
-func (trie_db *TrieDB) recover_child_nodes(node *Node) error {
-	return trie_db.recover_node(node)
+func (trie_db *TrieDB) recover_node_val(node *Node) error {
+
+	if node == nil {
+		return errors.New("recover_node_val err, node nil")
+	}
+	//already read in the past or new created
+	if node.val_hash == nil {
+		return nil
+	}
+
+	node_val_bytes, node_val_err := trie_db.getFromCacheKVDB(node.val_hash[:])
+	if node_val_err != nil {
+		return errors.New("recover_node_val getFromCacheKVDB  err, " + node_val_err.Error())
+	}
+	//
+	node.val = node_val_bytes
+	node.deserialize()
+
+	trie_db.attachHash(node.val_hash)
+	//delete to prevent double recover
+	node.val_hash = nil
+	//
+	return nil
 }
 
-// func (trie_db *TrieDB) recover_child_nodes(node *Node) error {
+func (trie_db *TrieDB) recover_child_nodes(node *Node) error {
 
-// 	if node == nil {
-// 		return errors.New("recover_child_nodes err, node nil")
-// 	}
+	if node == nil {
+		return errors.New("recover_child_nodes err, node nil")
+	}
 
-// 	if node.child_nodes == nil && node.child_nodes_hash != nil {
+	if node.child_nodes == nil && node.child_nodes_hash != nil {
 
-// 		nodes_bytes, err := trie_db.getFromCacheKVDB(node.child_nodes_hash[:])
-// 		if err != nil {
-// 			return errors.New("recover_child_nodes err :" + err.Error())
-// 		}
+		nodes_bytes, err := trie_db.getFromCacheKVDB(node.child_nodes_hash[:])
+		if err != nil {
+			return errors.New("recover_child_nodes err :" + err.Error())
+		}
 
-// 		child_nodes_ := Nodes{
-// 			nodes_bytes: nodes_bytes,
-// 			nodes_hash:  node.child_nodes_hash,
-// 		}
+		child_nodes_ := Nodes{
+			nodes_bytes: nodes_bytes,
+			nodes_hash:  node.child_nodes_hash,
+		}
 
-// 		//
-// 		child_nodes_.deserialize()
-// 		//
-// 		for _, c_n := range child_nodes_.path_index {
-// 			trie_db.attachHash(c_n.node_hash)
-// 		}
-// 		trie_db.attachHash(node.child_nodes_hash)
-// 		//delete to prevent double recover
-// 		node.child_nodes_hash = nil
-// 		//
-// 		return nil
+		//
+		child_nodes_.deserialize()
+		//
+		for _, c_n := range child_nodes_.path_index {
+			trie_db.attachHash(c_n.node_hash)
+		}
+		trie_db.attachHash(node.child_nodes_hash)
+		//delete to prevent double recover
+		node.child_nodes_hash = nil
+		//
+		return nil
 
-// 	} else {
-// 		//
-// 		return nil
-// 	}
-// }
+	} else {
+		//
+		return nil
+	}
+}
 
 // recursive_del will be called when del val happen
 func (trie_db *TrieDB) update_recursive_del(node *Node) {
@@ -206,6 +210,8 @@ func (trie_db *TrieDB) update_recursive_del(node *Node) {
 	//mark
 	node.mark_dirty()
 
+	//
+	trie_db.recover_child_nodes(node)
 	//
 	if node.child_nodes == nil {
 		//
@@ -318,7 +324,7 @@ func (trie_db *TrieDB) update_target_node(target_node *Node, left_path []byte, v
 			///
 			recover_err := trie_db.recover_child_nodes(target_node)
 			if recover_err != nil {
-				return errors.New("target_node recover_child_nodes err:" + recover_err.Error())
+				return errors.New("update_target_node recover_child_nodes err:" + recover_err.Error())
 			}
 			// nothing to do with nil (del action)
 			if target_node.child_nodes == nil {
