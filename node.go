@@ -115,6 +115,13 @@ func (n *Node) cal_node_hash() {
 	n.node_hash = util.NewHashFromBytes(result)
 }
 
+// later will recalculate related value
+func (node *Node) mark_dirty() {
+	node.val_hash = nil
+	node.node_bytes = nil
+	node.node_hash = nil
+}
+
 type Nodes struct {
 	path_index  map[byte]*Node //byte can only ranges from '0' to 'f' total 16 different values
 	parent_node *Node
@@ -163,4 +170,10 @@ func (n *Nodes) cal_nodes_hash() {
 	result = append(result, n.parent_node.get_full_path()...)
 	result = append(result, n.nodes_bytes...)
 	n.nodes_hash = util.NewHashFromBytes(result)
+}
+
+// later will recalculate related value
+func (n *Nodes) mark_dirty() {
+	n.nodes_bytes = nil
+	n.nodes_hash = nil
 }

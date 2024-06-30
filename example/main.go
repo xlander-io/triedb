@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	//
+
 	const db_path = "./kv_leveldb_test.db"
 	os.RemoveAll(db_path)
 	kvdb, _ := kv_leveldb.NewDB(db_path)
@@ -24,5 +24,12 @@ func main() {
 	tdb.Update([]byte("4"), nil)
 	tdb.Update([]byte("45"), nil)
 	tdb.Update([]byte("12"), nil)
+	//tdb.Update([]byte("123"), nil)
+
+	get_result, get_err := tdb.Get([]byte("123"))
+
+	fmt.Println(string(get_result))
+	fmt.Println(get_err)
+
 	fmt.Println(tdb)
 }

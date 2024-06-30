@@ -1,12 +1,22 @@
 package util
 
 import (
+	"bytes"
 	"encoding/hex"
 
 	"golang.org/x/crypto/sha3"
 )
 
 type Hash [32]byte
+
+var NIL_HASH = NewHashFromString("0xa7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a")
+
+func IsEmptyHash(hash *Hash) bool {
+	if hash == nil {
+		return true
+	}
+	return bytes.Compare((*hash)[:], NIL_HASH[:]) == 0
+}
 
 // sha3-256 hash
 // todo check sha3_g.Write error exist or not?
