@@ -117,7 +117,6 @@ func (n *Node) cal_node_hash() {
 
 // later will recalculate related value
 func (node *Node) mark_dirty() {
-	node.val_hash = nil
 	node.node_bytes = nil
 	node.node_hash = nil
 }

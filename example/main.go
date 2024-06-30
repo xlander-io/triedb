@@ -19,22 +19,26 @@ func main() {
 	tdb, _ := triedb.NewTrieDB(kvdb, c, nil)
 
 	tdb.Update([]byte("12"), []byte("val12"))
-	tdb.Update([]byte("45"), []byte("val45"))
 	tdb.Update([]byte("123"), []byte("val123"))
-	tdb.Update([]byte("4"), nil)
+	tdb.Update([]byte("1234"), []byte("val1234"))
+	tdb.Update([]byte("123"), nil)
 
-	tdb.Update([]byte("12"), nil)
-	//tdb.Update([]byte("123"), nil)
+	// tdb.Update([]byte("45"), []byte("val45"))
+	// tdb.Update([]byte("123"), []byte("val123"))
+	// tdb.Update([]byte("4"), nil)
 
-	get_result, get_err := tdb.Get([]byte("123"))
+	// tdb.Update([]byte("12"), nil)
+	// //tdb.Update([]byte("123"), nil)
 
-	fmt.Println(string(get_result))
-	fmt.Println(get_err)
+	// get_result, get_err := tdb.Get([]byte("123"))
 
-	get_result, get_err = tdb.Get([]byte("45"))
+	// fmt.Println(string(get_result))
+	// fmt.Println(get_err)
 
-	fmt.Println(string(get_result))
-	fmt.Println(get_err)
+	// get_result, get_err = tdb.Get([]byte("45"))
+
+	// fmt.Println(string(get_result))
+	// fmt.Println(get_err)
 
 	fmt.Println(tdb)
 }
