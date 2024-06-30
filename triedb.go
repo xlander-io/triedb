@@ -165,18 +165,30 @@ func (trie_db *TrieDB) recursive_del(node *Node) {
 
 	//del val of this node
 	node.val = nil
+	//mark dirty
 	node.val_hash = nil
+	node.node_bytes = nil
+	node.node_hash = nil
 
 	//
 	if node.child_nodes == nil {
+		//
 		delete(node.parent_nodes.path_index, node.path[0])
+		//mark parent_nodes dirty
+		node.parent_nodes.nodes_bytes = nil
+		node.parent_nodes.nodes_hash = nil
+
 		//what is left in parent_nodes
 		if len(node.parent_nodes.path_index) == 0 {
 			//
 			node.parent_nodes.parent_node.child_nodes = nil
-			trie_db.recursive_del(node.parent_nodes.parent_node)
+			if node.parent_nodes.parent_node.val == nil {
+				trie_db.recursive_del(node.parent_nodes.parent_node)
+			}
 			//
-		} else if len(node.parent_nodes.path_index) == 1 {
+		} else if len(node.parent_nodes.path_index) == 1 &&
+			node.parent_nodes.parent_node.parent_nodes != nil && // !=nil checks the root node
+			node.parent_nodes.parent_node.val == nil {
 			//  do simplification if possible
 
 			var left_single_node *Node = nil
@@ -184,15 +196,16 @@ func (trie_db *TrieDB) recursive_del(node *Node) {
 				left_single_node = c_node_
 			}
 
-			// first !=nil checks the root node
-			if left_single_node.parent_nodes.parent_node.parent_nodes != nil && left_single_node.parent_nodes.parent_node.val == nil {
-				delete(left_single_node.parent_nodes.path_index, left_single_node.path[0])
-				left_single_node.parent_nodes.parent_node.path = append(left_single_node.parent_nodes.parent_node.path, left_single_node.path...)
-				left_single_node.parent_nodes.parent_node.child_nodes = left_single_node.child_nodes
-				left_single_node.parent_nodes.parent_node.child_nodes_hash = left_single_node.child_nodes_hash
-				left_single_node.parent_nodes.parent_node.val = left_single_node.val
-				left_single_node.parent_nodes.parent_node.val_hash = nil
-			}
+			//
+			left_single_node.parent_nodes.parent_node.path = append(left_single_node.parent_nodes.parent_node.path, left_single_node.path...)
+			left_single_node.parent_nodes.parent_node.child_nodes = left_single_node.child_nodes
+			left_single_node.parent_nodes.parent_node.child_nodes_hash = left_single_node.child_nodes_hash
+			left_single_node.parent_nodes.parent_node.val = left_single_node.val
+			left_single_node.parent_nodes.parent_node.val_hash = left_single_node.val_hash
+
+			//mark parent nodes dirty
+			left_single_node.parent_nodes.nodes_bytes = nil
+			left_single_node.parent_nodes.nodes_hash = nil
 
 		} else {
 			//more then 1 node in parent nodes nothing to do
@@ -212,10 +225,10 @@ func (trie_db *TrieDB) recursive_del(node *Node) {
 			node.parent_nodes.path_index[node.path[0]] = single_child_node
 			single_child_node.path = append(node.path, single_child_node.path...)
 			single_child_node.parent_nodes = node.parent_nodes
-
-			//better gc
-			node.parent_nodes = nil
-			node.child_nodes = nil
+			//path changes mark dirty
+			single_child_node.val_hash = nil
+			single_child_node.node_bytes = nil
+			single_child_node.node_hash = nil
 		}
 	}
 
@@ -295,7 +308,10 @@ func (trie_db *TrieDB) target_node(target_node *Node, left_path []byte, val []by
 		} else {
 			//update this node
 			target_node.val = val
+			//mark dirty
 			target_node.val_hash = nil
+			target_node.node_bytes = nil
+			target_node.node_hash = nil
 		}
 		return nil
 
@@ -339,7 +355,7 @@ func (trie_db *TrieDB) target_node(target_node *Node, left_path []byte, val []by
 		new_node := Node{
 			path:         left_path[:],
 			parent_nodes: (*target_node).parent_nodes,
-			child_nodes:  &Nodes{},
+			child_nodes:  nil,
 			val:          val,
 		}
 
@@ -348,9 +364,14 @@ func (trie_db *TrieDB) target_node(target_node *Node, left_path []byte, val []by
 			parent_node: &new_node,
 		}
 
-		(*target_node).path = target_node.path[len(left_path):]
-		(*target_node).parent_nodes.path_index[new_node.path[0]] = &new_node
-		(*target_node).parent_nodes = new_node.child_nodes
+		target_node.path = target_node.path[len(left_path):]
+		target_node.parent_nodes.path_index[new_node.path[0]] = &new_node
+		target_node.parent_nodes = new_node.child_nodes
+
+		//mark dirty
+		target_node.val_hash = nil
+		target_node.node_bytes = nil
+		target_node.node_hash = nil
 
 		return nil
 
@@ -384,7 +405,7 @@ func (trie_db *TrieDB) target_node(target_node *Node, left_path []byte, val []by
 		new_node := Node{
 			path:         common_prefix_bytes[:],
 			parent_nodes: (*target_node).parent_nodes,
-			child_nodes:  &Nodes{},
+			child_nodes:  nil,
 		}
 
 		new_node.child_nodes = &Nodes{
@@ -403,6 +424,11 @@ func (trie_db *TrieDB) target_node(target_node *Node, left_path []byte, val []by
 		target_node.path = target_node.path[common_prefix_bytes_len:]
 		target_node.parent_nodes.path_index[new_node.path[0]] = &new_node
 		target_node.parent_nodes = new_node.child_nodes
+
+		//mark dirty
+		target_node.val_hash = nil
+		target_node.node_bytes = nil
+		target_node.node_hash = nil
 
 		return nil
 	}

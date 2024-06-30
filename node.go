@@ -120,7 +120,6 @@ type Nodes struct {
 	parent_node *Node
 	nodes_bytes []byte     //serialize(self) , nil for new node or dirty node
 	nodes_hash  *util.Hash //hash(self) , nil for new node or dirty node
-
 }
 
 // serialize to nodes_bytes
