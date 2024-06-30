@@ -248,7 +248,6 @@ func (trie_db *TrieDB) update_recursive_del(node *Node) {
 
 			//mark dirty
 			left_single_node.parent_nodes.parent_node.mark_dirty()
-			left_single_node.parent_nodes.parent_node.parent_nodes.mark_dirty()
 
 		} else {
 			//more then 1 node in parent nodes nothing to do
@@ -293,6 +292,7 @@ func (trie_db *TrieDB) update_target_nodes(target_nodes *Nodes, left_path []byte
 			path:         left_path,
 			parent_nodes: target_nodes,
 			val:          val,
+			dirty:        true,
 		}
 		//mark dirty
 		target_nodes.mark_dirty()
@@ -341,6 +341,7 @@ func (trie_db *TrieDB) update_target_node(target_node *Node, left_path []byte, v
 				target_node.child_nodes = &Nodes{
 					path_index:  make(map[byte]*Node),
 					parent_node: target_node,
+					dirty:       true,
 				}
 				target_node.child_nodes_hash = nil
 				target_node.mark_dirty()
@@ -358,20 +359,22 @@ func (trie_db *TrieDB) update_target_node(target_node *Node, left_path []byte, v
 			return nil
 		}
 
-		new_node := Node{
+		new_node := &Node{
 			path:         left_path[:],
 			parent_nodes: (*target_node).parent_nodes,
 			child_nodes:  nil,
 			val:          val,
+			dirty:        true,
 		}
 
 		new_node.child_nodes = &Nodes{
 			path_index:  make(map[byte]*Node),
-			parent_node: &new_node,
+			parent_node: new_node,
+			dirty:       true,
 		}
 
 		target_node.path = target_node.path[len(left_path):]
-		target_node.parent_nodes.path_index[new_node.path[0]] = &new_node
+		target_node.parent_nodes.path_index[new_node.path[0]] = new_node
 		target_node.parent_nodes = new_node.child_nodes
 
 		//mark dirty
@@ -415,12 +418,14 @@ func (trie_db *TrieDB) update_target_node(target_node *Node, left_path []byte, v
 		new_node.child_nodes = &Nodes{
 			path_index:  make(map[byte]*Node),
 			parent_node: &new_node,
+			dirty:       true,
 		}
 
 		new_node.child_nodes.path_index[left_path[common_prefix_bytes_len]] = &Node{
 			path:         left_path[common_prefix_bytes_len:],
 			parent_nodes: new_node.child_nodes,
 			val:          val,
+			dirty:        true,
 		}
 
 		new_node.child_nodes.path_index[target_node.path[common_prefix_bytes_len]] = target_node
