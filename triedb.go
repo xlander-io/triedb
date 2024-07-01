@@ -215,10 +215,6 @@ func (trie_db *TrieDB) update_recursive_del(node *Node) {
 
 	//del val of this node
 	node.val = nil
-	node.val_hash = nil
-
-	//mark
-	node.mark_dirty()
 
 	//
 	trie_db.recover_child_nodes(node)
@@ -226,14 +222,13 @@ func (trie_db *TrieDB) update_recursive_del(node *Node) {
 	if node.child_nodes == nil {
 		//
 		delete(node.parent_nodes.path_index, node.path[0])
-		//mark parent_nodes dirty
-		node.parent_nodes.mark_dirty()
 
 		//what is left in parent_nodes
 		if len(node.parent_nodes.path_index) == 0 {
 			//
 			node.parent_nodes.parent_node.child_nodes = nil
-			node.parent_nodes.parent_node.mark_dirty()
+			//don't forget to mark_dirty before next potential recursive
+			node.mark_dirty()
 			//
 			if node.parent_nodes.parent_node.val == nil {
 				trie_db.update_recursive_del(node.parent_nodes.parent_node)
@@ -250,17 +245,16 @@ func (trie_db *TrieDB) update_recursive_del(node *Node) {
 			}
 
 			//
-			left_single_node.parent_nodes.parent_node.path = append(left_single_node.parent_nodes.parent_node.path, left_single_node.path...)
-			left_single_node.parent_nodes.parent_node.child_nodes = left_single_node.child_nodes
-			left_single_node.parent_nodes.parent_node.child_nodes_hash = left_single_node.child_nodes_hash
-			left_single_node.parent_nodes.parent_node.val = left_single_node.val
-			left_single_node.parent_nodes.parent_node.val_hash = left_single_node.val_hash
+			left_single_node.path = append(left_single_node.parent_nodes.parent_node.path, left_single_node.path...)
+			node.parent_nodes.parent_node.parent_nodes.path_index[left_single_node.path[0]] = left_single_node
+			left_single_node.parent_nodes = node.parent_nodes.parent_node.parent_nodes
 
 			//mark dirty
 			left_single_node.parent_nodes.parent_node.mark_dirty()
 
 		} else {
 			//more then 1 node in parent nodes nothing to do
+			node.mark_dirty()
 		}
 
 	} else {
@@ -279,6 +273,8 @@ func (trie_db *TrieDB) update_recursive_del(node *Node) {
 			single_child_node.parent_nodes = node.parent_nodes
 			//path changes mark dirty
 			single_child_node.mark_dirty()
+		} else {
+			node.mark_dirty()
 		}
 	}
 
