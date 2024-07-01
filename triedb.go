@@ -456,6 +456,7 @@ func (trie_db *TrieDB) update_target_node(target_node *Node, left_path []byte, v
 
 		target_node.path = target_node.path[common_prefix_bytes_len:]
 		target_node.parent_nodes.path_index[new_node.path[0]] = &new_node
+		new_node.parent_nodes = target_node.parent_nodes
 		target_node.parent_nodes = new_node.child_nodes
 
 		//mark dirty
