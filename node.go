@@ -122,15 +122,13 @@ func (n *Node) cal_node_hash() {
 // later will recalculate related value
 func (node *Node) mark_dirty() {
 	node.dirty = true
-	if node.parent_nodes != nil {
+	if node.parent_nodes != nil && !node.parent_nodes.dirty {
 		node.parent_nodes.mark_dirty()
 	}
-	//node.node_bytes = nil
-	//node.node_hash = nil
 }
 
 type Nodes struct {
-	path_index  map[byte]*Node //byte can only ranges from '0' to 'f' total 16 different values
+	path_index  map[byte]*Node //byte can only ranges from '0' to '255' total 16 different values
 	parent_node *Node
 	nodes_bytes []byte //serialize(self) , nil for new node or dirty node
 	//nodes_hash  *util.Hash //hash(self) , nil for new node or dirty node
@@ -183,12 +181,8 @@ func (n *Nodes) cal_nodes_hash() {
 
 // later will recalculate related value
 func (n *Nodes) mark_dirty() {
-
 	n.dirty = true
-	if n.parent_node != nil {
+	if n.parent_node != nil && !n.parent_node.dirty {
 		n.parent_node.mark_dirty()
 	}
-
-	//n.nodes_bytes = nil
-	//n.nodes_hash = nil
 }

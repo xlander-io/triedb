@@ -62,7 +62,6 @@ func NewTrieDB(kvdb_ kv.KVDB, cache_ *cache.Cache, root_hash *util.Hash) (*TrieD
 			kvdb:      kvdb_,
 			root_hash: nil,
 			root_node: &Node{
-				node_hash:                  nil,
 				child_nodes_hash_recovered: true,
 				val_hash_recovered:         true,
 				node_hash_recovered:        true,
@@ -76,7 +75,12 @@ func NewTrieDB(kvdb_ kv.KVDB, cache_ *cache.Cache, root_hash *util.Hash) (*TrieD
 			cache:     cache_,
 			kvdb:      kvdb_,
 			root_hash: root_hash_copy,
-			root_node: &Node{node_hash: root_hash_copy},
+			root_node: &Node{
+				node_hash:                  root_hash_copy,
+				val_hash_recovered:         false,
+				child_nodes_hash_recovered: false,
+				node_hash_recovered:        false,
+			},
 		}
 
 		root_node_err := trie_db.recover_node(trie_db.root_node)
@@ -162,7 +166,6 @@ func (trie_db *TrieDB) recover_node_val(node *Node) error {
 	node.val = node_val_bytes
 	node.deserialize()
 
-	trie_db.attachHash(node.val_hash)
 	//delete to prevent double recover
 	node.val_hash_recovered = true
 	//
@@ -190,7 +193,6 @@ func (trie_db *TrieDB) recover_child_nodes(node *Node) error {
 		//
 		child_nodes_.deserialize()
 		//
-		trie_db.attachHash(node.child_nodes_hash)
 		//delete to prevent double recover
 		node.child_nodes_hash_recovered = true
 		//child_nodes_.nodes_hash = nil
@@ -296,7 +298,7 @@ func (trie_db *TrieDB) update_target_nodes(target_nodes *Nodes, left_path []byte
 		return nil
 	} else {
 		//simply add a new node
-		target_nodes.path_index[left_path[0]] = &Node{
+		new_node := &Node{
 			path:                       left_path,
 			parent_nodes:               target_nodes,
 			val:                        val,
@@ -305,8 +307,10 @@ func (trie_db *TrieDB) update_target_nodes(target_nodes *Nodes, left_path []byte
 			node_hash_recovered:        true,
 			val_hash_recovered:         true,
 		}
+		//
+		target_nodes.path_index[left_path[0]] = new_node
 		//mark dirty
-		target_nodes.mark_dirty()
+		new_node.mark_dirty()
 	}
 
 	return nil
@@ -325,7 +329,6 @@ func (trie_db *TrieDB) update_target_node(target_node *Node, left_path []byte, v
 		} else {
 			//update this node
 			target_node.val = val
-			target_node.val_hash = nil
 			//mark dirty
 			target_node.mark_dirty()
 		}
@@ -333,33 +336,32 @@ func (trie_db *TrieDB) update_target_node(target_node *Node, left_path []byte, v
 
 	} else if (len(left_path) > len(target_node.path)) && bytes.Equal(target_node.path, left_path[0:len(target_node.path)]) {
 		// left_path start with target_node.path
-		if target_node.child_nodes != nil {
-			///
-			return trie_db.update_target_nodes(target_node.child_nodes, left_path[len(target_node.path):], val)
-		} else {
-			///
+
+		if !target_node.child_nodes_hash_recovered {
 			recover_err := trie_db.recover_child_nodes(target_node)
 			if recover_err != nil {
 				return errors.New("update_target_node recover_child_nodes err:" + recover_err.Error())
 			}
-			// nothing to do with nil (del action)
-			if target_node.child_nodes == nil {
-				if val == nil {
-					return nil
-				}
+		}
 
-				// new nodes that dynamically created
-				target_node.child_nodes = &Nodes{
-					path_index:  make(map[byte]*Node),
-					parent_node: target_node,
-					dirty:       true,
-				}
-				target_node.child_nodes_hash = nil
-				target_node.mark_dirty()
+		if target_node.child_nodes != nil {
+			///
+			return trie_db.update_target_nodes(target_node.child_nodes, left_path[len(target_node.path):], val)
+		} else {
+
+			//nothing to do
+			if val == nil {
+				return nil
 			}
 
+			// new nodes that dynamically created
+			target_node.child_nodes = &Nodes{
+				path_index:  make(map[byte]*Node),
+				parent_node: target_node,
+				dirty:       true,
+			}
+			//
 			return trie_db.update_target_nodes(target_node.child_nodes, left_path[len(target_node.path):], val)
-
 		}
 
 	} else if (len(left_path) < len(target_node.path)) && bytes.Equal(left_path, target_node.path[0:len(left_path)]) {
@@ -390,6 +392,7 @@ func (trie_db *TrieDB) update_target_node(target_node *Node, left_path []byte, v
 		target_node.path = target_node.path[len(left_path):]
 		target_node.parent_nodes.path_index[new_node.path[0]] = new_node
 		target_node.parent_nodes = new_node.child_nodes
+		new_node.child_nodes.path_index[target_node.path[0]] = target_node
 
 		//mark dirty
 		target_node.mark_dirty()
@@ -491,7 +494,6 @@ func (trie_db *TrieDB) Update(full_path []byte, val []byte) error {
 			path_index:  make(map[byte]*Node),
 			parent_node: trie_db.root_node,
 		}
-		trie_db.root_node.child_nodes_hash = nil
 	}
 
 	return trie_db.update_target_nodes(trie_db.root_node.child_nodes, full_path, val)
