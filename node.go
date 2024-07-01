@@ -15,17 +15,19 @@ type Node struct {
 
 	parent_nodes *Nodes //nil for root node
 
-	child_nodes      *Nodes
-	child_nodes_hash *util.Hash //nil for new node or dirty node
+	child_nodes                *Nodes
+	child_nodes_hash           *util.Hash //nil for new node or dirty node
+	child_nodes_hash_recovered bool
 
-	val      []byte     //always nil for root node
-	val_hash *util.Hash //always nil for root node
+	val                []byte     //always nil for root node
+	val_hash           *util.Hash //always nil for root node
+	val_hash_recovered bool
 
-	node_bytes []byte     //serialize(self) , nil for new node or dirty node
-	node_hash  *util.Hash //hash(self.node_bytes) , nil for new node or dirty node
+	node_bytes          []byte     //serialize(self) , nil for new node or dirty node
+	node_hash           *util.Hash //hash(self.node_bytes) , nil for new node or dirty node
+	node_hash_recovered bool
 
 	dirty bool //default false
-
 }
 
 // serialize to node_bytes
@@ -130,9 +132,9 @@ func (node *Node) mark_dirty() {
 type Nodes struct {
 	path_index  map[byte]*Node //byte can only ranges from '0' to 'f' total 16 different values
 	parent_node *Node
-	nodes_bytes []byte     //serialize(self) , nil for new node or dirty node
-	nodes_hash  *util.Hash //hash(self) , nil for new node or dirty node
-	dirty       bool       //default false
+	nodes_bytes []byte //serialize(self) , nil for new node or dirty node
+	//nodes_hash  *util.Hash //hash(self) , nil for new node or dirty node
+	dirty bool //default false
 }
 
 // serialize to nodes_bytes
@@ -175,7 +177,8 @@ func (n *Nodes) cal_nodes_hash() {
 	result = append(result, HASH_NODES_PREFIX...)
 	result = append(result, n.parent_node.get_full_path()...)
 	result = append(result, n.nodes_bytes...)
-	n.nodes_hash = util.NewHashFromBytes(result)
+	n.parent_node.child_nodes_hash = util.NewHashFromBytes(result)
+	//n.nodes_hash = util.NewHashFromBytes(result)
 }
 
 // later will recalculate related value
