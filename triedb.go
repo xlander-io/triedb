@@ -250,7 +250,7 @@ func (trie_db *TrieDB) update_recursive_del(node *Node) {
 			left_single_node.parent_nodes = node.parent_nodes.parent_node.parent_nodes
 
 			//mark dirty
-			left_single_node.parent_nodes.parent_node.mark_dirty()
+			left_single_node.mark_dirty()
 
 		} else {
 			//more then 1 node in parent nodes nothing to do
