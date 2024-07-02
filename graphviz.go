@@ -83,20 +83,30 @@ func (vns *vizNodes) makeName() string {
 }
 
 func (vn *vizNode) makeLabel() string {
+	BORDER := func(n int) string { return fmt.Sprintf(`BORDER="%d"`, n) }
+	CELLBORDER := func(n int) string { return fmt.Sprintf(`CELLBORDER="%d"`, n) }
+	CELLSPACING := func(n int) string { return fmt.Sprintf(`CELLSPACING="%d"`, n) }
+	CELLPADDING := func(n int) string { return fmt.Sprintf(`CELLPADDING="%d"`, n) }
+	COLOR := `COLOR="gray"`
 	title := fmt.Sprintf("<TR>%s<TD>%d</TD></TR>", "<TD>ID</TD>", vn.ID)
 	path_ := fmt.Sprintf("<TR>%s<TD>%v</TD></TR>", "<TD>Path</TD>", vn.Path)
 	value := fmt.Sprintf("<TR>%s<TD>%v</TD></TR>", "<TD>Value</TD>", vn.Value)
-	return fmt.Sprintf(`label=<<TABLE>%v%v%v</TABLE>>`, title, path_, value)
+	return fmt.Sprintf(`label=<<TABLE %v %v %v %v %v>%v%v%v</TABLE>>`, BORDER(0), CELLBORDER(1), CELLSPACING(0), CELLPADDING(1), COLOR, title, path_, value)
 }
 
 func (vns *vizNodes) makeLabel() string {
+	BORDER := func(n int) string { return fmt.Sprintf(`BORDER="%d"`, n) }
+	CELLBORDER := func(n int) string { return fmt.Sprintf(`CELLBORDER="%d"`, n) }
+	CELLSPACING := func(n int) string { return fmt.Sprintf(`CELLSPACING="%d"`, n) }
+	CELLPADDING := func(n int) string { return fmt.Sprintf(`CELLPADDING="%d"`, n) }
+	COLOR := `COLOR="gray"`
 	var b bytes.Buffer
 	for k, _ := range vns.Index {
 		b.WriteString(fmt.Sprintf("<TD PORT=\"%s\">%s</TD>", k, k))
 	}
 	TR_id___ := fmt.Sprintf("<TR>%s<TD>%d</TD></TR>", "<TD>ID</TD>", vns.ID)
 	TR_ports := fmt.Sprintf("<TR>%s</TR>", b.String())
-	return fmt.Sprintf(`label=<<TABLE>%s%s</TABLE>>`, TR_id___, TR_ports)
+	return fmt.Sprintf(`label=<<TABLE %v %v %v %v %v>%s%s</TABLE>>`, BORDER(0), CELLBORDER(1), CELLSPACING(0), CELLPADDING(1), COLOR, TR_id___, TR_ports)
 }
 
 func (tdb *TrieDB) GenDot() string {
@@ -106,7 +116,7 @@ func (tdb *TrieDB) GenDot() string {
 	funcMaps := template.FuncMap{
 		"Name":  func(o NameFunc) string { return o.makeName() },
 		"Label": func(o LabelFunc) string { return o.makeLabel() },
-		"Eattr": func(vnS, vnD *vizNode, port string) string {
+		"Edge": func(vnS, vnD *vizNode, port string) string {
 			return fmt.Sprintf(`[tailport="%s"]`, port)
 		},
 	}
@@ -120,7 +130,7 @@ func (tdb *TrieDB) GenDot() string {
 	}
 
 	{{- define "vertices"}}
-		{{Name .}} [shape=plain {{Label .}}]
+		{{Name .}} [shape=box style=rounded {{Label .}}]
 		{{if .Children}}{{Name .Children}} [shape=plain {{Label .Children}}]{{end}}
 		{{- if .Children}}
 			{{- range $k,$v := .Children.Index}}
@@ -131,9 +141,10 @@ func (tdb *TrieDB) GenDot() string {
 
 	{{- define "edges"}}
 		{{- $O := .}}
+		{{if .Children}} {{Name $O}} -> {{Name $O.Children}} {{end}}
 		{{if .Children}}
 			{{- range $k,$v := .Children.Index}}
-				{{- Name $O.Children}} -> {{Name $v}} {{Eattr $O $v $k}}
+				{{- Name $O.Children}} -> {{Name $v}} {{Edge $O $v $k}}
 				{{- template "edges" $v}}
 			{{- end}}
 		{{- end}}
