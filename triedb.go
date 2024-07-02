@@ -630,6 +630,7 @@ func (trie_db *TrieDB) Get(path []byte) ([]byte, error) {
 // 	child_node_hash *hash.Hash
 // }
 
+// k_v_map is the potential changed keys' map
 // k_v_map to collected all the dirty k_v , string(key) => []byte (value)
 func (trie_db *TrieDB) commit_recursive(node *Node, k_v_map *sync.Map) *hash.Hash {
 
@@ -670,14 +671,16 @@ func (trie_db *TrieDB) commit_recursive(node *Node, k_v_map *sync.Map) *hash.Has
 		//
 		node.child_nodes.serialize()
 		node.child_nodes.cal_nodes_hash()
+		k_v_map.Store(string(node.child_nodes_hash.Bytes()), node.child_nodes.nodes_bytes)
 	}
 
 	//cal hash
 	node.cal_node_val_hash()
 	node.cal_node_hash()
+	k_v_map.Store(string(node.val_hash.Bytes()), node.val)
 
 	//
-	k_v_map.Store(string(node.node_hash.Bytes()), node.val)
+	k_v_map.Store(string(node.node_hash.Bytes()), node.node_bytes)
 
 	return node.node_hash
 
@@ -688,9 +691,23 @@ func (trie_db *TrieDB) Commit() (*hash.Hash, []hash.Hash, error) {
 	trie_db.lock.Lock()
 	defer trie_db.lock.Unlock()
 
-	all_cal_k_v := sync.Map{}
+	//
+	potential_changes_k_v := sync.Map{}
+	//
+	trie_db.commit_recursive(trie_db.root_node, &potential_changes_k_v)
 
-	trie_db.commit_recursive(trie_db.root_node, &all_cal_k_v)
+	// what to delete
+	var del_k_v map[string]struct{}
+
+	//what to del
+	for key_str, _ := range trie_db.attached_hash {
+		if _, found := potential_changes_k_v.Load(key_str); !found {
+			del_k_v[key_str] = struct{}{}
+		}
+	}
+
+	//
+	//trie_db.kvdb.WriteBatch()
 
 	return nil, nil, nil
 }
