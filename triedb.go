@@ -40,7 +40,7 @@ type TrieDB struct {
 	//
 	root_node *Node
 	//
-	attached_hash map[string]struct{} //hash => struct{}{} , all related hash in the trie
+	attached_hash map[string]*hash.Hash //hash => struct{}{} , all related hash in the trie
 	//
 	commit_thread_available chan struct{} //always >= 0, if 0 => new thread won't be created during commit
 }
@@ -104,9 +104,10 @@ func NewTrieDB(kvdb_ kv.KVDB, cache_ *cache.Cache, user_config *TrieDBConfig) (*
 	if hash.IsNilHash(config.Root_hash) {
 
 		return &TrieDB{
-			config: config,
-			cache:  cache_,
-			kvdb:   kvdb_,
+			config:        config,
+			cache:         cache_,
+			kvdb:          kvdb_,
+			attached_hash: make(map[string]*hash.Hash),
 			root_node: &Node{
 				node_hash:                  nil,
 				child_nodes_hash_recovered: true,
@@ -119,9 +120,10 @@ func NewTrieDB(kvdb_ kv.KVDB, cache_ *cache.Cache, user_config *TrieDBConfig) (*
 	} else {
 
 		trie_db := TrieDB{
-			config: config,
-			cache:  cache_,
-			kvdb:   kvdb_,
+			config:        config,
+			cache:         cache_,
+			kvdb:          kvdb_,
+			attached_hash: make(map[string]*hash.Hash),
 			root_node: &Node{
 				node_hash:                  config.Root_hash,
 				val_hash_recovered:         false,
@@ -141,7 +143,7 @@ func NewTrieDB(kvdb_ kv.KVDB, cache_ *cache.Cache, user_config *TrieDBConfig) (*
 }
 
 func (trie_db *TrieDB) attachHash(hash *hash.Hash) {
-	trie_db.attached_hash[string(hash.Bytes())] = struct{}{}
+	trie_db.attached_hash[string(hash.Bytes())] = hash
 }
 
 // get first from cache then from kvdb
@@ -632,7 +634,7 @@ func (trie_db *TrieDB) Get(path []byte) ([]byte, error) {
 
 // k_v_map is the potential changed keys' map
 // k_v_map to collected all the dirty k_v , string(key) => []byte (value)
-func (trie_db *TrieDB) commit_recursive(node *Node, k_v_map *sync.Map) *hash.Hash {
+func (trie_db *TrieDB) cal_hash_recursive(node *Node, k_v_map *sync.Map) *hash.Hash {
 
 	//
 	trie_db.commit_thread_available <- struct{}{}
@@ -656,7 +658,7 @@ func (trie_db *TrieDB) commit_recursive(node *Node, k_v_map *sync.Map) *hash.Has
 				<-trie_db.commit_thread_available
 				//
 				go func() {
-					trie_db.commit_recursive(cn, k_v_map)
+					trie_db.cal_hash_recursive(cn, k_v_map)
 					child_result_chan <- struct{}{}
 				}()
 				//
@@ -686,28 +688,32 @@ func (trie_db *TrieDB) commit_recursive(node *Node, k_v_map *sync.Map) *hash.Has
 
 }
 
-// return root_hash, removed hash array ,error
-func (trie_db *TrieDB) Commit() (*hash.Hash, []hash.Hash, error) {
+// return root_hash, update/insert hash map, del hash map ,error
+func (trie_db *TrieDB) CalHash() (*hash.Hash, map[string][]byte, map[string]*hash.Hash) {
 	trie_db.lock.Lock()
 	defer trie_db.lock.Unlock()
 
 	//
 	potential_changes_k_v := sync.Map{}
 	//
-	trie_db.commit_recursive(trie_db.root_node, &potential_changes_k_v)
+	trie_db.cal_hash_recursive(trie_db.root_node, &potential_changes_k_v)
 
 	// what to delete
-	var del_k_v map[string]struct{}
+	update_k_v := make(map[string][]byte)
+	del_k_v := make(map[string]*hash.Hash)
 
 	//what to del
-	for key_str, _ := range trie_db.attached_hash {
+	for key_str, key_hash := range trie_db.attached_hash {
 		if _, found := potential_changes_k_v.Load(key_str); !found {
-			del_k_v[key_str] = struct{}{}
+			del_k_v[key_str] = key_hash
 		}
 	}
 
-	//
-	//trie_db.kvdb.WriteBatch()
+	//what to update
+	potential_changes_k_v.Range(func(key, value any) bool {
+		update_k_v[key.(string)] = value.([]byte)
+		return true
+	})
 
-	return nil, nil, nil
+	return trie_db.root_node.node_hash, update_k_v, del_k_v
 }
