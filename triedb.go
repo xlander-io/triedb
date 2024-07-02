@@ -661,8 +661,10 @@ func (trie_db *TrieDB) cal_hash_recursive(node *Node, k_v_map *sync.Map) *hash.H
 		<-trie_db.commit_thread_available //give out a thread-slot
 
 		//make sure all sub-thread done
-		for i := 0; i < len(node.child_nodes.path_index); i++ {
-			<-child_result_chan
+		for _, cn := range node.child_nodes.path_index {
+			if cn.dirty {
+				<-child_result_chan
+			}
 		}
 		//
 		trie_db.commit_thread_available <- struct{}{} //get back the thread-slot

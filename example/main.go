@@ -21,8 +21,13 @@ func main() {
 	})
 
 	tdb.Update([]byte("12"), []byte("val12"))
+	tdb.Update([]byte("1a"), []byte("val1a"))
+	tdb.Update([]byte("1b"), []byte("val1b"))
 	tdb.Update([]byte("123"), []byte("val123"))
+	tdb.Update([]byte("12a"), []byte("val12a"))
+	tdb.Update([]byte("12b"), []byte("val12b"))
 	tdb.Update([]byte("1234"), []byte("val1234"))
+	tdb.Update([]byte("123a"), []byte("val123a"))
 
 	_, to_update, _ := tdb.CalHash()
 
