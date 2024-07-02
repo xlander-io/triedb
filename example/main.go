@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/xlander-io/cache"
 	"github.com/xlander-io/kv_leveldb"
@@ -11,16 +10,6 @@ import (
 )
 
 func main() {
-
-	go func() {
-
-		ccc := make(chan struct{}, 5)
-		ccc <- struct{}{}
-		<-ccc
-		fmt.Println("no stuck")
-	}()
-
-	time.Sleep(30 * time.Second)
 
 	const db_path = "./kv_leveldb_test.db"
 	os.RemoveAll(db_path)
@@ -32,7 +21,17 @@ func main() {
 	tdb.Update([]byte("12"), []byte("val12"))
 	tdb.Update([]byte("123"), []byte("val123"))
 	tdb.Update([]byte("1234"), []byte("val1234"))
-	tdb.Update([]byte("123"), nil)
+
+	root_hash, to_update, _ := tdb.CalHash()
+
+	fmt.Println(root_hash)
+
+	for hex_string, update_v := range to_update {
+		fmt.Println("hex:" + fmt.Sprintf("%x", hex_string))
+		fmt.Println("val:" + string(update_v))
+	}
+
+	//fmt.Println(to_del)
 
 	// tdb.Update([]byte("45"), []byte("val45"))
 	// tdb.Update([]byte("123"), []byte("val123"))

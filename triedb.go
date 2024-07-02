@@ -627,11 +627,6 @@ func (trie_db *TrieDB) Get(path []byte) ([]byte, error) {
 
 ////////////////////////commit ///////////////////////////////
 
-// type commitRecursiveChildResult struct {
-// 	path_index_byte byte
-// 	child_node_hash *hash.Hash
-// }
-
 // k_v_map is the potential changed keys' map
 // k_v_map to collected all the dirty k_v , string(key) => []byte (value)
 func (trie_db *TrieDB) cal_hash_recursive(node *Node, k_v_map *sync.Map) *hash.Hash {

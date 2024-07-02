@@ -85,20 +85,12 @@ func (n *Node) deserialize() {
 
 // return nil for root empty node
 func (n *Node) get_full_path() []byte {
-	if n.path == nil {
+	if n.parent_nodes == nil {
 		//may happen in root node
-		return nil
-	}
-	//
-	full_path := n.path
-	parent_nodes := n.parent_nodes
-
-	//when parent_nodes != nil always -> parent_nodes.parent_node !=nil
-	for parent_nodes != nil && parent_nodes.parent_node.path != nil {
-		full_path = append(parent_nodes.parent_node.path, full_path...)
+		return []byte{}
 	}
 
-	return full_path
+	return append(n.parent_nodes.parent_node.get_full_path(), n.path...)
 }
 
 // calculate val_hash
@@ -107,7 +99,7 @@ func (n *Node) cal_node_val_hash() {
 	result = append(result, HASH_NODE_VAL_PREFIX...)
 	result = append(result, n.get_full_path()...)
 	result = append(result, n.val...)
-	n.val_hash = hash.NewHashFromBytes(result)
+	n.val_hash = hash.CalHash(result)
 }
 
 // calculate node_hash
@@ -116,7 +108,7 @@ func (n *Node) cal_node_hash() {
 	result = append(result, HASH_NODE_PREFIX...)
 	result = append(result, n.get_full_path()...)
 	result = append(result, n.node_bytes...)
-	n.node_hash = hash.NewHashFromBytes(result)
+	n.node_hash = hash.CalHash(result)
 }
 
 // later will recalculate related value
@@ -174,7 +166,7 @@ func (n *Nodes) cal_nodes_hash() {
 	result = append(result, HASH_NODES_PREFIX...)
 	result = append(result, n.parent_node.get_full_path()...)
 	result = append(result, n.nodes_bytes...)
-	n.parent_node.child_nodes_hash = hash.NewHashFromBytes(result)
+	n.parent_node.child_nodes_hash = hash.CalHash(result)
 }
 
 // later will recalculate related value
