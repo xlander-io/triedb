@@ -42,7 +42,7 @@ type TrieDB struct {
 	//
 	attached_hash map[string]struct{} //hash => struct{}{} , all related hash in the trie
 	//
-	commit_thread_available int //always >= 0, stop use new thread when becomes 0
+	commit_thread_available chan struct{} //always >= 0, if 0 => new thread won't be created during commit
 }
 
 type TrieDBConfig struct {
@@ -113,7 +113,7 @@ func NewTrieDB(kvdb_ kv.KVDB, cache_ *cache.Cache, user_config *TrieDBConfig) (*
 				val_hash_recovered:         true,
 				node_hash_recovered:        true,
 			},
-			commit_thread_available: config.Commit_thread_limit,
+			commit_thread_available: make(chan struct{}, config.Commit_thread_limit),
 		}, nil
 
 	} else {
@@ -128,7 +128,7 @@ func NewTrieDB(kvdb_ kv.KVDB, cache_ *cache.Cache, user_config *TrieDBConfig) (*
 				child_nodes_hash_recovered: false,
 				node_hash_recovered:        false,
 			},
-			commit_thread_available: config.Commit_thread_limit,
+			commit_thread_available: make(chan struct{}, config.Commit_thread_limit),
 		}
 
 		root_node_err := trie_db.recover_node(trie_db.root_node)
@@ -625,27 +625,72 @@ func (trie_db *TrieDB) Get(path []byte) ([]byte, error) {
 
 ////////////////////////commit ///////////////////////////////
 
-// // k_v_map to collected all the dirty k_v , string(key) => []byte (value)
-// func (trie_db *TrieDB) commit_recursive(node *Node, k_v_map *sync.Map) {
-// 	//
-// 	if !node.dirty {
-// 		return
-// 	}
-// 	//
-// 	if node.child_nodes != nil && node.child_nodes.dirty {
-// 		for _, cn := range node.child_nodes.path_index {
-// 			if cn.dirty {
-// 				atomic.CompareAndSwapInt32()
-// 			}
-// 		}
-// 	}
-
+// type commitRecursiveChildResult struct {
+// 	path_index_byte byte
+// 	child_node_hash *hash.Hash
 // }
+
+// k_v_map to collected all the dirty k_v , string(key) => []byte (value)
+func (trie_db *TrieDB) commit_recursive(node *Node, k_v_map *sync.Map) *hash.Hash {
+
+	//
+	trie_db.commit_thread_available <- struct{}{}
+	defer func() {
+		<-trie_db.commit_thread_available
+	}()
+
+	//
+	if !node.dirty {
+		return node.node_hash
+	}
+
+	//
+	if node.child_nodes != nil && node.child_nodes.dirty && len(node.child_nodes.path_index) != 0 {
+
+		child_result_chan := make(chan struct{}, len(node.child_nodes.path_index))
+
+		for _, cn := range node.child_nodes.path_index {
+			if cn.dirty {
+				//
+				<-trie_db.commit_thread_available
+				//
+				go func() {
+					trie_db.commit_recursive(cn, k_v_map)
+					child_result_chan <- struct{}{}
+				}()
+				//
+				trie_db.commit_thread_available <- struct{}{}
+			}
+		}
+
+		//make sure all sub-thread done
+		for i := 0; i < len(node.child_nodes.path_index); i++ {
+			<-child_result_chan
+		}
+		//
+		node.child_nodes.serialize()
+		node.child_nodes.cal_nodes_hash()
+	}
+
+	//cal hash
+	node.cal_node_val_hash()
+	node.cal_node_hash()
+
+	//
+	k_v_map.Store(string(node.node_hash.Bytes()), node.val)
+
+	return node.node_hash
+
+}
 
 // return root_hash, removed hash array ,error
 func (trie_db *TrieDB) Commit() (*hash.Hash, []hash.Hash, error) {
 	trie_db.lock.Lock()
 	defer trie_db.lock.Unlock()
+
+	all_cal_k_v := sync.Map{}
+
+	trie_db.commit_recursive(trie_db.root_node, &all_cal_k_v)
 
 	return nil, nil, nil
 }

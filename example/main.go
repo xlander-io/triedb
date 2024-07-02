@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/xlander-io/cache"
 	"github.com/xlander-io/kv_leveldb"
@@ -10,6 +11,16 @@ import (
 )
 
 func main() {
+
+	go func() {
+
+		ccc := make(chan struct{}, 5)
+		ccc <- struct{}{}
+		<-ccc
+		fmt.Println("no stuck")
+	}()
+
+	time.Sleep(30 * time.Second)
 
 	const db_path = "./kv_leveldb_test.db"
 	os.RemoveAll(db_path)
