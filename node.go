@@ -3,7 +3,7 @@ package triedb
 import (
 	"encoding/binary"
 
-	"github.com/xlander-io/triedb/util"
+	"github.com/xlander-io/hash"
 )
 
 var HASH_NODE_PREFIX []byte = []byte("hash_node_prefix")
@@ -16,15 +16,15 @@ type Node struct {
 	parent_nodes *Nodes //nil for root node
 
 	child_nodes                *Nodes
-	child_nodes_hash           *util.Hash //nil for new node or dirty node
+	child_nodes_hash           *hash.Hash //nil for new node or dirty node
 	child_nodes_hash_recovered bool
 
 	val                []byte     //always nil for root node
-	val_hash           *util.Hash //always nil for root node
+	val_hash           *hash.Hash //always nil for root node
 	val_hash_recovered bool
 
 	node_bytes          []byte     //serialize(self) , nil for new node or dirty node
-	node_hash           *util.Hash //hash(self.node_bytes) , nil for new node or dirty node
+	node_hash           *hash.Hash //hash(self.node_bytes) , nil for new node or dirty node
 	node_hash_recovered bool
 
 	dirty bool //default false
@@ -38,7 +38,7 @@ func (n *Node) serialize() {
 		result = append(result, uint8(0))
 	} else {
 		result = append(result, uint8(32))
-		result = append(result, (*n.child_nodes_hash)[:]...)
+		result = n.child_nodes_hash.PrePend(result)
 	}
 
 	//val_hash
@@ -46,7 +46,7 @@ func (n *Node) serialize() {
 		result = append(result, uint8(0))
 	} else {
 		result = append(result, uint8(32))
-		result = append(result, (*n.val_hash)[:]...)
+		result = n.val_hash.PrePend(result)
 	}
 
 	n.node_bytes = result
@@ -61,7 +61,7 @@ func (n *Node) deserialize() {
 	if child_nodes_hash_len == 0 {
 		n.child_nodes_hash = nil
 	} else if child_nodes_hash_len == 32 {
-		n.child_nodes_hash = util.NewHashFromBytes(n.node_bytes[deserialize_offset : deserialize_offset+32])
+		n.child_nodes_hash = hash.NewHashFromBytes(n.node_bytes[deserialize_offset : deserialize_offset+32])
 		deserialize_offset += 32
 	} else {
 		//remove this else in final production
@@ -74,7 +74,7 @@ func (n *Node) deserialize() {
 	if val_hash_len == 0 {
 		n.val_hash = nil
 	} else if val_hash_len == 32 {
-		n.val_hash = util.NewHashFromBytes(n.node_bytes[deserialize_offset : deserialize_offset+32])
+		n.val_hash = hash.NewHashFromBytes(n.node_bytes[deserialize_offset : deserialize_offset+32])
 		deserialize_offset += 32
 	} else {
 		//remove this else in final production
@@ -107,7 +107,7 @@ func (n *Node) cal_node_val_hash() {
 	result = append(result, HASH_NODE_VAL_PREFIX...)
 	result = append(result, n.get_full_path()...)
 	result = append(result, n.val...)
-	n.val_hash = util.NewHashFromBytes(result)
+	n.val_hash = hash.NewHashFromBytes(result)
 }
 
 // calculate node_hash
@@ -116,7 +116,7 @@ func (n *Node) cal_node_hash() {
 	result = append(result, HASH_NODE_PREFIX...)
 	result = append(result, n.get_full_path()...)
 	result = append(result, n.node_bytes...)
-	n.node_hash = util.NewHashFromBytes(result)
+	n.node_hash = hash.NewHashFromBytes(result)
 }
 
 // later will recalculate related value
@@ -140,7 +140,7 @@ func (n *Nodes) serialize() {
 	var result []byte = []byte{}
 	result = append(result, uint8(len(n.path_index)))
 	for _, node := range n.path_index {
-		result = append(result, (*node.node_hash)[:]...)
+		result = node.node_hash.PrePend(result)
 		path_len_bytes := make([]byte, 16)
 		binary.LittleEndian.PutUint16(path_len_bytes, uint16(len(node.path)))
 		result = append(result, path_len_bytes...)
@@ -158,7 +158,7 @@ func (n *Nodes) deserialize() {
 	} else {
 		for i := 0; i < path_index_len; i++ {
 			node_ := Node{}
-			node_.node_hash = util.NewHashFromBytes(n.nodes_bytes[deserialize_offset : deserialize_offset+32])
+			node_.node_hash = hash.NewHashFromBytes(n.nodes_bytes[deserialize_offset : deserialize_offset+32])
 			deserialize_offset += 32
 			path_len := int(binary.LittleEndian.Uint16(n.nodes_bytes[deserialize_offset : deserialize_offset+16]))
 			deserialize_offset += 16
@@ -175,7 +175,7 @@ func (n *Nodes) cal_nodes_hash() {
 	result = append(result, HASH_NODES_PREFIX...)
 	result = append(result, n.parent_node.get_full_path()...)
 	result = append(result, n.nodes_bytes...)
-	n.parent_node.child_nodes_hash = util.NewHashFromBytes(result)
+	n.parent_node.child_nodes_hash = hash.NewHashFromBytes(result)
 	//n.nodes_hash = util.NewHashFromBytes(result)
 }
 

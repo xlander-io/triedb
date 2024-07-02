@@ -6,8 +6,8 @@ import (
 	"sync"
 
 	"github.com/xlander-io/cache"
+	"github.com/xlander-io/hash"
 	"github.com/xlander-io/kv"
-	"github.com/xlander-io/triedb/util"
 )
 
 /*
@@ -19,9 +19,6 @@ import (
  *		   what key hash will be removed in commit
  *		5. Get,Put,Commit use the same lock to prevent data inconsistence
  */
-
-//const PATH_LEN_LIMIT = 64 * 1024         // in bytes uint16 limit
-//const VAL_LEN_LIMIT = 4096 * 1024 * 1024 // in bytes uint32 limit
 
 // ///////////////////////////
 type trie_cache_item struct {
@@ -35,17 +32,24 @@ func (item *trie_cache_item) CacheBytes() int {
 /////////////////////////////
 
 type TrieDB struct {
-	root_hash *util.Hash
-	root_node *Node
-
+	config *TrieDBConfig
+	//
 	kvdb  kv.KVDB
 	cache *cache.Cache
 	lock  sync.Mutex
-
+	//
+	root_node *Node
+	//
 	attached_hash map[string]struct{} //hash => struct{}{} , all related hash in the trie
 }
 
-func NewTrieDB(kvdb_ kv.KVDB, cache_ *cache.Cache, root_hash *util.Hash) (*TrieDB, error) {
+type TrieDBConfig struct {
+	Root_hash             *hash.Hash
+	Update_path_len_limit int // max bytes len
+	Update_val_len_limit  int // max bytes len
+}
+
+func NewTrieDB(kvdb_ kv.KVDB, cache_ *cache.Cache, user_config *TrieDBConfig) (*TrieDB, error) {
 
 	if kvdb_ == nil {
 		return nil, errors.New("NewTrieDB kvdb is nil")
@@ -55,13 +59,44 @@ func NewTrieDB(kvdb_ kv.KVDB, cache_ *cache.Cache, root_hash *util.Hash) (*TrieD
 		return nil, errors.New("NewTrieDB cache is nil")
 	}
 
-	if util.IsEmptyHash(root_hash) {
+	//default config
+	config := &TrieDBConfig{
+		Root_hash:             nil,
+		Update_path_len_limit: 64 * 1024,          //64kb
+		Update_val_len_limit:  4096 * 1024 * 1024, //4GB
+	}
+
+	if user_config != nil {
+		//
+		if user_config.Root_hash != nil {
+			config.Root_hash = user_config.Root_hash.Clone()
+		}
+		//
+		if user_config.Update_path_len_limit < 0 {
+			return nil, errors.New("config Update_path_len_limit err")
+		} else if user_config.Update_path_len_limit == 0 {
+			//use default val
+		} else {
+			config.Update_path_len_limit = user_config.Update_path_len_limit
+		}
+		//
+		if user_config.Update_val_len_limit < 0 {
+			return nil, errors.New("config Update_val_len_limit err")
+		} else if user_config.Update_val_len_limit == 0 {
+			//use default val
+		} else {
+			config.Update_val_len_limit = user_config.Update_val_len_limit
+		}
+	}
+
+	if hash.IsNilHash(config.Root_hash) {
 
 		return &TrieDB{
-			cache:     cache_,
-			kvdb:      kvdb_,
-			root_hash: nil,
+			config: config,
+			cache:  cache_,
+			kvdb:   kvdb_,
 			root_node: &Node{
+				node_hash:                  nil,
 				child_nodes_hash_recovered: true,
 				val_hash_recovered:         true,
 				node_hash_recovered:        true,
@@ -70,13 +105,12 @@ func NewTrieDB(kvdb_ kv.KVDB, cache_ *cache.Cache, root_hash *util.Hash) (*TrieD
 
 	} else {
 
-		root_hash_copy := util.NewHashFromBytes((*root_hash)[:])
 		trie_db := TrieDB{
-			cache:     cache_,
-			kvdb:      kvdb_,
-			root_hash: root_hash_copy,
+			config: config,
+			cache:  cache_,
+			kvdb:   kvdb_,
 			root_node: &Node{
-				node_hash:                  root_hash_copy,
+				node_hash:                  config.Root_hash,
 				val_hash_recovered:         false,
 				child_nodes_hash_recovered: false,
 				node_hash_recovered:        false,
@@ -92,8 +126,8 @@ func NewTrieDB(kvdb_ kv.KVDB, cache_ *cache.Cache, root_hash *util.Hash) (*TrieD
 	}
 }
 
-func (trie_db *TrieDB) attachHash(hash *util.Hash) {
-	trie_db.attached_hash[string((*hash)[:])] = struct{}{}
+func (trie_db *TrieDB) attachHash(hash *hash.Hash) {
+	trie_db.attached_hash[string(hash.Bytes())] = struct{}{}
 }
 
 // get first from cache then from kvdb
@@ -131,7 +165,7 @@ func (trie_db *TrieDB) recover_node(node *Node) error {
 		return nil
 	}
 
-	node_bytes, node_err := trie_db.getFromCacheKVDB(node.node_hash[:])
+	node_bytes, node_err := trie_db.getFromCacheKVDB(node.node_hash.Bytes())
 	if node_err != nil {
 		return errors.New("recover_node getFromCacheKVDB  err, " + node_err.Error())
 	}
@@ -158,7 +192,7 @@ func (trie_db *TrieDB) recover_node_val(node *Node) error {
 		return nil
 	}
 
-	node_val_bytes, node_val_err := trie_db.getFromCacheKVDB(node.val_hash[:])
+	node_val_bytes, node_val_err := trie_db.getFromCacheKVDB(node.val_hash.Bytes())
 	if node_val_err != nil {
 		return errors.New("recover_node_val getFromCacheKVDB  err, " + node_val_err.Error())
 	}
@@ -180,7 +214,7 @@ func (trie_db *TrieDB) recover_child_nodes(node *Node) error {
 
 	if node.child_nodes == nil && !node.child_nodes_hash_recovered {
 
-		nodes_bytes, err := trie_db.getFromCacheKVDB(node.child_nodes_hash[:])
+		nodes_bytes, err := trie_db.getFromCacheKVDB(node.child_nodes_hash.Bytes())
 		if err != nil {
 			return errors.New("recover_child_nodes err :" + err.Error())
 		}
@@ -188,14 +222,16 @@ func (trie_db *TrieDB) recover_child_nodes(node *Node) error {
 		//
 		child_nodes_ := Nodes{
 			nodes_bytes: nodes_bytes,
-			//nodes_hash:  node.child_nodes_hash,
 		}
 		//
 		child_nodes_.deserialize()
+
 		//
+		for _, c_n := range child_nodes_.path_index {
+			trie_db.attachHash(c_n.node_hash)
+		}
 		//delete to prevent double recover
 		node.child_nodes_hash_recovered = true
-		//child_nodes_.nodes_hash = nil
 		//
 		return nil
 
@@ -472,6 +508,14 @@ func (trie_db *TrieDB) Update(full_path []byte, val []byte) error {
 		return errors.New("full_path len err")
 	}
 
+	if len(full_path) > trie_db.config.Update_path_len_limit {
+		return errors.New("trie update_path_len_limit over limit")
+	}
+
+	if len(val) > trie_db.config.Update_val_len_limit {
+		return errors.New("trie update_val_len_limit over limit")
+	}
+
 	trie_db.lock.Lock()
 	defer trie_db.lock.Unlock()
 
@@ -563,4 +607,11 @@ func (trie_db *TrieDB) Get(path []byte) ([]byte, error) {
 	}
 	//
 	return get_node.val, nil
+}
+
+// return root_hash, removed hash array ,error
+func (trie_db *TrieDB) Commit() (*hash.Hash, []hash.Hash, error) {
+	trie_db.lock.Lock()
+	defer trie_db.lock.Unlock()
+	return nil, nil, nil
 }
