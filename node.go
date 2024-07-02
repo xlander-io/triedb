@@ -153,9 +153,8 @@ func (n *Nodes) deserialize() {
 	deserialize_offset := 0
 	path_index_len := int(uint8(n.nodes_bytes[0]))
 	deserialize_offset++
-	if path_index_len == 0 {
+	if path_index_len != 0 {
 		n.path_index = make(map[byte]*Node)
-	} else {
 		for i := 0; i < path_index_len; i++ {
 			node_ := Node{}
 			node_.node_hash = hash.NewHashFromBytes(n.nodes_bytes[deserialize_offset : deserialize_offset+32])
@@ -176,7 +175,6 @@ func (n *Nodes) cal_nodes_hash() {
 	result = append(result, n.parent_node.get_full_path()...)
 	result = append(result, n.nodes_bytes...)
 	n.parent_node.child_nodes_hash = hash.NewHashFromBytes(result)
-	//n.nodes_hash = util.NewHashFromBytes(result)
 }
 
 // later will recalculate related value

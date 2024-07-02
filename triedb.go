@@ -41,12 +41,15 @@ type TrieDB struct {
 	root_node *Node
 	//
 	attached_hash map[string]struct{} //hash => struct{}{} , all related hash in the trie
+	//
+	commit_thread_available int //always >= 0, stop use new thread when becomes 0
 }
 
 type TrieDBConfig struct {
 	Root_hash             *hash.Hash
 	Update_path_len_limit int // max bytes len
 	Update_val_len_limit  int // max bytes len
+	Commit_thread_limit   int // max concurrent threads during commit
 }
 
 func NewTrieDB(kvdb_ kv.KVDB, cache_ *cache.Cache, user_config *TrieDBConfig) (*TrieDB, error) {
@@ -64,6 +67,7 @@ func NewTrieDB(kvdb_ kv.KVDB, cache_ *cache.Cache, user_config *TrieDBConfig) (*
 		Root_hash:             nil,
 		Update_path_len_limit: 64 * 1024,          //64kb
 		Update_val_len_limit:  4096 * 1024 * 1024, //4GB
+		Commit_thread_limit:   10,
 	}
 
 	if user_config != nil {
@@ -87,6 +91,14 @@ func NewTrieDB(kvdb_ kv.KVDB, cache_ *cache.Cache, user_config *TrieDBConfig) (*
 		} else {
 			config.Update_val_len_limit = user_config.Update_val_len_limit
 		}
+		//
+		if user_config.Commit_thread_limit < 0 {
+			return nil, errors.New("config Commit_thread_limit err")
+		} else if user_config.Commit_thread_limit == 0 {
+			//use default val
+		} else {
+			config.Commit_thread_limit = user_config.Commit_thread_limit
+		}
 	}
 
 	if hash.IsNilHash(config.Root_hash) {
@@ -101,6 +113,7 @@ func NewTrieDB(kvdb_ kv.KVDB, cache_ *cache.Cache, user_config *TrieDBConfig) (*
 				val_hash_recovered:         true,
 				node_hash_recovered:        true,
 			},
+			commit_thread_available: config.Commit_thread_limit,
 		}, nil
 
 	} else {
@@ -115,6 +128,7 @@ func NewTrieDB(kvdb_ kv.KVDB, cache_ *cache.Cache, user_config *TrieDBConfig) (*
 				child_nodes_hash_recovered: false,
 				node_hash_recovered:        false,
 			},
+			commit_thread_available: config.Commit_thread_limit,
 		}
 
 		root_node_err := trie_db.recover_node(trie_db.root_node)
@@ -609,9 +623,29 @@ func (trie_db *TrieDB) Get(path []byte) ([]byte, error) {
 	return get_node.val, nil
 }
 
+////////////////////////commit ///////////////////////////////
+
+// // k_v_map to collected all the dirty k_v , string(key) => []byte (value)
+// func (trie_db *TrieDB) commit_recursive(node *Node, k_v_map *sync.Map) {
+// 	//
+// 	if !node.dirty {
+// 		return
+// 	}
+// 	//
+// 	if node.child_nodes != nil && node.child_nodes.dirty {
+// 		for _, cn := range node.child_nodes.path_index {
+// 			if cn.dirty {
+// 				atomic.CompareAndSwapInt32()
+// 			}
+// 		}
+// 	}
+
+// }
+
 // return root_hash, removed hash array ,error
 func (trie_db *TrieDB) Commit() (*hash.Hash, []hash.Hash, error) {
 	trie_db.lock.Lock()
 	defer trie_db.lock.Unlock()
+
 	return nil, nil, nil
 }
