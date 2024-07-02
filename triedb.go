@@ -632,14 +632,13 @@ func (trie_db *TrieDB) Get(path []byte) ([]byte, error) {
 func (trie_db *TrieDB) cal_hash_recursive(node *Node, k_v_map *sync.Map) *hash.Hash {
 
 	//
-	trie_db.commit_thread_available <- struct{}{}
-	defer func() {
-		<-trie_db.commit_thread_available
-	}()
-
-	//
 	if !node.dirty {
 		return node.node_hash
+	}
+
+	//root node and empty trie check
+	if node.parent_nodes == nil && (node.child_nodes == nil || len(node.child_nodes.path_index) == 0) {
+		return hash.NIL_HASH
 	}
 
 	//
@@ -649,38 +648,43 @@ func (trie_db *TrieDB) cal_hash_recursive(node *Node, k_v_map *sync.Map) *hash.H
 
 		for _, cn := range node.child_nodes.path_index {
 			if cn.dirty {
-				//
-				<-trie_db.commit_thread_available
-				//
 				go func() {
+					trie_db.commit_thread_available <- struct{}{}
 					trie_db.cal_hash_recursive(cn, k_v_map)
 					child_result_chan <- struct{}{}
+					<-trie_db.commit_thread_available
 				}()
-				//
-				trie_db.commit_thread_available <- struct{}{}
 			}
 		}
+
+		//
+		<-trie_db.commit_thread_available //give out a thread-slot
 
 		//make sure all sub-thread done
 		for i := 0; i < len(node.child_nodes.path_index); i++ {
 			<-child_result_chan
 		}
 		//
+		trie_db.commit_thread_available <- struct{}{} //get back the thread-slot
+
+		//cal child nodes hash
 		node.child_nodes.serialize()
 		node.child_nodes.cal_nodes_hash()
 		k_v_map.Store(string(node.child_nodes_hash.Bytes()), node.child_nodes.nodes_bytes)
 	}
 
-	//cal hash
-	node.cal_node_val_hash()
+	//cal val hash
+	if node.val != nil {
+		node.cal_node_val_hash()
+		k_v_map.Store(string(node.val_hash.Bytes()), node.val)
+	}
+
+	//cal node hash
+	node.serialize()
 	node.cal_node_hash()
-	k_v_map.Store(string(node.val_hash.Bytes()), node.val)
-
-	//
 	k_v_map.Store(string(node.node_hash.Bytes()), node.node_bytes)
-
+	//
 	return node.node_hash
-
 }
 
 // return root_hash, update/insert hash map, del hash map ,error
@@ -691,7 +695,12 @@ func (trie_db *TrieDB) CalHash() (*hash.Hash, map[string][]byte, map[string]*has
 	//
 	potential_changes_k_v := sync.Map{}
 	//
+	trie_db.commit_thread_available <- struct{}{} //main thread-slot
+	//
 	trie_db.cal_hash_recursive(trie_db.root_node, &potential_changes_k_v)
+	//
+	<-trie_db.commit_thread_available //main thread-slot
+	//
 
 	// what to delete
 	update_k_v := make(map[string][]byte)
