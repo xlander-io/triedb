@@ -10,6 +10,10 @@ type NameFunc interface {
 	makeName() string
 }
 
+type LabelFunc interface {
+	makeLabel() string
+}
+
 type vizGraph struct {
 	Root   *vizNode
 	nextID int
@@ -74,8 +78,25 @@ func (vn *vizNode) makeName() string {
 	return fmt.Sprintf("ND%d", vn.ID)
 }
 
-func (vn *vizNodes) makeName() string {
-	return fmt.Sprintf("NS%d", vn.ID)
+func (vns *vizNodes) makeName() string {
+	return fmt.Sprintf("NS%d", vns.ID)
+}
+
+func (vn *vizNode) makeLabel() string {
+	title := fmt.Sprintf("<TR>%s<TD>%d</TD></TR>", "<TD>ID</TD>", vn.ID)
+	path_ := fmt.Sprintf("<TR>%s<TD>%v</TD></TR>", "<TD>Path</TD>", vn.Path)
+	value := fmt.Sprintf("<TR>%s<TD>%v</TD></TR>", "<TD>Value</TD>", vn.Value)
+	return fmt.Sprintf(`label=<<TABLE>%v%v%v</TABLE>>`, title, path_, value)
+}
+
+func (vns *vizNodes) makeLabel() string {
+	var b bytes.Buffer
+	for k, _ := range vns.Index {
+		b.WriteString(fmt.Sprintf("<TD PORT=\"%s\">%s</TD>", k, k))
+	}
+	TR_id___ := fmt.Sprintf("<TR>%s<TD>%d</TD></TR>", "<TD>ID</TD>", vns.ID)
+	TR_ports := fmt.Sprintf("<TR>%s</TR>", b.String())
+	return fmt.Sprintf(`label=<<TABLE>%s%s</TABLE>>`, TR_id___, TR_ports)
 }
 
 func (tdb *TrieDB) GenDot() string {
@@ -83,10 +104,10 @@ func (tdb *TrieDB) GenDot() string {
 	var b bytes.Buffer
 
 	funcMaps := template.FuncMap{
-		"Name":  func(nf NameFunc) string { return nf.makeName() },
-		"Vattr": func(vn *vizNode) string { return fmt.Sprintf(`[label="path:'%s', val:'%s'"]`, vn.Path, vn.Value) },
+		"Name":  func(o NameFunc) string { return o.makeName() },
+		"Label": func(o LabelFunc) string { return o.makeLabel() },
 		"Eattr": func(vnS, vnD *vizNode, port string) string {
-			return fmt.Sprintf(`[port='%s' label="path='%s'"]`, port, vnS.Path)
+			return fmt.Sprintf(`[tailport="%s"]`, port)
 		},
 	}
 	tmpl := template.New("trie")
@@ -99,8 +120,8 @@ func (tdb *TrieDB) GenDot() string {
 	}
 
 	{{- define "vertices"}}
-		{{Name .}} {{Vattr .}}
-		{{if .Children}}{{Name .Children}} [label=<>]{{end}}
+		{{Name .}} [shape=plain {{Label .}}]
+		{{if .Children}}{{Name .Children}} [shape=plain {{Label .Children}}]{{end}}
 		{{- if .Children}}
 			{{- range $k,$v := .Children.Index}}
 				{{- template "vertices" $v}}
