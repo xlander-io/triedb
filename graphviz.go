@@ -12,8 +12,8 @@ type NameFunc interface {
 	makeName() string
 }
 
-type LabelFunc interface {
-	makeLabel() string
+type TableFunc interface {
+	makeTable() string
 }
 
 type vizGraph struct {
@@ -84,38 +84,38 @@ func (vns *vizNodes) makeName() string {
 	return fmt.Sprintf("NS%d", vns.ID)
 }
 
-func (vn *vizNode) makeLabel() string {
+func (vn *vizNode) makeTable() string {
 	BORDER := func(n int) string { return fmt.Sprintf(`BORDER="%d"`, n) }
 	CELLBORDER := func(n int) string { return fmt.Sprintf(`CELLBORDER="%d"`, n) }
 	CELLSPACING := func(n int) string { return fmt.Sprintf(`CELLSPACING="%d"`, n) }
 	CELLPADDING := func(n int) string { return fmt.Sprintf(`CELLPADDING="%d"`, n) }
 	COLOR := `COLOR="gray"`
-	title := fmt.Sprintf("<TR>%s<TD>%d</TD></TR>", "<TD>ID</TD>", vn.ID)
-	path_ := fmt.Sprintf("<TR>%s<TD>%v</TD></TR>", "<TD>Path</TD>", vn.Path)
-	value := fmt.Sprintf("<TR>%s<TD>%v</TD></TR>", "<TD>Value</TD>", vn.Value)
-	return fmt.Sprintf(`label=<<TABLE %v %v %v %v %v>%v%v%v</TABLE>>`, BORDER(0), CELLBORDER(1), CELLSPACING(0), CELLPADDING(1), COLOR, title, path_, value)
+	//title := fmt.Sprintf("<TR>%s<TD>%d</TD></TR>", "<TD>ID</TD>", vn.ID)
+	path_ := fmt.Sprintf("<TR>%s<TD>%v</TD></TR>", "<TD>path</TD>", vn.Path)
+	value := fmt.Sprintf("<TR>%s<TD>%v</TD></TR>", "<TD>value</TD>", vn.Value)
+	return fmt.Sprintf(`<TABLE %v %v %v %v %v>%v%v</TABLE>`, BORDER(0), CELLBORDER(1), CELLSPACING(0), CELLPADDING(1), COLOR, path_, value)
 }
 
-func (vns *vizNodes) makeLabel() string {
+func (vns *vizNodes) makeTable() string {
 	BORDER := func(n int) string { return fmt.Sprintf(`BORDER="%d"`, n) }
 	CELLBORDER := func(n int) string { return fmt.Sprintf(`CELLBORDER="%d"`, n) }
 	CELLSPACING := func(n int) string { return fmt.Sprintf(`CELLSPACING="%d"`, n) }
 	CELLPADDING := func(n int) string { return fmt.Sprintf(`CELLPADDING="%d"`, n) }
 	COLOR := `COLOR="gray"`
 	var b bytes.Buffer
-	for k, _ := range vns.Index {
-		b.WriteString(fmt.Sprintf("<TD PORT=\"%s\">%s</TD>", k, k))
+	for k, v := range vns.Index {
+		b.WriteString(fmt.Sprintf("<TD PORT=\"%s\">%s</TD>", k, v.makeTable()))
 	}
-	TR_id___ := fmt.Sprintf("<TR>%s<TD>%d</TD></TR>", "<TD>ID</TD>", vns.ID)
+	//TR_id___ := fmt.Sprintf("<TR>%s<TD>%d</TD></TR>", "<TD>ID</TD>", vns.ID)
 	TR_ports := fmt.Sprintf("<TR>%s</TR>", b.String())
-	return fmt.Sprintf(`label=<<TABLE %v %v %v %v %v>%s%s</TABLE>>`, BORDER(0), CELLBORDER(1), CELLSPACING(0), CELLPADDING(1), COLOR, TR_id___, TR_ports)
+	return fmt.Sprintf(`<TABLE %v %v %v %v %v>%s</TABLE>`, BORDER(0), CELLBORDER(1), CELLSPACING(0), CELLPADDING(1), COLOR, TR_ports)
 }
 
 func (tdb *TrieDB) WriteDot(b io.Writer) {
 
 	funcMaps := template.FuncMap{
 		"Name":  func(o NameFunc) string { return o.makeName() },
-		"Label": func(o LabelFunc) string { return o.makeLabel() },
+		"Table": func(o TableFunc) string { return o.makeTable() },
 		"Edge": func(vnS, vnD *vizNode, port string) string {
 			return fmt.Sprintf(`[tailport="%s"]`, port)
 		},
@@ -130,8 +130,8 @@ func (tdb *TrieDB) WriteDot(b io.Writer) {
 	}
 
 	{{- define "vertices"}}
-		{{Name .}} [shape=box style=rounded {{Label .}}]
-		{{if .Children}}{{Name .Children}} [shape=plain {{Label .Children}}]{{end}}
+		{{if eq .ID 0}}{{Name .}} [shape=box style=rounded label=<{{Table .}}>]{{end}}
+		{{if .Children}}{{Name .Children}} [shape=plain label=<{{Table .Children}}>]{{end}}
 		{{- if .Children}}
 			{{- range $k,$v := .Children.Index}}
 				{{- template "vertices" $v}}
@@ -141,10 +141,12 @@ func (tdb *TrieDB) WriteDot(b io.Writer) {
 
 	{{- define "edges"}}
 		{{- $O := .}}
-		{{if .Children}} {{Name $O}} -> {{Name $O.Children}} {{end}}
+		{{if and .Children (eq .ID 0)}} {{Name $O}} -> {{Name $O.Children}} {{end}}
 		{{if .Children}}
 			{{- range $k,$v := .Children.Index}}
-				{{- Name $O.Children}} -> {{Name $v}} {{Edge $O $v $k}}
+				{{if $v.Children}}
+					{{- Name $O.Children}} -> {{Name $v.Children}} {{Edge $O $v $k}}
+				{{end}}
 				{{- template "edges" $v}}
 			{{- end}}
 		{{- end}}
@@ -165,7 +167,7 @@ func (tdb *TrieDB) GenDotString() string {
 }
 
 func (tdb *TrieDB) GenDotFile(filepath string) {
-	dot, err := os.OpenFile(filepath, os.O_CREATE|os.O_WRONLY, 0644)
+	dot, err := os.OpenFile(filepath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if nil != err {
 		panic(err)
 	}

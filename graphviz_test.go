@@ -21,6 +21,7 @@ func TestBasic(t *testing.T) {
 	tdb.Update([]byte("12"), []byte("val12"))
 	tdb.Update([]byte("1a"), []byte("val1a"))
 	tdb.Update([]byte("1b"), []byte("val1b"))
+	tdb.Update([]byte("1ab"), []byte("val1ab"))
 	tdb.Update([]byte("123"), []byte("val123"))
 	tdb.Update([]byte("12a"), []byte("val12a"))
 	tdb.Update([]byte("12b"), []byte("val12b"))
