@@ -28,6 +28,9 @@ func TestBasic(t *testing.T) {
 	tdb.Update([]byte("1234"), []byte("val1234"))
 	tdb.Update([]byte("123a"), []byte("val123a"))
 
-	fmt.Println(tdb.GenDotString())
-	tdb.GenDotFile("./test_basic.dot")
+	tdb.CalHash()
+
+	fmt.Println(tdb.GenDotString(true))
+	// dot -Tpdf -O test_basic.dot && open test_basic.dot.pdf
+	tdb.GenDotFile("./test_basic.dot", false)
 }
