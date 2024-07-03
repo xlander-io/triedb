@@ -21,11 +21,23 @@ func main() {
 		Commit_thread_limit: 1,
 	})
 
+	tdb.Update([]byte("12"), []byte("val12"))
 	tdb.Update([]byte("1a"), []byte("val1a"))
+	tdb.Update([]byte("1b"), []byte("val1b"))
+	// tdb.Update([]byte("1ab"), []byte("val1ab"))
+	// tdb.Update([]byte("123"), []byte("val123"))
+	// tdb.Update([]byte("12a"), []byte("val12a"))
+	// tdb.Update([]byte("12b"), []byte("val12b"))
+	// tdb.Update([]byte("1234"), []byte("val1234"))
+	// tdb.Update([]byte("123a"), []byte("val123a"))
 
-	root_hash, to_update, to_del := tdb.CalHash()
+	root_hash, to_update, to_del, cal_herr := tdb.CalHash()
+	if cal_herr != nil {
+		fmt.Println("tdb.CalHash() err:", cal_herr.Error())
+		return
+	}
 
-	tdb.GenDotFile("./check.dot")
+	tdb.GenDotFile("./check.dot", true)
 
 	// fmt.Println("hex:" + fmt.Sprintf("%x", root_hash))
 
@@ -68,7 +80,12 @@ func main() {
 	//////
 	tdb2.Update([]byte("1a"), nil)
 
-	root_hash2, to_update2, to_del2 := tdb2.CalHash()
+	root_hash2, to_update2, to_del2, cal_h_err := tdb2.CalHash()
+
+	if cal_h_err != nil {
+		fmt.Println("tdb2.CalHash() err:", cal_h_err)
+		return
+	}
 
 	fmt.Println("root_hash2 hex:" + fmt.Sprintf("%x", root_hash2))
 
@@ -117,6 +134,20 @@ func main() {
 		fmt.Println("get err key 1a:", key_1a_val_err)
 	} else {
 		fmt.Println("key_1a_val val:", string(key_1a_val))
+	}
+
+	key_12_val, key_12_val_err := tdb3.Get([]byte("12"))
+	if key_12_val_err != nil {
+		fmt.Println("get err key 12:", key_12_val_err)
+	} else {
+		fmt.Println("key_12_val val:", string(key_12_val))
+	}
+
+	key_1b_val, key_1b_val_err := tdb3.Get([]byte("1b"))
+	if key_1b_val_err != nil {
+		fmt.Println("get err key 1b:", key_1b_val_err)
+	} else {
+		fmt.Println("key_1b_val val:", string(key_1b_val))
 	}
 
 }
