@@ -2,10 +2,13 @@ package triedb
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
 	"text/template"
+
+	"github.com/xlander-io/hash"
 )
 
 type NameFunc interface {
@@ -25,6 +28,8 @@ type vizNode struct {
 	ID       int
 	Path     string
 	Value    string
+	Hash     string
+	Dirty    bool
 	Children *vizNodes
 }
 
@@ -48,6 +53,10 @@ func (vg *vizGraph) fromTrieDB(tdb *TrieDB) {
 func (vn *vizNode) fromTrieNode(n *Node) {
 	vn.Path = string(bytes.Clone(n.path))
 	vn.Value = string(bytes.Clone(n.val))
+	if !hash.IsNilHash(n.node_hash) {
+		vn.Hash = hex.EncodeToString(n.node_hash.Bytes())
+	}
+	vn.Dirty = n.dirty
 
 	if nil != n.child_nodes {
 		vn.Children = &vizNodes{}
@@ -93,7 +102,12 @@ func (vn *vizNode) makeTable() string {
 	//title := fmt.Sprintf("<TR>%s<TD>%d</TD></TR>", "<TD>ID</TD>", vn.ID)
 	path_ := fmt.Sprintf("<TR>%s<TD>%v</TD></TR>", "<TD>path</TD>", vn.Path)
 	value := fmt.Sprintf("<TR>%s<TD>%v</TD></TR>", "<TD>value</TD>", vn.Value)
-	return fmt.Sprintf(`<TABLE %v %v %v %v %v>%v%v</TABLE>`, BORDER(0), CELLBORDER(1), CELLSPACING(0), CELLPADDING(1), COLOR, path_, value)
+	hash_ := fmt.Sprintf("<TR>%s<TD>%v</TD></TR>", "<TD>hash</TD>", vn.Hash)
+	dirty := fmt.Sprintf("<TR>%s<TD>%v</TD></TR>", "<TD>dirty</TD>", vn.Dirty)
+
+	STYLEs := fmt.Sprintf("%v %v %v %v %v", BORDER(0), CELLBORDER(1), CELLSPACING(0), CELLPADDING(1), COLOR)
+	VALUEs := fmt.Sprintf("%v%v%v%v", path_, value, hash_, dirty)
+	return fmt.Sprintf(`<TABLE %v>%v</TABLE>`, STYLEs, VALUEs)
 }
 
 func (vns *vizNodes) makeTable() string {
@@ -102,13 +116,17 @@ func (vns *vizNodes) makeTable() string {
 	CELLSPACING := func(n int) string { return fmt.Sprintf(`CELLSPACING="%d"`, n) }
 	CELLPADDING := func(n int) string { return fmt.Sprintf(`CELLPADDING="%d"`, n) }
 	COLOR := `COLOR="gray"`
+	STYLE := `STYLE="rounded"`
 	var b bytes.Buffer
 	for k, v := range vns.Index {
 		b.WriteString(fmt.Sprintf("<TD PORT=\"%s\">%s</TD>", k, v.makeTable()))
 	}
-	//TR_id___ := fmt.Sprintf("<TR>%s<TD>%d</TD></TR>", "<TD>ID</TD>", vns.ID)
-	TR_ports := fmt.Sprintf("<TR>%s</TR>", b.String())
-	return fmt.Sprintf(`<TABLE %v %v %v %v %v>%s</TABLE>`, BORDER(0), CELLBORDER(1), CELLSPACING(0), CELLPADDING(1), COLOR, TR_ports)
+	//id___ := fmt.Sprintf("<TR>%s<TD>%d</TD></TR>", "<TD>ID</TD>", vns.ID)
+	ports := fmt.Sprintf("<TR>%s</TR>", b.String())
+
+	STYLEs := fmt.Sprintf("%v %v %v %v %v %v", BORDER(1), CELLBORDER(0), CELLSPACING(15), CELLPADDING(0), COLOR, STYLE)
+	VALUEs := fmt.Sprintf("%v", ports)
+	return fmt.Sprintf(`<TABLE %v>%v</TABLE>`, STYLEs, VALUEs)
 }
 
 func (tdb *TrieDB) WriteDot(b io.Writer) {
@@ -130,7 +148,7 @@ func (tdb *TrieDB) WriteDot(b io.Writer) {
 	}
 
 	{{- define "vertices"}}
-		{{if eq .ID 0}}{{Name .}} [shape=box style=rounded label=<{{Table .}}>]{{end}}
+		{{if eq .ID 0}}{{Name .}} [shape=plain label=<{{Table .}}>]{{end}}
 		{{if .Children}}{{Name .Children}} [shape=plain label=<{{Table .Children}}>]{{end}}
 		{{- if .Children}}
 			{{- range $k,$v := .Children.Index}}
@@ -141,12 +159,12 @@ func (tdb *TrieDB) WriteDot(b io.Writer) {
 
 	{{- define "edges"}}
 		{{- $O := .}}
-		{{if and .Children (eq .ID 0)}} {{Name $O}} -> {{Name $O.Children}} {{end}}
-		{{if .Children}}
+		{{- if and .Children (eq .ID 0)}} {{- Name $O}} -> {{Name $O.Children}} {{end}}
+		{{- if .Children}}
 			{{- range $k,$v := .Children.Index}}
-				{{if $v.Children}}
+				{{- if $v.Children}}
 					{{- Name $O.Children}} -> {{Name $v.Children}} {{Edge $O $v $k}}
-				{{end}}
+				{{- end}}
 				{{- template "edges" $v}}
 			{{- end}}
 		{{- end}}
