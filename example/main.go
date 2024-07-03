@@ -21,31 +21,25 @@ func main() {
 		Commit_thread_limit: 1,
 	})
 
-	tdb.Update([]byte("12"), []byte("val12"))
 	tdb.Update([]byte("1a"), []byte("val1a"))
-	tdb.Update([]byte("1b"), []byte("val1b"))
-	tdb.Update([]byte("123"), []byte("val123"))
-	tdb.Update([]byte("12a"), []byte("val12a"))
-	tdb.Update([]byte("12b"), []byte("val12b"))
-	tdb.Update([]byte("1234"), []byte("val1234"))
-	tdb.Update([]byte("123a"), []byte("val123a"))
-	tdb.Update([]byte("1234"), nil)
 
 	root_hash, to_update, to_del := tdb.CalHash()
 
-	fmt.Println("hex:" + fmt.Sprintf("%x", root_hash))
+	tdb.GenDotFile("./check.dot")
 
-	// fmt.Println("================to update len:", len(to_update), "====================")
-	// for hex_string, update_v := range to_update {
-	// 	fmt.Println("hex:" + fmt.Sprintf("%x", hex_string))
-	// 	fmt.Println("val:" + string(update_v))
-	// }
+	// fmt.Println("hex:" + fmt.Sprintf("%x", root_hash))
 
-	// fmt.Println("================to del len:", len(to_del), "====================")
-	// for hex_string, del_v := range to_del {
-	// 	fmt.Println("hex:" + fmt.Sprintf("%x", hex_string))
-	// 	fmt.Println("val:" + string(del_v.Bytes()))
-	// }
+	fmt.Println("================to update len:", len(to_update), "====================")
+	for hex_string, update_v := range to_update {
+		fmt.Println("hex:" + fmt.Sprintf("%x", hex_string))
+		fmt.Println("val:" + string(update_v))
+	}
+
+	fmt.Println("================to del len:", len(to_del), "====================")
+	for hex_string, del_v := range to_del {
+		fmt.Println("hex:" + fmt.Sprintf("%x", hex_string))
+		fmt.Println("val:" + string(del_v.Bytes()))
+	}
 
 	///excute the code
 
@@ -71,18 +65,58 @@ func main() {
 		Root_hash:           root_hash,
 	})
 
-	key_12_val, key_12_val_err := tdb2.Get([]byte("12"))
-	if key_12_val_err != nil {
-		fmt.Println("get err key 12:", key_12_val_err)
-	} else {
-		fmt.Println("key_12_val val:", string(key_12_val))
+	//////
+	tdb2.Update([]byte("1a"), nil)
+
+	root_hash2, to_update2, to_del2 := tdb2.CalHash()
+
+	fmt.Println("root_hash2 hex:" + fmt.Sprintf("%x", root_hash2))
+
+	fmt.Println("================to update2 len:", len(to_update2), "====================")
+	for hex_string, update_v := range to_update2 {
+		fmt.Println("hex:" + fmt.Sprintf("%x", hex_string))
+		fmt.Println("val:" + string(update_v))
 	}
 
-	key_1234_val, key_1234_val_err := tdb2.Get([]byte("1234"))
-	if key_1234_val_err != nil {
-		fmt.Println("get err key 1234:", key_1234_val_err)
+	fmt.Println("================to del2 len:", len(to_del2), "====================")
+	for hex_string, _ := range to_del2 {
+		fmt.Println("hex:" + fmt.Sprintf("%x", hex_string))
+	}
+
+	b2 := kv.NewBatch()
+	for hex_string, update_v := range to_update2 {
+		b2.Put([]byte(hex_string), update_v)
+	}
+
+	for _, del_v := range to_del2 {
+		fmt.Println("to_del2 to del in batch :", fmt.Sprintf("%x", del_v.Bytes()))
+		b2.Delete(del_v.Bytes())
+	}
+
+	write_err2 := kvdb.WriteBatch(b2, true)
+
+	if write_err2 != nil {
+		fmt.Println("write_err2:", write_err2)
+	}
+
+	//////////////////
+
+	c3, _ := cache.New(nil)
+	tdb3, trie_err := triedb.NewTrieDB(kvdb, c3, &triedb.TrieDBConfig{
+		Commit_thread_limit: 1,
+		Root_hash:           root_hash2,
+	})
+
+	if trie_err != nil {
+		fmt.Println("trie_err ", trie_err)
+		return
+	}
+
+	key_1a_val, key_1a_val_err := tdb3.Get([]byte("1a"))
+	if key_1a_val_err != nil {
+		fmt.Println("get err key 1a:", key_1a_val_err)
 	} else {
-		fmt.Println("key_1234_val val:", string(key_1234_val))
+		fmt.Println("key_1a_val val:", string(key_1a_val))
 	}
 
 }

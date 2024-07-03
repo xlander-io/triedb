@@ -15,10 +15,10 @@ github.com/xlander-io/cache v0.0.0-20240629113731-202145a0cf50 h1:P153Qi0OVOsS+W
 github.com/xlander-io/cache v0.0.0-20240629113731-202145a0cf50/go.mod h1:4a2iKNpRPUrWl2harrSmmnqrL2KcEOhEb7uf9IUrAKo=
 github.com/xlander-io/hash v0.0.0-20240702005625-39fa6700ef21 h1:Gi4B8T+mkNB9wqPeMMlmcQT2LvXo4FPKaATT6TBrBAs=
 github.com/xlander-io/hash v0.0.0-20240702005625-39fa6700ef21/go.mod h1:Qi38hR1X6IAseh53zN1tQ2xf/16IqNaCbgnQW4DgT0g=
-github.com/xlander-io/kv v0.0.0-20240627123727-434d0569d2e2 h1:KHAHyCXiWyFBkMbpmXtMgB5tNUhP+8CjBBWyRWSYsiU=
-github.com/xlander-io/kv v0.0.0-20240627123727-434d0569d2e2/go.mod h1:Zb7e/Z1K3g8RjYptlUKP2h3R+iHHZF7Z03jPYFTYdN0=
-github.com/xlander-io/kv_leveldb v0.0.0-20240629114505-0fe58a4ee334 h1:NVULdrvGtTxdDyGiXA6sJInPOCIos2LTPw1iG2AT8GY=
-github.com/xlander-io/kv_leveldb v0.0.0-20240629114505-0fe58a4ee334/go.mod h1:wvR12P4oVjVUJI2onyGQygh8p5CP3MnDkXVnStO59+0=
+github.com/xlander-io/kv v0.0.0-20240703070149-408f10396aaa h1:viWMn+f53kZgWOqqkQXVG+zC/f2qxtcaEJE0hoXXqBU=
+github.com/xlander-io/kv v0.0.0-20240703070149-408f10396aaa/go.mod h1:Zb7e/Z1K3g8RjYptlUKP2h3R+iHHZF7Z03jPYFTYdN0=
+github.com/xlander-io/kv_leveldb v0.0.0-20240703070351-7d8361440e83 h1:nkh9SFJkQOv9KbEkwDpmv2DbBSUIgjEXiH0xXDlxWsg=
+github.com/xlander-io/kv_leveldb v0.0.0-20240703070351-7d8361440e83/go.mod h1:kjHhb2BLsgUPWBylvMaGnLGE2hMLgJ4D9E+3g16clc8=
 golang.org/x/crypto v0.24.0 h1:mnl8DM0o513X8fdIkmyFE/5hTYxbwYOjDS/+rK6qpRI=
 golang.org/x/crypto v0.24.0/go.mod h1:Z1PMYSOR5nyMcyAVAIQSKCDwalqy85Aqn1x3Ws4L5DM=
 golang.org/x/net v0.0.0-20180906233101-161cd47e91fd/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=

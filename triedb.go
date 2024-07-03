@@ -3,6 +3,7 @@ package triedb
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/xlander-io/cache"
@@ -152,14 +153,18 @@ func (trie_db *TrieDB) getFromCacheKVDB(key []byte) ([]byte, error) {
 	node_val, get_err := trie_db.kvdb.Get(key)
 	if get_err != nil {
 		return nil, get_err
-	} else {
-		//set to cache
-		trie_db.cache.Set(key_str, &trie_cache_item{
-			val: node_val,
-		})
-
-		return node_val, nil
 	}
+
+	if node_val == nil {
+		return nil, nil
+	}
+
+	//set to cache
+	trie_db.cache.Set(key_str, &trie_cache_item{
+		val: node_val,
+	})
+
+	return node_val, nil
 }
 
 func (trie_db *TrieDB) recover_node(node *Node) error {
@@ -169,13 +174,17 @@ func (trie_db *TrieDB) recover_node(node *Node) error {
 	}
 
 	//already read in the past or new created
-	if node.node_hash_recovered {
+	if node.node_hash_recovered || node.node_hash == nil {
 		return nil
 	}
 
 	node_bytes, node_err := trie_db.getFromCacheKVDB(node.node_hash.Bytes())
 	if node_err != nil {
-		return errors.New("recover_node getFromCacheKVDB  err, " + node_err.Error())
+		return errors.New("recover_node getFromCacheKVDB  err, node_hash: " + fmt.Sprintf("%x", node.node_hash.Bytes()))
+	}
+
+	if node_bytes == nil {
+		return errors.New("recover_node getFromCacheKVDB  err, node_hash not found")
 	}
 	//
 	node.node_bytes = node_bytes
@@ -196,7 +205,7 @@ func (trie_db *TrieDB) recover_node_val(node *Node) error {
 		return errors.New("recover_node_val err, node nil")
 	}
 	//already read in the past or new created
-	if node.val_hash_recovered {
+	if node.val_hash_recovered || node.val_hash == nil {
 		return nil
 	}
 
@@ -204,6 +213,7 @@ func (trie_db *TrieDB) recover_node_val(node *Node) error {
 	if node_val_err != nil {
 		return errors.New("recover_node_val getFromCacheKVDB  err, " + node_val_err.Error())
 	}
+
 	//
 	node.val = node_val_bytes
 	node.deserialize()
@@ -220,11 +230,15 @@ func (trie_db *TrieDB) recover_child_nodes(node *Node) error {
 		return errors.New("recover_child_nodes err, node nil")
 	}
 
-	if node.child_nodes == nil && !node.child_nodes_hash_recovered {
+	if node.child_nodes == nil && !node.child_nodes_hash_recovered && node.child_nodes_hash != nil {
 
 		nodes_bytes, err := trie_db.getFromCacheKVDB(node.child_nodes_hash.Bytes())
 		if err != nil {
-			return errors.New("recover_child_nodes err :" + err.Error())
+			return errors.New("recover_child_nodes err : " + err.Error())
+		}
+
+		if nodes_bytes == nil {
+			return errors.New("recover_child_nodes err : child_nodes_hash not found")
 		}
 
 		//
@@ -238,6 +252,7 @@ func (trie_db *TrieDB) recover_child_nodes(node *Node) error {
 		//
 		for _, c_n := range child_nodes_.path_index {
 			trie_db.attachHash(c_n.node_hash)
+			c_n.parent_nodes = &child_nodes_
 		}
 		//delete to prevent double recover
 		node.child_nodes_hash_recovered = true

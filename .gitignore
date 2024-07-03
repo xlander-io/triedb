@@ -22,3 +22,6 @@ default_dev
 
 # Dependency directories (remove the comment below to include it)
 kv_leveldb_test.db
+
+# dot file
+*.dot
