@@ -114,7 +114,9 @@ func (n *Node) cal_node_hash() {
 // later will recalculate related value
 func (node *Node) mark_dirty() {
 	node.dirty = true
-	if node.parent_nodes != nil && !node.parent_nodes.dirty {
+
+	//because of the lazy action never add contion like '&& !node.parent_nodes.dirty'
+	if node.parent_nodes != nil {
 		node.parent_nodes.mark_dirty()
 	}
 }
@@ -172,7 +174,9 @@ func (n *Nodes) cal_nodes_hash() {
 // later will recalculate related value
 func (n *Nodes) mark_dirty() {
 	n.dirty = true
-	if n.parent_node != nil && !n.parent_node.dirty {
+
+	//because of the lazy action never add contion like '&& !n.parent_node.dirty'
+	if n.parent_node != nil {
 		n.parent_node.mark_dirty()
 	}
 }

@@ -29,9 +29,9 @@ func main() {
 	tdb.Update([]byte("1234"), []byte("val1234"))
 	tdb.Update([]byte("123a"), []byte("val123a"))
 
-	_, to_update, _ := tdb.CalHash()
+	root_hash, to_update, _ := tdb.CalHash()
 
-	//fmt.Println(root_hash)
+	fmt.Println("hex:" + fmt.Sprintf("%x", root_hash))
 
 	fmt.Println(len(to_update))
 	for hex_string, update_v := range to_update {

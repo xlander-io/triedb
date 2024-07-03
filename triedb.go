@@ -109,7 +109,7 @@ func NewTrieDB(kvdb_ kv.KVDB, cache_ *cache.Cache, user_config *TrieDBConfig) (*
 			kvdb:          kvdb_,
 			attached_hash: make(map[string]*hash.Hash),
 			root_node: &Node{
-				node_hash:                  nil,
+				node_hash:                  hash.NIL_HASH,
 				child_nodes_hash_recovered: true,
 				val_hash_recovered:         true,
 				node_hash_recovered:        true,
@@ -482,6 +482,7 @@ func (trie_db *TrieDB) update_target_node(target_node *Node, left_path []byte, v
 			child_nodes_hash_recovered: true,
 			val_hash_recovered:         true,
 			node_hash_recovered:        true,
+			dirty:                      true,
 		}
 
 		new_node.child_nodes = &Nodes{
