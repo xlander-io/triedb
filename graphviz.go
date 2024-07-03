@@ -3,6 +3,8 @@ package triedb
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"os"
 	"text/template"
 )
 
@@ -109,9 +111,7 @@ func (vns *vizNodes) makeLabel() string {
 	return fmt.Sprintf(`label=<<TABLE %v %v %v %v %v>%s%s</TABLE>>`, BORDER(0), CELLBORDER(1), CELLSPACING(0), CELLPADDING(1), COLOR, TR_id___, TR_ports)
 }
 
-func (tdb *TrieDB) GenDot() string {
-
-	var b bytes.Buffer
+func (tdb *TrieDB) WriteDot(b io.Writer) {
 
 	funcMaps := template.FuncMap{
 		"Name":  func(o NameFunc) string { return o.makeName() },
@@ -152,10 +152,23 @@ func (tdb *TrieDB) GenDot() string {
 	`))
 
 	vg := newVizGraphFromTrieDB(tdb)
-	err := tmpl.Execute(&b, &vg)
+	err := tmpl.Execute(b, &vg)
 	if err != nil {
 		panic(err)
 	}
+}
 
+func (tdb *TrieDB) GenDotString() string {
+	var b bytes.Buffer
+	tdb.WriteDot(&b)
 	return b.String()
+}
+
+func (tdb *TrieDB) GenDotFile(filepath string) {
+	dot, err := os.OpenFile(filepath, os.O_CREATE|os.O_WRONLY, 0644)
+	if nil != err {
+		panic(err)
+	}
+	defer dot.Close()
+	tdb.WriteDot(dot)
 }
