@@ -46,10 +46,9 @@ type TrieDB struct {
 }
 
 type TrieDBConfig struct {
-	Root_hash             *hash.Hash
-	Update_path_len_limit int // max bytes len
-	Update_val_len_limit  int // max bytes len
-	Commit_thread_limit   int // max concurrent threads during commit
+	Root_hash            *hash.Hash
+	Update_val_len_limit int // max bytes len
+	Commit_thread_limit  int // max concurrent threads during commit
 }
 
 func NewTrieDB(kvdb_ kv.KVDB, cache_ *cache.Cache, user_config *TrieDBConfig) (*TrieDB, error) {
@@ -64,24 +63,15 @@ func NewTrieDB(kvdb_ kv.KVDB, cache_ *cache.Cache, user_config *TrieDBConfig) (*
 
 	//default config
 	config := &TrieDBConfig{
-		Root_hash:             nil,
-		Update_path_len_limit: 64 * 1024,          //64kb
-		Update_val_len_limit:  4096 * 1024 * 1024, //4GB
-		Commit_thread_limit:   10,
+		Root_hash:            nil,
+		Update_val_len_limit: 4096 * 1024 * 1024, //4GB
+		Commit_thread_limit:  10,
 	}
 
 	if user_config != nil {
 		//
 		if user_config.Root_hash != nil {
 			config.Root_hash = user_config.Root_hash.Clone()
-		}
-		//
-		if user_config.Update_path_len_limit < 0 {
-			return nil, errors.New("config Update_path_len_limit err")
-		} else if user_config.Update_path_len_limit == 0 {
-			//use default val
-		} else {
-			config.Update_path_len_limit = user_config.Update_path_len_limit
 		}
 		//
 		if user_config.Update_val_len_limit < 0 {
@@ -143,7 +133,9 @@ func NewTrieDB(kvdb_ kv.KVDB, cache_ *cache.Cache, user_config *TrieDBConfig) (*
 }
 
 func (trie_db *TrieDB) attachHash(hash *hash.Hash) {
-	trie_db.attached_hash[string(hash.Bytes())] = hash
+	if hash != nil {
+		trie_db.attached_hash[string(hash.Bytes())] = hash
+	}
 }
 
 // get first from cache then from kvdb
@@ -238,6 +230,7 @@ func (trie_db *TrieDB) recover_child_nodes(node *Node) error {
 		//
 		child_nodes_ := Nodes{
 			nodes_bytes: nodes_bytes,
+			parent_node: node,
 		}
 		//
 		child_nodes_.deserialize()
@@ -248,13 +241,14 @@ func (trie_db *TrieDB) recover_child_nodes(node *Node) error {
 		}
 		//delete to prevent double recover
 		node.child_nodes_hash_recovered = true
-		//
-		return nil
 
-	} else {
 		//
-		return nil
+		node.child_nodes = &child_nodes_
+
 	}
+
+	//
+	return nil
 }
 
 // recursive_del will be called when del val happen
@@ -517,21 +511,22 @@ func (trie_db *TrieDB) update_target_node(target_node *Node, left_path []byte, v
 
 }
 
+// max bytes limit of full path
+func (trie_db *TrieDB) GetPathLenLimit() int {
+	return PATH_LEN_LIMIT
+}
+
 // full_path len !=0 is required
 // val == nil stands for del
 // return error may be caused by kvdb io as get reading may happen inside update
 func (trie_db *TrieDB) Update(full_path []byte, val []byte) error {
 
-	if len(full_path) == 0 {
+	if len(full_path) == 0 || len(full_path) > PATH_LEN_LIMIT {
 		return errors.New("full_path len err")
 	}
 
-	if len(full_path) > trie_db.config.Update_path_len_limit {
-		return errors.New("trie update_path_len_limit over limit")
-	}
-
 	if len(val) > trie_db.config.Update_val_len_limit {
-		return errors.New("trie update_val_len_limit over limit")
+		return errors.New("trie val size over limit")
 	}
 
 	trie_db.lock.Lock()
@@ -610,11 +605,17 @@ func (trie_db *TrieDB) get_recursive(target_node *Node, left_path []byte) (*Node
 // 1.get from internal nodes which is the lastest val(dirty or not dirty val)
 // 2.get from cache
 // 3.get from kvdb
-func (trie_db *TrieDB) Get(path []byte) ([]byte, error) {
+func (trie_db *TrieDB) Get(full_path []byte) ([]byte, error) {
+
+	//should never exsit related value
+	if len(full_path) == 0 || len(full_path) > PATH_LEN_LIMIT {
+		return nil, nil
+	}
+
 	trie_db.lock.Lock()
 	defer trie_db.lock.Unlock()
 	//
-	get_node, get_err := trie_db.get_recursive(trie_db.root_node, path)
+	get_node, get_err := trie_db.get_recursive(trie_db.root_node, full_path)
 	//
 	if get_err != nil {
 		return nil, get_err
