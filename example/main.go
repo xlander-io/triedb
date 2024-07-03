@@ -42,14 +42,13 @@ func main() {
 	fmt.Println("================to update len:", len(to_update), "====================")
 	for hex_string, _ := range to_update {
 		fmt.Println("hex:" + fmt.Sprintf("%x", hex_string))
-		//fmt.Println("val:" + string(update_v))
 	}
 
 	fmt.Println("================to del len:", len(to_del), "====================")
 	for hex_string, _ := range to_del {
 		fmt.Println("hex:" + fmt.Sprintf("%x", hex_string))
-		//fmt.Println("val:" + string(del_v.Bytes()))
 	}
+	fmt.Println("==================================")
 
 	///excute the code
 
@@ -81,6 +80,11 @@ func main() {
 		panic(del_err)
 	}
 
+	del_err = tdb2.Delete([]byte("123a"))
+	if del_err != nil {
+		panic(del_err)
+	}
+
 	root_hash2, to_update2, to_del2, cal_h_err := tdb2.CalHash()
 
 	if cal_h_err != nil {
@@ -93,7 +97,6 @@ func main() {
 	fmt.Println("================to update2 len:", len(to_update2), "====================")
 	for hex_string, _ := range to_update2 {
 		fmt.Println("hex:" + fmt.Sprintf("%x", hex_string))
-		//	fmt.Println("val:" + string(update_v))
 	}
 
 	fmt.Println("================to del2 len:", len(to_del2), "====================")
@@ -107,9 +110,10 @@ func main() {
 	}
 
 	for _, del_v := range to_del2 {
-		fmt.Println("to_del2 to del in batch :", fmt.Sprintf("%x", del_v.Bytes()))
 		b2.Delete(del_v.Bytes())
 	}
+
+	fmt.Println("====================================")
 
 	write_err2 := kvdb.WriteBatch(b2, true)
 
