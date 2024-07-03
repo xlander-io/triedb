@@ -358,7 +358,7 @@ func (trie_db *TrieDB) update_target_nodes(target_nodes *Nodes, left_path []byte
 		//
 		target_nodes.path_index[left_path[0]] = new_node
 		//mark dirty
-		new_node.mark_dirty()
+		target_nodes.mark_dirty()
 	}
 
 	return nil
@@ -444,7 +444,8 @@ func (trie_db *TrieDB) update_target_node(target_node *Node, left_path []byte, v
 		new_node.child_nodes.path_index[target_node.path[0]] = target_node
 
 		//mark dirty
-		target_node.mark_dirty()
+		target_node.dirty = true
+		new_node.parent_nodes.mark_dirty()
 
 		return nil
 
@@ -509,7 +510,7 @@ func (trie_db *TrieDB) update_target_node(target_node *Node, left_path []byte, v
 		target_node.parent_nodes = new_node.child_nodes
 
 		//mark dirty
-		target_node.mark_dirty()
+		new_node.parent_nodes.mark_dirty()
 
 		return nil
 	}
