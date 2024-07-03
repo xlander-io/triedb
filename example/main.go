@@ -76,7 +76,10 @@ func main() {
 	})
 
 	//////
-	tdb2.Update([]byte("1a"), nil)
+	del_err := tdb2.Delete([]byte("1a"))
+	if del_err != nil {
+		panic(del_err)
+	}
 
 	root_hash2, to_update2, to_del2, cal_h_err := tdb2.CalHash()
 

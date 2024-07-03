@@ -553,10 +553,21 @@ func (trie_db *TrieDB) GetPathLenLimit() int {
 	return PATH_LEN_LIMIT
 }
 
+func (trie_db *TrieDB) Update(full_path []byte, val []byte) error {
+	if len(val) == 0 {
+		return errors.New("update val empty")
+	}
+	return trie_db.update_(full_path, val)
+}
+
+func (trie_db *TrieDB) Delete(full_path []byte) error {
+	return trie_db.update_(full_path, nil)
+}
+
 // full_path len !=0 is required
 // val == nil stands for del
 // return error may be caused by kvdb io as get reading may happen inside update
-func (trie_db *TrieDB) Update(full_path []byte, val []byte) error {
+func (trie_db *TrieDB) update_(full_path []byte, val []byte) error {
 
 	if len(full_path) == 0 || len(full_path) > PATH_LEN_LIMIT {
 		return errors.New("full_path len err")
@@ -688,7 +699,7 @@ func (trie_db *TrieDB) cal_hash_recursive(node *Node, k_v_map *sync.Map) (*hash.
 		return hash.NIL_HASH, nil
 	}
 
-	//  && node.child_nodes.dirty removed
+	//
 	if node.child_nodes != nil && len(node.child_nodes.path_index) != 0 {
 
 		child_result_chan := make(chan error, len(node.child_nodes.path_index))
@@ -716,9 +727,16 @@ func (trie_db *TrieDB) cal_hash_recursive(node *Node, k_v_map *sync.Map) (*hash.
 		trie_db.commit_thread_available <- struct{}{} //get back the thread-slot
 	}
 
+	//cal child nodes hash
+	if node.child_nodes != nil && node.child_nodes.dirty {
+		node.child_nodes.serialize()
+		node.child_nodes.cal_nodes_hash()
+	}
+
 	//
 	if node.dirty {
 
+		//if dirty maybe cause by path change ,so val_hash has to be recalculated
 		r_err = trie_db.recover_node_val(node)
 		if r_err != nil {
 			return nil, errors.New("cal_hash_recursive recover_node_val err, " + r_err.Error())
@@ -731,19 +749,12 @@ func (trie_db *TrieDB) cal_hash_recursive(node *Node, k_v_map *sync.Map) (*hash.
 			node.val_hash = nil
 		}
 
-		//cal child nodes hash
-		if node.child_nodes != nil {
-			node.child_nodes.serialize()
-			node.child_nodes.cal_nodes_hash()
-		} else {
-			node.child_nodes_hash = nil
-		}
-
 		//cal node hash
 		node.serialize()
 		node.cal_node_hash()
 	}
 
+	//////////////// store all related //////////////////////////
 	if node.val_hash != nil {
 		k_v_map.Store(string(node.val_hash.Bytes()), node.val)
 	}
@@ -752,6 +763,7 @@ func (trie_db *TrieDB) cal_hash_recursive(node *Node, k_v_map *sync.Map) (*hash.
 		if node.child_nodes != nil {
 			k_v_map.Store(string(node.child_nodes_hash.Bytes()), node.child_nodes.nodes_bytes)
 		} else {
+			//may caused by no loading because of lazy loading feature
 			k_v_map.Store(string(node.child_nodes_hash.Bytes()), []byte{})
 		}
 	}
