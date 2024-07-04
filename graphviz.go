@@ -184,25 +184,26 @@ func (vn *vizNode) makeTable() string {
 	CELLSPACING := func(n int) string { return fmt.Sprintf(`CELLSPACING="%d"`, n) }
 	CELLPADDING := func(n int) string { return fmt.Sprintf(`CELLPADDING="%d"`, n) }
 	ALIGN := func(n string) string { return fmt.Sprintf(`ALIGN="%s"`, n) }
+	FONT := func(text string) string { return fmt.Sprintf(`<FONT COLOR="gray40">%s</FONT>`, text) }
 	COLOR := `COLOR="gray"`
 
 	TR := func(style1, value1, style2, value2 string) string {
-		return fmt.Sprintf("<TR><TD %s>%s</TD><TD %s>%v</TD></TR>", style1, value1, style2, value2)
+		return fmt.Sprintf(`<TR><TD %s>%s</TD><TD %s>%v</TD></TR>`, style1, value1, style2, value2)
 	}
 
-	path_ := TR(ALIGN("RIGHT"), "path", ALIGN("LEFT"), vn.Path)
-	value := TR(ALIGN("RIGHT"), "value", ALIGN("LEFT"), vn.Value)
+	path_ := TR(ALIGN("RIGHT"), FONT("path"), ALIGN("LEFT"), vn.Path)
+	value := TR(ALIGN("RIGHT"), FONT("value"), ALIGN("LEFT"), vn.Value)
 
-	hashNode := TR(ALIGN("RIGHT"), "node hash", ALIGN("LEFT"), vn.HashNode)
-	hashChildren := TR(ALIGN("RIGHT"), "children hash", ALIGN("LEFT"), vn.HashChildren)
-	hashValue := TR(ALIGN("RIGHT"), "value hash", ALIGN("LEFT"), vn.HashValue)
+	hashNode := TR(ALIGN("RIGHT"), FONT("node hash"), ALIGN("LEFT"), vn.HashNode)
+	hashChildren := TR(ALIGN("RIGHT"), FONT("children hash"), ALIGN("LEFT"), vn.HashChildren)
+	hashValue := TR(ALIGN("RIGHT"), FONT("value hash"), ALIGN("LEFT"), vn.HashValue)
 
-	recoveredNode := TR(ALIGN("RIGHT"), "recovered node hash", ALIGN("LEFT"), strconv.FormatBool(vn.RecoveredNode))
-	recoveredChildren := TR(ALIGN("RIGHT"), "recovered children hash", ALIGN("LEFT"), strconv.FormatBool(vn.RecoveredChildren))
-	recoveredValue := TR(ALIGN("RIGHT"), "recovered value hash", ALIGN("LEFT"), strconv.FormatBool(vn.RecoveredValue))
+	recoveredNode := TR(ALIGN("RIGHT"), FONT("recovered node hash"), ALIGN("LEFT"), strconv.FormatBool(vn.RecoveredNode))
+	recoveredChildren := TR(ALIGN("RIGHT"), FONT("recovered children hash"), ALIGN("LEFT"), strconv.FormatBool(vn.RecoveredChildren))
+	recoveredValue := TR(ALIGN("RIGHT"), FONT("recovered value hash"), ALIGN("LEFT"), strconv.FormatBool(vn.RecoveredValue))
 
-	bytes := TR(ALIGN("RIGHT"), "node bytes", ALIGN("LEFT"), fmt.Sprint(vn.Bytes))
-	dirty := TR(ALIGN("RIGHT"), "dirty", ALIGN("LEFT"), strconv.FormatBool(vn.Dirty))
+	bytes := TR(ALIGN("RIGHT"), FONT("node bytes"), ALIGN("LEFT"), fmt.Sprint(vn.Bytes))
+	dirty := TR(ALIGN("RIGHT"), FONT("dirty"), ALIGN("LEFT"), strconv.FormatBool(vn.Dirty))
 
 	STYLEs := strings.Join([]string{BORDER(0), CELLBORDER(1), CELLSPACING(0), CELLPADDING(1), COLOR}, " ")
 	VALUEs := strings.Join([]string{
@@ -225,11 +226,12 @@ func (vns *vizNodes) makeTable() string {
 	CELLSPACING := func(n int) string { return fmt.Sprintf(`CELLSPACING="%d"`, n) }
 	CELLPADDING := func(n int) string { return fmt.Sprintf(`CELLPADDING="%d"`, n) }
 	ALIGN := func(n string) string { return fmt.Sprintf(`ALIGN="%s"`, n) }
+	FONT := func(text string) string { return fmt.Sprintf(`<FONT COLOR="gray40">%s</FONT>`, text) }
 	COLOR := `COLOR="gray"`
 	STYLE := `STYLE="rounded"`
 
 	TR := func(style1, value1, style2, value2 string) string {
-		return fmt.Sprintf("<TR><TD %s>%s</TD><TD %s>%v</TD></TR>", style1, value1, style2, value2)
+		return fmt.Sprintf(`<TR><TD %s>%s</TD><TD %s>%v</TD></TR>`, style1, value1, style2, value2)
 	}
 
 	ports := func() string {
@@ -241,8 +243,8 @@ func (vns *vizNodes) makeTable() string {
 		return fmt.Sprintf("<TR>%s</TR>", b.String())
 	}
 
-	bytes := TR(ALIGN("RIGHT"), "nodes bytes", ALIGN("LEFT"), fmt.Sprint(vns.Bytes))
-	dirty := TR(ALIGN("RIGHT"), "dirty", ALIGN("LEFT"), strconv.FormatBool(vns.Dirty))
+	bytes := TR(ALIGN("RIGHT"), FONT("nodes bytes"), ALIGN("LEFT"), fmt.Sprint(vns.Bytes))
+	dirty := TR(ALIGN("RIGHT"), FONT("dirty"), ALIGN("LEFT"), strconv.FormatBool(vns.Dirty))
 	styles := strings.Join([]string{BORDER(0), CELLBORDER(1), CELLSPACING(0), CELLPADDING(2), COLOR, STYLE}, " ")
 	values := strings.Join([]string{bytes, dirty}, "")
 	header := fmt.Sprintf(`<TR><TD COLSPAN="%d"><TABLE %v>%v</TABLE></TD></TR>`, len(vns.Index), styles, values)
