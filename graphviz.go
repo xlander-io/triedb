@@ -179,7 +179,7 @@ func (tdb *TrieDB) WriteDot(b io.Writer, fullMode bool) {
 		"Name":  func(o NameFunc) string { return o.makeName() },
 		"Table": func(o TableFunc) string { return o.makeTable() },
 		"Edge": func(vnS, vnD *vizNode, port string) string {
-			return fmt.Sprintf(`[tailport="%s"]`, port)
+			return fmt.Sprintf(`[tailport="%s" color=gray]`, port)
 		},
 	}
 	tmpl := template.New("trie")
@@ -203,7 +203,7 @@ func (tdb *TrieDB) WriteDot(b io.Writer, fullMode bool) {
 
 	{{- define "edges"}}
 		{{- $O := .}}
-		{{- if and .Children (eq .ID 0)}} {{- Name $O}} -> {{Name $O.Children}} {{end}}
+		{{- if and .Children (eq .ID 0)}} {{- Name $O}} -> {{Name $O.Children}} [color=gray] {{end}}
 		{{- if .Children}}
 			{{- range $k,$v := .Children.Index}}
 				{{- if $v.Children}}
