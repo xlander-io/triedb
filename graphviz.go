@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
+	"strings"
 	"text/template"
 
 	"github.com/xlander-io/hash"
@@ -98,14 +100,12 @@ func (vg *vizGraph) recursiveUpdateID(vn *vizNode) {
 
 func (vg *vizGraph) recursiveApplyFullMode(vn *vizNode) {
 	shorten := func(s string) string {
-		fmt.Println("len(s)", len(s))
-		if len(s) == 64 {
+		if len(s) > 5+1+3 {
 			S := bytes.NewBufferString(s).Bytes()
 			var buf []byte
 			buf = append(buf, S[:5]...)
 			buf = append(buf, "..."...)
 			buf = append(buf, S[len(s)-3:]...)
-			fmt.Print(string(buf))
 			return string(buf)
 		}
 		return s
@@ -138,16 +138,19 @@ func (vn *vizNode) makeTable() string {
 	ALIGN := func(n string) string { return fmt.Sprintf(`ALIGN="%s"`, n) }
 	COLOR := `COLOR="gray"`
 
-	//title := fmt.Sprintf("<TR>%s<TD>%d</TD></TR>", "<TD>ID</TD>", vn.ID)
-	path_ := fmt.Sprintf("<TR><TD %s>path</TD><TD %s>%v</TD></TR>", ALIGN("RIGHT"), ALIGN("LEFT"), vn.Path)
-	value := fmt.Sprintf("<TR><TD %s>value</TD><TD %s>%v</TD></TR>", ALIGN("RIGHT"), ALIGN("LEFT"), vn.Value)
-	hashNode := fmt.Sprintf("<TR><TD %s>node hash</TD><TD %s>%v</TD></TR>", ALIGN("RIGHT"), ALIGN("LEFT"), vn.HashNode)
-	hashChildren := fmt.Sprintf("<TR><TD %s>children hash</TD><TD %s>%v</TD></TR>", ALIGN("RIGHT"), ALIGN("LEFT"), vn.HashChildren)
-	hashValue := fmt.Sprintf("<TR><TD %s>value hash</TD><TD %s>%v</TD></TR>", ALIGN("RIGHT"), ALIGN("LEFT"), vn.HashValue)
-	dirty := fmt.Sprintf("<TR><TD %s>dirty</TD><TD %s>%v</TD></TR>", ALIGN("RIGHT"), ALIGN("LEFT"), vn.Dirty)
+	TR := func(style1, value1, style2, value2 string) string {
+		return fmt.Sprintf("<TR><TD %s>%s</TD><TD %s>%v</TD></TR>", style1, value1, style2, value2)
+	}
 
-	STYLEs := fmt.Sprintf("%v %v %v %v %v", BORDER(0), CELLBORDER(1), CELLSPACING(0), CELLPADDING(1), COLOR)
-	VALUEs := fmt.Sprintf("%v%v%v%v%v%v", path_, value, hashNode, hashChildren, hashValue, dirty)
+	path_ := TR(ALIGN("RIGHT"), "path", ALIGN("LEFT"), vn.Path)
+	value := TR(ALIGN("RIGHT"), "value", ALIGN("LEFT"), vn.Value)
+	hashNode := TR(ALIGN("RIGHT"), "node hash", ALIGN("LEFT"), vn.HashNode)
+	hashChildren := TR(ALIGN("RIGHT"), "children hash", ALIGN("LEFT"), vn.HashChildren)
+	hashValue := TR(ALIGN("RIGHT"), "value hash", ALIGN("LEFT"), vn.HashValue)
+	dirty := TR(ALIGN("RIGHT"), "dirty", ALIGN("LEFT"), strconv.FormatBool(vn.Dirty))
+
+	STYLEs := strings.Join([]string{BORDER(0), CELLBORDER(1), CELLSPACING(0), CELLPADDING(1), COLOR}, " ")
+	VALUEs := strings.Join([]string{path_, value, hashNode, hashChildren, hashValue, dirty}, "")
 	return fmt.Sprintf(`<TABLE %v>%v</TABLE>`, STYLEs, VALUEs)
 }
 
@@ -162,11 +165,11 @@ func (vns *vizNodes) makeTable() string {
 	for k, v := range vns.Index {
 		b.WriteString(fmt.Sprintf("<TD PORT=\"%s\">%s</TD>", k, v.makeTable()))
 	}
-	//id___ := fmt.Sprintf("<TR>%s<TD>%d</TD></TR>", "<TD>ID</TD>", vns.ID)
+
 	ports := fmt.Sprintf("<TR>%s</TR>", b.String())
 
-	STYLEs := fmt.Sprintf("%v %v %v %v %v %v", BORDER(1), CELLBORDER(0), CELLSPACING(10), CELLPADDING(0), COLOR, STYLE)
-	VALUEs := fmt.Sprintf("%v", ports)
+	STYLEs := strings.Join([]string{BORDER(1), CELLBORDER(0), CELLSPACING(10), CELLPADDING(0), COLOR, STYLE}, " ")
+	VALUEs := strings.Join([]string{ports}, " ")
 	return fmt.Sprintf(`<TABLE %v>%v</TABLE>`, STYLEs, VALUEs)
 }
 
