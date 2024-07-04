@@ -103,7 +103,7 @@ func main() {
 
 	fmt.Println("root_hash2", fmt.Sprintf("%x", root_hash2))
 
-	tdb2.GenDotFile("./afterdel.dot", true)
+	tdb2.GenDotFile("./afterdel.dot", false)
 
 	///
 	// println("//////// to_update2 ///////////")

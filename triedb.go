@@ -299,6 +299,7 @@ func (trie_db *TrieDB) update_recursive_del(node *Node) error {
 		if len(node.parent_nodes.path_index) == 0 {
 			//
 			node.parent_nodes.parent_node.child_nodes = nil
+			node.parent_nodes.parent_node.child_nodes_hash = nil
 			//don't forget to mark_dirty before next potential recursive
 			node.parent_nodes.parent_node.mark_dirty()
 			//
@@ -492,6 +493,7 @@ func (trie_db *TrieDB) update_target_node(target_node *Node, left_path []byte, v
 		trie_db.recover_node_val(target_node)
 
 		//mark dirty
+		target_node.dirty = true
 		new_node.parent_nodes.mark_dirty()
 
 		return nil
@@ -725,14 +727,13 @@ func (trie_db *TrieDB) cal_hash_recursive(node *Node, k_v_map *sync.Map) (*hash.
 		trie_db.commit_thread_available <- struct{}{} //get back the thread-slot
 	}
 
-	//cal child nodes hash
-	if node.child_nodes != nil && node.child_nodes.dirty {
-		node.child_nodes.serialize()
-		node.child_nodes.cal_nodes_hash()
-	}
-
 	//
 	if node.dirty {
+
+		if node.child_nodes != nil && node.child_nodes.dirty {
+			node.child_nodes.serialize()
+			node.child_nodes.cal_nodes_hash()
+		}
 
 		//if dirty maybe cause by path change ,so val_hash has to be recalculated
 		r_err = trie_db.recover_node_val(node)
