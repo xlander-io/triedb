@@ -808,7 +808,9 @@ func (trie_db *TrieDB) CalHash() (*hash.Hash, map[string][]byte, map[string]*has
 		value_bytes := value.([]byte)
 		//because of lazy load len may be 0, e.g : lazy load of val_hash
 		if len(value_bytes) != 0 {
-			update_k_v[key.(string)] = value_bytes
+			if _, exist := trie_db.attached_hash[key.(string)]; !exist {
+				update_k_v[key.(string)] = value_bytes
+			}
 		}
 		return true
 	})
