@@ -37,6 +37,7 @@ func main() {
 		Commit_thread_limit: 1,
 	})
 
+	tdb.Update([]byte("1"), []byte([]byte("val_1")))
 	tdb.Update([]byte("12"), []byte([]byte("val_12")))
 	tdb.Update([]byte("13"), []byte([]byte("val_13")))
 	tdb.Update([]byte("14"), []byte([]byte("val_14")))
@@ -59,6 +60,7 @@ func main() {
 	b := kv.NewBatch()
 	for hex_string, update_v := range to_update {
 		b.Put([]byte(hex_string), update_v)
+		fmt.Println("hex_string ", fmt.Sprintf("%x", hex_string))
 	}
 
 	for _, del_v := range to_del {
@@ -80,11 +82,15 @@ func main() {
 
 	///////
 
-	getMe(tdb2, "1234")
+	del_err := tdb2.Delete([]byte("1"))
+	fmt.Println(del_err)
 
 	//////
 
 	tdb2.GenDotFile("./from kvdb.dot", false)
+
+	////here we go
+	fmt.Println("//////////////////////////////")
 
 	root_hash2, to_update2, to_del2, cal_herr2 := tdb2.CalHash()
 	if cal_herr2 != nil {
@@ -92,18 +98,23 @@ func main() {
 		return
 	}
 
+	fmt.Println("to_update2", len(to_update2))
+	fmt.Println("to_del2", len(to_del2))
+
 	fmt.Println("root_hash2", fmt.Sprintf("%x", root_hash2))
 
-	///
-	println("//////// to_update2 ///////////")
-	for hash_str, _ := range to_update2 {
-		fmt.Println(fmt.Sprintf("%x", hash_str))
-	}
+	tdb2.GenDotFile("./afterdel.dot", true)
 
-	println("//////// to_del2 ///////////")
-	for _, hash_ := range to_del2 {
-		fmt.Println(string(hash_.Bytes()))
-	}
+	///
+	// println("//////// to_update2 ///////////")
+	// for hash_str, _ := range to_update2 {
+	// 	fmt.Println(fmt.Sprintf("%x", hash_str))
+	// }
+
+	// println("//////// to_del2 ///////////")
+	// for _, hash_ := range to_del2 {
+	// 	fmt.Println(fmt.Sprintf("%x", hash_.Bytes()))
+	// }
 
 }
 

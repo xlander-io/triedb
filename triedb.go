@@ -285,9 +285,6 @@ func (trie_db *TrieDB) update_recursive_del(node *Node) error {
 		return nil
 	}
 
-	//del val of this node
-	node.val = nil
-
 	//
 	r_err := trie_db.recover_child_nodes(node)
 	if r_err != nil {
@@ -303,7 +300,7 @@ func (trie_db *TrieDB) update_recursive_del(node *Node) error {
 			//
 			node.parent_nodes.parent_node.child_nodes = nil
 			//don't forget to mark_dirty before next potential recursive
-			node.mark_dirty()
+			node.parent_nodes.parent_node.mark_dirty()
 			//
 			if node.parent_nodes.parent_node.val == nil {
 				return trie_db.update_recursive_del(node.parent_nodes.parent_node)
@@ -324,10 +321,14 @@ func (trie_db *TrieDB) update_recursive_del(node *Node) error {
 			node.parent_nodes.parent_node.parent_nodes.path_index[left_single_node.path[0]] = left_single_node
 			left_single_node.parent_nodes = node.parent_nodes.parent_node.parent_nodes
 
+			//because path changes, recover val is required
+			trie_db.recover_node_val(left_single_node)
+
 			//mark dirty
 			left_single_node.mark_dirty()
 
 		} else {
+
 			//more then 1 node in parent nodes nothing to do
 			node.mark_dirty()
 		}
@@ -346,9 +347,15 @@ func (trie_db *TrieDB) update_recursive_del(node *Node) error {
 			node.parent_nodes.path_index[node.path[0]] = single_child_node
 			single_child_node.path = append(node.path, single_child_node.path...)
 			single_child_node.parent_nodes = node.parent_nodes
+
+			//because path changes, recover val is required
+			trie_db.recover_node_val(single_child_node)
+
 			//path changes mark dirty
 			single_child_node.mark_dirty()
 		} else {
+			node.val_hash_recovered = true
+			node.val = nil
 			node.mark_dirty()
 		}
 
@@ -383,7 +390,7 @@ func (trie_db *TrieDB) update_target_nodes(target_nodes *Nodes, left_path []byte
 		//
 		target_nodes.path_index[left_path[0]] = new_node
 		//mark dirty
-		target_nodes.mark_dirty()
+		new_node.mark_dirty()
 	}
 
 	return nil
@@ -399,6 +406,7 @@ func (trie_db *TrieDB) update_target_node(target_node *Node, left_path []byte, v
 
 	//target exactly
 	if bytes.Equal(target_node.path, left_path) {
+
 		if val == nil {
 			//del this node
 			update_r_del_err := trie_db.update_recursive_del(target_node)
@@ -408,9 +416,12 @@ func (trie_db *TrieDB) update_target_node(target_node *Node, left_path []byte, v
 		} else {
 			//update this node
 			target_node.val = val
+			//to prevent recover again later inside calhash process
+			target_node.val_hash_recovered = true
 			//mark dirty
 			target_node.mark_dirty()
 		}
+
 		return nil
 
 	} else if (len(left_path) > len(target_node.path)) && bytes.Equal(target_node.path, left_path[0:len(target_node.path)]) {
@@ -439,6 +450,9 @@ func (trie_db *TrieDB) update_target_node(target_node *Node, left_path []byte, v
 				parent_node: target_node,
 				dirty:       true,
 			}
+			//first call child_nodes.mark_dirty() which is required
+			target_node.child_nodes.mark_dirty()
+
 			//
 			return trie_db.update_target_nodes(target_node.child_nodes, left_path[len(target_node.path):], val)
 		}
@@ -474,8 +488,10 @@ func (trie_db *TrieDB) update_target_node(target_node *Node, left_path []byte, v
 		target_node.parent_nodes = new_node.child_nodes
 		new_node.child_nodes.path_index[target_node.path[0]] = target_node
 
+		//because path changes, recover val is required
+		trie_db.recover_node_val(target_node)
+
 		//mark dirty
-		target_node.dirty = true
 		new_node.parent_nodes.mark_dirty()
 
 		return nil
@@ -540,7 +556,10 @@ func (trie_db *TrieDB) update_target_node(target_node *Node, left_path []byte, v
 		new_node.parent_nodes = target_node.parent_nodes
 		target_node.parent_nodes = new_node.child_nodes
 
+		//because path changes, recover val is required
+		trie_db.recover_node_val(target_node)
 		//mark dirty
+		target_node.dirty = true
 		new_node.parent_nodes.mark_dirty()
 
 		return nil
@@ -580,27 +599,7 @@ func (trie_db *TrieDB) update_(full_path []byte, val []byte) error {
 	trie_db.lock.Lock()
 	defer trie_db.lock.Unlock()
 
-	//
-	recover_err := trie_db.recover_child_nodes(trie_db.root_node)
-	if recover_err != nil {
-		return recover_err
-	}
-
-	//nothing todo
-	if trie_db.root_node.child_nodes == nil && val == nil {
-		return nil
-	}
-
-	// new child_nodes if not exist
-	if trie_db.root_node.child_nodes == nil {
-		trie_db.root_node.child_nodes = &Nodes{
-			path_index:  make(map[byte]*Node),
-			parent_node: trie_db.root_node,
-		}
-	}
-
-	return trie_db.update_target_nodes(trie_db.root_node.child_nodes, full_path, val)
-
+	return trie_db.update_target_node(trie_db.root_node, full_path, val)
 }
 
 //////////////////////////////////GET/////////////////////////////////////////
@@ -687,14 +686,13 @@ func (trie_db *TrieDB) Get(full_path []byte) ([]byte, error) {
 // k_v_map to collected all the k_v , string(key) => []byte(value)
 func (trie_db *TrieDB) cal_hash_recursive(node *Node, k_v_map *sync.Map) (*hash.Hash, error) {
 
-	//
 	r_err := trie_db.recover_node(node)
 	if r_err != nil {
 		return nil, errors.New("cal_hash_recursive recover_node err, " + r_err.Error())
 	}
 
 	//root node and empty trie check
-	if node.parent_nodes == nil && (node.child_nodes == nil || len(node.child_nodes.path_index) == 0) {
+	if node.parent_nodes == nil && node.child_nodes_hash == nil && (node.child_nodes == nil || len(node.child_nodes.path_index) == 0) {
 		node.node_hash = hash.NIL_HASH
 		return hash.NIL_HASH, nil
 	}
@@ -770,7 +768,6 @@ func (trie_db *TrieDB) cal_hash_recursive(node *Node, k_v_map *sync.Map) (*hash.
 
 	k_v_map.Store(string(node.node_hash.Bytes()), node.node_bytes)
 
-	//
 	return node.node_hash, nil
 }
 
@@ -805,6 +802,7 @@ func (trie_db *TrieDB) CalHash() (*hash.Hash, map[string][]byte, map[string]*has
 
 	//what to update
 	all_trie_k_v.Range(func(key, value any) bool {
+
 		value_bytes := value.([]byte)
 		//because of lazy load len may be 0, e.g : lazy load of val_hash
 		if len(value_bytes) != 0 {
