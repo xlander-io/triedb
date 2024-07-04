@@ -13,15 +13,15 @@ import (
 	"github.com/xlander-io/hash"
 )
 
-type NameFunc interface {
+type _NameFunc interface {
 	makeName() string
 }
 
-type TableFunc interface {
+type _TableFunc interface {
 	makeTable() string
 }
 
-type ApplyFullModeFunc interface {
+type _ApplyFullModeFunc interface {
 	applyFullMode(fullMode bool)
 }
 
@@ -141,7 +141,7 @@ func (vg *vizGraph) recursiveUpdateID(vn *vizNode) {
 	}
 }
 
-func (vg *vizGraph) recursiveApplyFullMode(o ApplyFullModeFunc) {
+func (vg *vizGraph) recursiveApplyFullMode(o _ApplyFullModeFunc) {
 	o.applyFullMode(vg.fullMode)
 
 	if vn, ok := o.(*vizNode); ok {
@@ -257,8 +257,8 @@ func (vns *vizNodes) makeTable() string {
 func (tdb *TrieDB) WriteDot(b io.Writer, fullMode bool) {
 
 	funcMaps := template.FuncMap{
-		"Name":  func(o NameFunc) string { return o.makeName() },
-		"Table": func(o TableFunc) string { return o.makeTable() },
+		"Name":  func(o _NameFunc) string { return o.makeName() },
+		"Table": func(o _TableFunc) string { return o.makeTable() },
 		"Edge": func(vnS, vnD *vizNode, port string) string {
 			return fmt.Sprintf(`[tailport="%s" color=gray]`, port)
 		},
