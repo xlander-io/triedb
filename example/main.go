@@ -84,6 +84,10 @@ func main() {
 
 	del_err := tdb2.Delete([]byte("1"))
 	fmt.Println(del_err)
+	del_err = tdb2.Delete([]byte("12"))
+	fmt.Println(del_err)
+	del_err = tdb2.Delete([]byte("13"))
+	fmt.Println(del_err)
 
 	//////
 
