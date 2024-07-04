@@ -89,6 +89,8 @@ func main() {
 
 	tdb2.GenDotFile("./from kvdb.dot", false)
 
+	tdb2.GenDotFile("./afterdel.dot", false)
+
 	////here we go
 	fmt.Println("//////////////////////////////")
 
@@ -103,7 +105,7 @@ func main() {
 
 	fmt.Println("root_hash2", fmt.Sprintf("%x", root_hash2))
 
-	tdb2.GenDotFile("./afterdel.dot", false)
+	tdb2.GenDotFile("./afterdel_calhash.dot", false)
 
 	///
 	// println("//////// to_update2 ///////////")

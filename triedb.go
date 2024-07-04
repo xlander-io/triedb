@@ -688,10 +688,11 @@ func (trie_db *TrieDB) Get(full_path []byte) ([]byte, error) {
 // k_v_map to collected all the k_v , string(key) => []byte(value)
 func (trie_db *TrieDB) cal_hash_recursive(node *Node, k_v_map *sync.Map) (*hash.Hash, error) {
 
-	r_err := trie_db.recover_node(node)
-	if r_err != nil {
-		return nil, errors.New("cal_hash_recursive recover_node err, " + r_err.Error())
-	}
+	// //why recover?
+	// r_err := trie_db.recover_node(node)
+	// if r_err != nil {
+	// 	return nil, errors.New("cal_hash_recursive recover_node err, " + r_err.Error())
+	// }
 
 	//root node and empty trie check
 	if node.parent_nodes == nil && node.child_nodes_hash == nil && (node.child_nodes == nil || len(node.child_nodes.path_index) == 0) {
@@ -736,7 +737,7 @@ func (trie_db *TrieDB) cal_hash_recursive(node *Node, k_v_map *sync.Map) (*hash.
 		}
 
 		//if dirty maybe cause by path change ,so val_hash has to be recalculated
-		r_err = trie_db.recover_node_val(node)
+		r_err := trie_db.recover_node_val(node)
 		if r_err != nil {
 			return nil, errors.New("cal_hash_recursive recover_node_val err, " + r_err.Error())
 		}
