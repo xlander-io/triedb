@@ -21,6 +21,10 @@ type TableFunc interface {
 	makeTable() string
 }
 
+type ApplyFullModeFunc interface {
+	applyFullMode(fullMode bool)
+}
+
 type vizGraph struct {
 	Root     *vizNode
 	nextID   int
@@ -28,19 +32,26 @@ type vizGraph struct {
 }
 
 type vizNode struct {
-	ID           int
-	Path         string
-	Value        string
-	HashNode     string
-	HashChildren string
-	HashValue    string
-	Dirty        bool
-	Children     *vizNodes
+	ID                int
+	Path              string
+	Value             string
+	HashNode          string
+	HashChildren      string
+	HashValue         string
+	RecoveredNode     bool
+	RecoveredChildren bool
+	RecoveredValue    bool
+	Bytes             []byte
+	Children          *vizNodes
+	Dirty             bool
 }
 
 type vizNodes struct {
-	ID    int
-	Index map[string]*vizNode
+	ID        int
+	Recovered bool
+	Bytes     []byte
+	Index     map[string]*vizNode
+	Dirty     bool
 }
 
 func newVizGraphFromTrieDB(tdb *TrieDB, fullMode bool) *vizGraph {
@@ -52,6 +63,30 @@ func newVizGraphFromTrieDB(tdb *TrieDB, fullMode bool) *vizGraph {
 	return &vg
 }
 
+func shortenText(text string, startLen, endLen int, sep string) string {
+	if len(text) > startLen+len(sep)+endLen {
+		s := bytes.NewBufferString(text).Bytes()
+		var buf []byte
+		buf = append(buf, s[:startLen]...)
+		buf = append(buf, sep...)
+		buf = append(buf, s[len(s)-endLen:]...)
+		return string(buf)
+	}
+	return text
+}
+
+func shortenBytes(text []byte, startLen, endLen int, sep []byte) []byte {
+	if len(text) > 5+1+3 {
+		s := text
+		var buf []byte
+		buf = append(buf, s[:startLen]...)
+		buf = append(buf, sep...)
+		buf = append(buf, s[len(s)-endLen:]...)
+		return buf
+	}
+	return text
+}
+
 func (vg *vizGraph) fromTrieDB(tdb *TrieDB) {
 	vg.Root = &vizNode{}
 	vg.Root.fromTrieNode(tdb.root_node)
@@ -60,6 +95,12 @@ func (vg *vizGraph) fromTrieDB(tdb *TrieDB) {
 func (vn *vizNode) fromTrieNode(n *Node) {
 	vn.Path = string(bytes.Clone(n.path))
 	vn.Value = string(bytes.Clone(n.val))
+	vn.Bytes = bytes.Clone(n.node_bytes)
+	vn.RecoveredNode = n.node_hash_recovered
+	vn.RecoveredChildren = n.child_nodes_hash_recovered
+	vn.RecoveredValue = n.val_hash_recovered
+	vn.Dirty = n.dirty
+
 	if !hash.IsNilHash(n.node_hash) {
 		vn.HashNode = hex.EncodeToString(n.node_hash.Bytes())
 	}
@@ -69,7 +110,6 @@ func (vn *vizNode) fromTrieNode(n *Node) {
 	if !hash.IsNilHash(n.val_hash) {
 		vn.HashValue = hex.EncodeToString(n.val_hash.Bytes())
 	}
-	vn.Dirty = n.dirty
 
 	if nil != n.child_nodes {
 		vn.Children = &vizNodes{}
@@ -79,6 +119,9 @@ func (vn *vizNode) fromTrieNode(n *Node) {
 
 func (vns *vizNodes) fromTrieNodes(ns *Nodes) {
 	vns.Index = make(map[string]*vizNode)
+	vns.Bytes = bytes.Clone(ns.nodes_bytes)
+	vns.Dirty = ns.dirty
+
 	for k, n := range ns.path_index {
 		var vn vizNode
 		vn.fromTrieNode(n)
@@ -98,26 +141,15 @@ func (vg *vizGraph) recursiveUpdateID(vn *vizNode) {
 	}
 }
 
-func (vg *vizGraph) recursiveApplyFullMode(vn *vizNode) {
-	shorten := func(s string) string {
-		if len(s) > 5+1+3 {
-			S := bytes.NewBufferString(s).Bytes()
-			var buf []byte
-			buf = append(buf, S[:5]...)
-			buf = append(buf, "..."...)
-			buf = append(buf, S[len(s)-3:]...)
-			return string(buf)
-		}
-		return s
-	}
-	if !vg.fullMode {
-		vn.HashNode = shorten(vn.HashNode)
-		vn.HashChildren = shorten(vn.HashChildren)
-		vn.HashValue = shorten(vn.HashValue)
-	}
-	if nil != vn.Children {
-		for _, v := range vn.Children.Index {
-			vg.recursiveApplyFullMode(v)
+func (vg *vizGraph) recursiveApplyFullMode(o ApplyFullModeFunc) {
+	o.applyFullMode(vg.fullMode)
+
+	if vn, ok := o.(*vizNode); ok {
+		if nil != vn.Children {
+			vn.Children.applyFullMode(vg.fullMode)
+			for _, v := range vn.Children.Index {
+				vg.recursiveApplyFullMode(v)
+			}
 		}
 	}
 }
@@ -128,6 +160,22 @@ func (vn *vizNode) makeName() string {
 
 func (vns *vizNodes) makeName() string {
 	return fmt.Sprintf("NS%d", vns.ID)
+}
+
+func (vn *vizNode) applyFullMode(fullMode bool) {
+	if !fullMode {
+		vn.HashNode = shortenText(vn.HashNode, 8, 5, "...")
+		vn.HashChildren = shortenText(vn.HashChildren, 8, 5, "...")
+		vn.HashValue = shortenText(vn.HashValue, 8, 5, "...")
+
+		vn.Bytes = shortenBytes(vn.Bytes, 5, 0, []byte(nil))
+	}
+}
+
+func (vns *vizNodes) applyFullMode(fullMode bool) {
+	if !fullMode {
+		vns.Bytes = shortenBytes(vns.Bytes, 5, 0, []byte(nil))
+	}
 }
 
 func (vn *vizNode) makeTable() string {
@@ -144,13 +192,30 @@ func (vn *vizNode) makeTable() string {
 
 	path_ := TR(ALIGN("RIGHT"), "path", ALIGN("LEFT"), vn.Path)
 	value := TR(ALIGN("RIGHT"), "value", ALIGN("LEFT"), vn.Value)
+
 	hashNode := TR(ALIGN("RIGHT"), "node hash", ALIGN("LEFT"), vn.HashNode)
 	hashChildren := TR(ALIGN("RIGHT"), "children hash", ALIGN("LEFT"), vn.HashChildren)
 	hashValue := TR(ALIGN("RIGHT"), "value hash", ALIGN("LEFT"), vn.HashValue)
+
+	recoveredNode := TR(ALIGN("RIGHT"), "recovered node hash", ALIGN("LEFT"), strconv.FormatBool(vn.RecoveredNode))
+	recoveredChildren := TR(ALIGN("RIGHT"), "recovered children hash", ALIGN("LEFT"), strconv.FormatBool(vn.RecoveredChildren))
+	recoveredValue := TR(ALIGN("RIGHT"), "recovered value hash", ALIGN("LEFT"), strconv.FormatBool(vn.RecoveredValue))
+
+	bytes := TR(ALIGN("RIGHT"), "node bytes", ALIGN("LEFT"), fmt.Sprint(vn.Bytes))
 	dirty := TR(ALIGN("RIGHT"), "dirty", ALIGN("LEFT"), strconv.FormatBool(vn.Dirty))
 
 	STYLEs := strings.Join([]string{BORDER(0), CELLBORDER(1), CELLSPACING(0), CELLPADDING(1), COLOR}, " ")
-	VALUEs := strings.Join([]string{path_, value, hashNode, hashChildren, hashValue, dirty}, "")
+	VALUEs := strings.Join([]string{
+		path_,
+		value,
+		hashNode,
+		recoveredNode,
+		hashChildren,
+		recoveredChildren,
+		hashValue,
+		recoveredValue,
+		bytes,
+		dirty}, "")
 	return fmt.Sprintf(`<TABLE %v>%v</TABLE>`, STYLEs, VALUEs)
 }
 
@@ -159,17 +224,31 @@ func (vns *vizNodes) makeTable() string {
 	CELLBORDER := func(n int) string { return fmt.Sprintf(`CELLBORDER="%d"`, n) }
 	CELLSPACING := func(n int) string { return fmt.Sprintf(`CELLSPACING="%d"`, n) }
 	CELLPADDING := func(n int) string { return fmt.Sprintf(`CELLPADDING="%d"`, n) }
+	ALIGN := func(n string) string { return fmt.Sprintf(`ALIGN="%s"`, n) }
 	COLOR := `COLOR="gray"`
 	STYLE := `STYLE="rounded"`
-	var b bytes.Buffer
-	for k, v := range vns.Index {
-		b.WriteString(fmt.Sprintf("<TD PORT=\"%s\">%s</TD>", k, v.makeTable()))
+
+	TR := func(style1, value1, style2, value2 string) string {
+		return fmt.Sprintf("<TR><TD %s>%s</TD><TD %s>%v</TD></TR>", style1, value1, style2, value2)
 	}
 
-	ports := fmt.Sprintf("<TR>%s</TR>", b.String())
+	ports := func() string {
+		var b bytes.Buffer
+		for k, v := range vns.Index {
+			b.WriteString(fmt.Sprintf("<TD PORT=\"%s\">%s</TD>", k, v.makeTable()))
+		}
 
-	STYLEs := strings.Join([]string{BORDER(1), CELLBORDER(0), CELLSPACING(10), CELLPADDING(0), COLOR, STYLE}, " ")
-	VALUEs := strings.Join([]string{ports}, " ")
+		return fmt.Sprintf("<TR>%s</TR>", b.String())
+	}
+
+	bytes := TR(ALIGN("RIGHT"), "nodes bytes", ALIGN("LEFT"), fmt.Sprint(vns.Bytes))
+	dirty := TR(ALIGN("RIGHT"), "dirty", ALIGN("LEFT"), strconv.FormatBool(vns.Dirty))
+	styles := strings.Join([]string{BORDER(0), CELLBORDER(1), CELLSPACING(0), CELLPADDING(2), COLOR, STYLE}, " ")
+	values := strings.Join([]string{bytes, dirty}, "")
+	header := fmt.Sprintf(`<TR><TD COLSPAN="%d"><TABLE %v>%v</TABLE></TD></TR>`, len(vns.Index), styles, values)
+
+	STYLEs := strings.Join([]string{BORDER(1), CELLBORDER(0), CELLSPACING(10), CELLPADDING(5), COLOR, STYLE}, " ")
+	VALUEs := strings.Join([]string{header, ports()}, "")
 	return fmt.Sprintf(`<TABLE %v>%v</TABLE>`, STYLEs, VALUEs)
 }
 
