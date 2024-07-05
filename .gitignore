@@ -26,3 +26,4 @@ kv_leveldb_test.db
 # dot file
 *.dot
 *.dot.pdf
+*.db
