@@ -3,16 +3,26 @@ package triedb
 import (
 	"encoding/binary"
 
+	"github.com/xlander-io/btree"
 	"github.com/xlander-io/hash"
 )
 
 // 65536= 2^16 , len can be put inside a uint16 , never change this
 // setting a long path will decrease the speed of kvdb
 const PATH_LEN_LIMIT = 65536
+const PATH_B_TREE_DEGREE = 5
 
 var HASH_NODE_PREFIX []byte = []byte("hash_node_prefix")
 var HASH_NODE_VAL_PREFIX []byte = []byte("hash_node_val_prefix")
 var HASH_NODES_PREFIX []byte = []byte("hash_nodes_prefix")
+
+func NewPathBTree() *btree.BTree {
+	return btree.New(PATH_B_TREE_DEGREE, func(a, b interface{}) bool {
+		//node_a := a.(*Node)
+		//node_b := b.(*Node)
+		return uint8(a.(uint8)) < uint8(b.(uint8))
+	})
+}
 
 type Node struct {
 	path []byte //nil for root node
@@ -125,7 +135,7 @@ func (node *Node) mark_dirty() {
 }
 
 type Nodes struct {
-	path_index  map[byte]*Node //byte can only ranges from '0' to '255' total 16 different values
+	path_btree  *btree.BTree //byte can only ranges from '0' to '255' total 16 different values
 	parent_node *Node
 	nodes_bytes []byte //serialize(self) , nil for new node or dirty node
 	//nodes_hash  *util.Hash //hash(self) , nil for new node or dirty node
@@ -135,15 +145,28 @@ type Nodes struct {
 // serialize to nodes_bytes
 func (n *Nodes) serialize() {
 	var result []byte = []byte{}
-	result = append(result, uint8(len(n.path_index)))
-	for _, node := range n.path_index {
+
+	result = append(result, uint8(n.path_btree.Len()))
+
+	iter := n.path_btree.Before(uint8(0))
+	for iter.Next() {
+		node := iter.Value.(*Node)
 		result = node.node_hash.PrePend(result)
 		path_len_bytes := make([]byte, 16)
 		binary.LittleEndian.PutUint16(path_len_bytes, uint16(len(node.path)))
 		result = append(result, path_len_bytes...)
 		result = append(result, node.path...)
 	}
-	n.nodes_bytes = result
+
+	// result = append(result, uint8(len(n.path_index)))
+	// for _, node := range n.path_index {
+	// 	result = node.node_hash.PrePend(result)
+	// 	path_len_bytes := make([]byte, 16)
+	// 	binary.LittleEndian.PutUint16(path_len_bytes, uint16(len(node.path)))
+	// 	result = append(result, path_len_bytes...)
+	// 	result = append(result, node.path...)
+	// }
+	// n.nodes_bytes = result
 }
 
 func (n *Nodes) deserialize() {
@@ -151,7 +174,8 @@ func (n *Nodes) deserialize() {
 	path_index_len := int(uint8(n.nodes_bytes[0]))
 	deserialize_offset++
 	if path_index_len != 0 {
-		n.path_index = make(map[byte]*Node)
+
+		n.path_btree = NewPathBTree()
 		for i := 0; i < path_index_len; i++ {
 			node_ := Node{}
 			node_.node_hash = hash.NewHashFromBytes(n.nodes_bytes[deserialize_offset : deserialize_offset+32])
@@ -160,8 +184,20 @@ func (n *Nodes) deserialize() {
 			deserialize_offset += 16
 			node_.path = n.nodes_bytes[deserialize_offset : deserialize_offset+path_len]
 			deserialize_offset += path_len
-			n.path_index[node_.path[0]] = &node_
+			n.path_btree.Set(uint8(node_.path[0]), &node_)
 		}
+
+		// n.path_index = make(map[byte]*Node)
+		// for i := 0; i < path_index_len; i++ {
+		// 	node_ := Node{}
+		// 	node_.node_hash = hash.NewHashFromBytes(n.nodes_bytes[deserialize_offset : deserialize_offset+32])
+		// 	deserialize_offset += 32
+		// 	path_len := int(binary.LittleEndian.Uint16(n.nodes_bytes[deserialize_offset : deserialize_offset+16]))
+		// 	deserialize_offset += 16
+		// 	node_.path = n.nodes_bytes[deserialize_offset : deserialize_offset+path_len]
+		// 	deserialize_offset += path_len
+		// 	n.path_index[node_.path[0]] = &node_
+		// }
 	}
 }
 

@@ -122,10 +122,17 @@ func (vns *vizNodes) fromTrieNodes(ns *Nodes) {
 	vns.Bytes = bytes.Clone(ns.nodes_bytes)
 	vns.Dirty = ns.dirty
 
-	for k, n := range ns.path_index {
+	// for k, n := range ns.path_index {
+	// 	var vn vizNode
+	// 	vn.fromTrieNode(n)
+	// 	vns.Index[string(k)] = &vn
+	// }
+
+	p_b_iter := ns.path_btree.Before(uint8(0))
+	for p_b_iter.Next() {
 		var vn vizNode
-		vn.fromTrieNode(n)
-		vns.Index[string(k)] = &vn
+		vn.fromTrieNode(p_b_iter.Value.(*Node))
+		vns.Index[string(p_b_iter.Value.(*Node).path[0])] = &vn
 	}
 }
 

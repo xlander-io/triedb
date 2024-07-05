@@ -3,6 +3,7 @@ module github.com/xlander-io/triedb
 go 1.22.1
 
 require (
+	github.com/xlander-io/btree v0.0.0-20240705064004-86eecd8d7f58
 	github.com/xlander-io/cache v0.0.0-20240629113731-202145a0cf50
 	github.com/xlander-io/hash v0.0.0-20240702005625-39fa6700ef21
 	github.com/xlander-io/kv v0.0.0-20240703070149-408f10396aaa
