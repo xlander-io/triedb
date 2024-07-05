@@ -185,7 +185,13 @@ func (vn *vizNode) makeTable() string {
 	CELLPADDING := func(n int) string { return fmt.Sprintf(`CELLPADDING="%d"`, n) }
 	ALIGN := func(n string) string { return fmt.Sprintf(`ALIGN="%s"`, n) }
 	FONT := func(text string) string { return fmt.Sprintf(`<FONT COLOR="gray40">%s</FONT>`, text) }
-	COLOR := `COLOR="gray"`
+	COLOR := func() string {
+		if vn.Dirty {
+			return `COLOR="red"`
+		} else {
+			return `COLOR="gray"`
+		}
+	}
 
 	TR := func(style1, value1, style2, value2 string) string {
 		return fmt.Sprintf(`<TR><TD %s>%s</TD><TD %s>%v</TD></TR>`, style1, value1, style2, value2)
@@ -205,7 +211,7 @@ func (vn *vizNode) makeTable() string {
 	bytes := TR(ALIGN("RIGHT"), FONT("node bytes"), ALIGN("LEFT"), fmt.Sprint(vn.Bytes))
 	dirty := TR(ALIGN("RIGHT"), FONT("dirty"), ALIGN("LEFT"), strconv.FormatBool(vn.Dirty))
 
-	STYLEs := strings.Join([]string{BORDER(0), CELLBORDER(1), CELLSPACING(0), CELLPADDING(1), COLOR}, " ")
+	STYLEs := strings.Join([]string{BORDER(0), CELLBORDER(1), CELLSPACING(0), CELLPADDING(1), COLOR()}, " ")
 	VALUEs := strings.Join([]string{
 		path_,
 		value,
