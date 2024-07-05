@@ -37,6 +37,7 @@ func main() {
 		Commit_thread_limit: 1,
 	})
 
+	tdb.Update([]byte("1"), []byte("val_1"))
 	tdb.Update([]byte("12"), []byte("val_12"))
 	tdb.Update([]byte("13"), []byte("val_13"))
 	tdb.Update([]byte("14"), []byte("val_14"))

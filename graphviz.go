@@ -50,8 +50,13 @@ type vizNodes struct {
 	ID        int
 	Recovered bool
 	Bytes     []byte
-	Index     map[string]*vizNode
+	Index     []*vizIndex
 	Dirty     bool
+}
+
+type vizIndex struct {
+	Key  string
+	Node *vizNode
 }
 
 func newVizGraphFromTrieDB(tdb *TrieDB, fullMode bool) *vizGraph {
@@ -118,21 +123,17 @@ func (vn *vizNode) fromTrieNode(n *Node) {
 }
 
 func (vns *vizNodes) fromTrieNodes(ns *Nodes) {
-	vns.Index = make(map[string]*vizNode)
+	vns.Index = make([]*vizIndex, 0, ns.path_btree.Len())
 	vns.Bytes = bytes.Clone(ns.nodes_bytes)
 	vns.Dirty = ns.dirty
 
-	// for k, n := range ns.path_index {
-	// 	var vn vizNode
-	// 	vn.fromTrieNode(n)
-	// 	vns.Index[string(k)] = &vn
-	// }
-
-	p_b_iter := ns.path_btree.Before(uint8(0))
-	for p_b_iter.Next() {
+	iter := ns.path_btree.Before(uint8(0))
+	for iter.Next() {
+		n := iter.Value.(*Node)
 		var vn vizNode
-		vn.fromTrieNode(p_b_iter.Value.(*Node))
-		vns.Index[string(p_b_iter.Value.(*Node).path[0])] = &vn
+		vn.fromTrieNode(n)
+		vi := vizIndex{Key: string(n.path[0]), Node: &vn}
+		vns.Index = append(vns.Index, &vi)
 	}
 }
 
@@ -142,8 +143,8 @@ func (vg *vizGraph) recursiveUpdateID(vn *vizNode) {
 	if nil != vn.Children {
 		vn.Children.ID = vg.nextID
 		vg.nextID++
-		for _, v := range vn.Children.Index {
-			vg.recursiveUpdateID(v)
+		for _, vi := range vn.Children.Index {
+			vg.recursiveUpdateID(vi.Node)
 		}
 	}
 }
@@ -154,8 +155,8 @@ func (vg *vizGraph) recursiveApplyFullMode(o applyFullModeFunc) {
 	if vn, ok := o.(*vizNode); ok {
 		if nil != vn.Children {
 			vn.Children.applyFullMode(vg.fullMode)
-			for _, v := range vn.Children.Index {
-				vg.recursiveApplyFullMode(v)
+			for _, vi := range vn.Children.Index {
+				vg.recursiveApplyFullMode(vi.Node)
 			}
 		}
 	}
@@ -255,8 +256,8 @@ func (vns *vizNodes) makeTable() string {
 
 	ports := func() string {
 		var b bytes.Buffer
-		for k, v := range vns.Index {
-			b.WriteString(fmt.Sprintf("<TD PORT=\"%s\">%s</TD>", k, v.makeTable()))
+		for _, vi := range vns.Index {
+			b.WriteString(fmt.Sprintf("<TD PORT=\"%s\">%s</TD>", vi.Key, vi.Node.makeTable()))
 		}
 
 		return fmt.Sprintf("<TR>%s</TR>", b.String())
@@ -295,8 +296,8 @@ func (tdb *TrieDB) WriteDot(b io.Writer, fullMode bool) {
 		{{if eq .ID 0}}{{Name .}} [shape=plain label=<{{Table .}}>]{{end}}
 		{{if .Children}}{{Name .Children}} [shape=plain label=<{{Table .Children}}>]{{end}}
 		{{- if .Children}}
-			{{- range $k,$v := .Children.Index}}
-				{{- template "vertices" $v}}
+			{{- range $_, $vi := .Children.Index}}
+				{{- template "vertices" $vi.Node}}
 			{{- end}}
 		{{- end}}
 	{{- end}}
@@ -305,11 +306,12 @@ func (tdb *TrieDB) WriteDot(b io.Writer, fullMode bool) {
 		{{- $O := .}}
 		{{- if and .Children (eq .ID 0)}} {{- Name $O}} -> {{Name $O.Children}} [color=gray] {{end}}
 		{{- if .Children}}
-			{{- range $k,$v := .Children.Index}}
-				{{- if $v.Children}}
-					{{- Name $O.Children}} -> {{Name $v.Children}} {{Edge $O $v $k}}
+			{{- range $_, $vi := .Children.Index}}
+				{{- $k := $vi.Key}} {{- $n := $vi.Node}}
+				{{- if $n.Children}}
+					{{- Name $O.Children}} -> {{Name $n.Children}} {{Edge $O $n $k}}
 				{{- end}}
-				{{- template "edges" $v}}
+				{{- template "edges" $n}}
 			{{- end}}
 		{{- end}}
 	{{- end}}

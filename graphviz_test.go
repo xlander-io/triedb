@@ -11,7 +11,7 @@ import (
 
 const _DATABASE_PATH = "./kv_leveldb_test.db"
 
-func TestBasic(t *testing.T) {
+func TestGraphviz(t *testing.T) {
 	os.RemoveAll(_DATABASE_PATH)
 	kvdb, _ := kv_leveldb.NewDB(_DATABASE_PATH)
 	//
@@ -31,6 +31,6 @@ func TestBasic(t *testing.T) {
 	tdb.CalHash()
 
 	fmt.Println(tdb.GenDotString(true))
-	// dot -Tpdf -O test_basic.dot && open test_basic.dot.pdf
-	tdb.GenDotFile("./test_basic.dot", false)
+	// dot -Tpdf -O test_graphviz.dot && open test_graphviz.dot.pdf
+	tdb.GenDotFile("./test_graphviz.dot", false)
 }
