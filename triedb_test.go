@@ -55,6 +55,9 @@ func (tdb *TrieDB) testCommit() (*hash.Hash, error) {
 
 func TestMainWorkflow(t *testing.T) {
 
+	// dot -Tpdf -O trie_test_mainworkflow.dot && open trie_test_mainworkflow.dot.pdf
+	// tdb.GenDotFile("./trie_test_mainworkflow.dot", false)
+
 	const db_path = "./trie_test_mainworkflow.db"
 	os.RemoveAll(db_path)
 
@@ -456,6 +459,7 @@ func TestMainWorkflow(t *testing.T) {
 
 		rootHash = _rootHash
 
+		// tdb.GenDotFile("./trie_test_mainworkflow.dot", false)
 		tdb.kvdb.Close()
 	}
 
@@ -479,6 +483,8 @@ func TestMainWorkflow(t *testing.T) {
 		}
 
 		rootHash = _rootHash
+
+		tdb.GenDotFile("./trie_test_mainworkflow.dot", false)
 
 		{
 			root := tdb.root_node
@@ -891,7 +897,7 @@ func TestMainWorkflow(t *testing.T) {
 			}
 		}
 
-		//tdb.GenDotFile("./trie_test_mainworkflow.dot", false)
+		// tdb.GenDotFile("./trie_test_mainworkflow.dot", false)
 		tdb.kvdb.Close()
 	}
 
@@ -913,7 +919,7 @@ func TestMainWorkflow(t *testing.T) {
 			t.Fatal(`Delete item "12" should work as expected!`)
 		}
 
-		tdb.GenDotFile("./trie_test_mainworkflow.dot", false)
+		// tdb.GenDotFile("./trie_test_mainworkflow.dot", false)
 		tdb.kvdb.Close()
 	}
 
