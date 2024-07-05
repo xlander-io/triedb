@@ -307,9 +307,10 @@ func (tdb *TrieDB) WriteDot(b io.Writer, fullMode bool) {
 		{{- if and .Children (eq .ID 0)}} {{- Name $O}} -> {{Name $O.Children}} [color=gray] {{end}}
 		{{- if .Children}}
 			{{- range $_, $vi := .Children.Index}}
-				{{- $k := $vi.Key}} {{- $n := $vi.Node}}
+				{{- $k := $vi.Key}} 
+				{{- $n := $vi.Node}}
 				{{- if $n.Children}}
-					{{- Name $O.Children}} -> {{Name $n.Children}} {{Edge $O $n $k}}
+					{{Name $O.Children}} -> {{Name $n.Children}} {{Edge $O $n $k}}
 				{{- end}}
 				{{- template "edges" $n}}
 			{{- end}}
