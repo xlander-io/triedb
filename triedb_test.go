@@ -141,7 +141,7 @@ func TestMainWorkflow(t *testing.T) {
 				{"child_nodes_hash", nil, root.child_nodes_hash, nil == root.child_nodes_hash},
 				{"child_nodes_hash_recovered", true, root.child_nodes_hash_recovered, true == root.child_nodes_hash_recovered},
 
-				{"len(child_nodes.path_index)", 1, len(root.child_nodes.path_index), int(1) == len(root.child_nodes.path_index)},
+				{"child_nodes.path_btree.Len()", 1, root.child_nodes.path_btree.Len(), int(1) == root.child_nodes.path_btree.Len()},
 				{"child_nodes.dirty", true, root.child_nodes.dirty, true == root.child_nodes.dirty},
 				{"child_nodes.parent_node", root, root.child_nodes.parent_node, root == root.child_nodes.parent_node},
 			}
@@ -153,7 +153,7 @@ func TestMainWorkflow(t *testing.T) {
 			}
 
 			{
-				_1 := root.child_nodes.path_index[byte('1')]
+				_1 := root.child_nodes.path_btree.Get(byte('1')).(*Node)
 				if nil == _1 {
 					t.Fatalf("unexpect nil pointer for node %v", '1')
 				}
@@ -211,7 +211,7 @@ func TestMainWorkflow(t *testing.T) {
 			}
 			if nil != root.child_nodes {
 				rootTests = append(rootTests, []TEST{
-					{"len(child_nodes.path_index)", 1, len(root.child_nodes.path_index), int(1) == len(root.child_nodes.path_index)},
+					{"child_nodes.path_btree.Len()", 1, root.child_nodes.path_btree.Len(), int(1) == root.child_nodes.path_btree.Len()},
 					{"child_nodes.dirty", true, root.child_nodes.dirty, true == root.child_nodes.dirty},
 					{"child_nodes.parent_node", root, root.child_nodes.parent_node, root == root.child_nodes.parent_node},
 				}...)
@@ -224,7 +224,7 @@ func TestMainWorkflow(t *testing.T) {
 			}
 
 			{
-				_1 := root.child_nodes.path_index[byte('1')]
+				_1 := root.child_nodes.path_btree.Get(byte('1')).(*Node)
 				if nil == _1 {
 					t.Fatalf("unexpect nil pointer for node full path %v", "1")
 				}
@@ -247,7 +247,7 @@ func TestMainWorkflow(t *testing.T) {
 				}
 				if nil != _1.child_nodes {
 					_1Tests = append(_1Tests, []TEST{
-						{"len(child_nodes.path_index)", 3, len(_1.child_nodes.path_index), int(3) == len(_1.child_nodes.path_index)},
+						{"child_nodes.path_btree.Len()", 3, _1.child_nodes.path_btree.Len(), int(3) == _1.child_nodes.path_btree.Len()},
 						{"child_nodes.dirty", true, _1.child_nodes.dirty, true == _1.child_nodes.dirty},
 						{"child_nodes.parent_node", _1, _1.child_nodes.parent_node, _1 == _1.child_nodes.parent_node},
 					}...)
@@ -260,9 +260,9 @@ func TestMainWorkflow(t *testing.T) {
 				}
 
 				{
-					_12 := _1.child_nodes.path_index[byte('2')]
-					_13 := _1.child_nodes.path_index[byte('3')]
-					_14 := _1.child_nodes.path_index[byte('4')]
+					_12 := _1.child_nodes.path_btree.Get(byte('2')).(*Node)
+					_13 := _1.child_nodes.path_btree.Get(byte('3')).(*Node)
+					_14 := _1.child_nodes.path_btree.Get(byte('4')).(*Node)
 					if nil == _12 {
 						t.Fatalf("unexpect nil pointer for node full path %v", "12")
 					}
@@ -293,7 +293,7 @@ func TestMainWorkflow(t *testing.T) {
 						}
 						if nil != _12.child_nodes {
 							_12Tests = append(_12Tests, []TEST{
-								{"len(child_nodes.path_index)", 1, len(_12.child_nodes.path_index), int(1) == len(_12.child_nodes.path_index)},
+								{"child_nodes.path_btree.Len()", 1, _12.child_nodes.path_btree.Len(), int(1) == _12.child_nodes.path_btree.Len()},
 								{"child_nodes.dirty", true, _12.child_nodes.dirty, true == _12.child_nodes.dirty},
 								{"child_nodes.parent_node", _12, _12.child_nodes.parent_node, _12 == _12.child_nodes.parent_node},
 							}...)
@@ -306,7 +306,7 @@ func TestMainWorkflow(t *testing.T) {
 						}
 
 						{
-							_123 := _12.child_nodes.path_index[byte('3')]
+							_123 := _12.child_nodes.path_btree.Get(byte('3')).(*Node)
 							if nil == _123 {
 								t.Fatalf("unexpect nil pointer for node full path %v", "123")
 							}
@@ -330,7 +330,7 @@ func TestMainWorkflow(t *testing.T) {
 
 							if nil != _123.child_nodes {
 								_123Tests = append(_123Tests, []TEST{
-									{"len(child_nodes.path_index)", 1, len(_123.child_nodes.path_index), int(1) == len(_123.child_nodes.path_index)},
+									{"child_nodes.path_btree.Len()", 1, _123.child_nodes.path_btree.Len(), int(1) == _123.child_nodes.path_btree.Len()},
 									{"child_nodes.dirty", true, _123.child_nodes.dirty, true == _123.child_nodes.dirty},
 									{"child_nodes.parent_node", _123, _123.child_nodes.parent_node, _123 == _123.child_nodes.parent_node},
 								}...)
@@ -343,7 +343,7 @@ func TestMainWorkflow(t *testing.T) {
 							}
 
 							{
-								_1234 := _123.child_nodes.path_index[byte('4')]
+								_1234 := _123.child_nodes.path_btree.Get(byte('4')).(*Node)
 								if nil == _1234 {
 									t.Fatalf("unexpect nil pointer for node full path %v", "1234")
 								}
@@ -366,7 +366,7 @@ func TestMainWorkflow(t *testing.T) {
 								}
 								if nil != _1234.child_nodes {
 									_1234Tests = append(_1234Tests, []TEST{
-										{"len(child_nodes.path_index)", 1, len(_1234.child_nodes.path_index), int(1) == len(_1234.child_nodes.path_index)},
+										{"child_nodes.path_btree.Len()", 1, _1234.child_nodes.path_btree.Len(), int(1) == _1234.child_nodes.path_btree.Len()},
 										{"child_nodes.dirty", true, _1234.child_nodes.dirty, true == _1234.child_nodes.dirty},
 										{"child_nodes.parent_node", _1234, _1234.child_nodes.parent_node, _1234 == _1234.child_nodes.parent_node},
 									}...)
@@ -400,7 +400,7 @@ func TestMainWorkflow(t *testing.T) {
 						}
 						if nil != _13.child_nodes {
 							_13Tests = append(_13Tests, []TEST{
-								{"len(child_nodes.path_index)", 3, len(_13.child_nodes.path_index), int(3) == len(_13.child_nodes.path_index)},
+								{"child_nodes.path_btree.Len()", 3, _13.child_nodes.path_btree.Len(), int(3) == _13.child_nodes.path_btree.Len()},
 								{"child_nodes.dirty", true, _13.child_nodes.dirty, true == _13.child_nodes.dirty},
 								{"child_nodes.parent_node", _13, _13.child_nodes.parent_node, _13 == _13.child_nodes.parent_node},
 							}...)
@@ -432,7 +432,7 @@ func TestMainWorkflow(t *testing.T) {
 						}
 						if nil != _14.child_nodes {
 							_14Tests = append(_14Tests, []TEST{
-								{"len(child_nodes.path_index)", 3, len(_14.child_nodes.path_index), int(3) == len(_14.child_nodes.path_index)},
+								{"child_nodes.path_btree.Len()", 3, _14.child_nodes.path_btree.Len(), int(3) == _14.child_nodes.path_btree.Len()},
 								{"child_nodes.dirty", true, _14.child_nodes.dirty, true == _14.child_nodes.dirty},
 								{"child_nodes.parent_node", _14, _14.child_nodes.parent_node, _14 == _14.child_nodes.parent_node},
 							}...)
@@ -502,7 +502,7 @@ func TestMainWorkflow(t *testing.T) {
 				}
 				if nil != root.child_nodes {
 					rootTests = append(rootTests, []TEST{
-						{"len(child_nodes.path_index)", 2, len(root.child_nodes.path_index), int(2) == len(root.child_nodes.path_index)},
+						{"child_nodes.path_btree.Len()", 2, root.child_nodes.path_btree.Len(), int(2) == root.child_nodes.path_btree.Len()},
 						{"child_nodes.dirty", true, root.child_nodes.dirty, true == root.child_nodes.dirty},
 						{"child_nodes.parent_node", root, root.child_nodes.parent_node, root == root.child_nodes.parent_node},
 					}...)
@@ -515,8 +515,8 @@ func TestMainWorkflow(t *testing.T) {
 				}
 			}
 			{
-				_1 := root.child_nodes.path_index[byte('1')]
-				_2 := root.child_nodes.path_index[byte('2')]
+				_1 := root.child_nodes.path_btree.Get(byte('1')).(*Node)
+				_2 := root.child_nodes.path_btree.Get(byte('2')).(*Node)
 				if nil == _1 {
 					t.Fatalf("unexpect nil pointer for node full path %v", "1")
 				}
@@ -544,7 +544,7 @@ func TestMainWorkflow(t *testing.T) {
 					}
 					if nil != _1.child_nodes {
 						_1Tests = append(_1Tests, []TEST{
-							{"len(child_nodes.path_index)", 4, len(_1.child_nodes.path_index), int(4) == len(_1.child_nodes.path_index)},
+							{"child_nodes.path_btree.Len()", 4, _1.child_nodes.path_btree.Len(), int(4) == _1.child_nodes.path_btree.Len()},
 							{"child_nodes.dirty", true, _1.child_nodes.dirty, true == _1.child_nodes.dirty},
 							{"child_nodes.parent_node", _1, _1.child_nodes.parent_node, _1 == _1.child_nodes.parent_node},
 						}...)
@@ -576,7 +576,7 @@ func TestMainWorkflow(t *testing.T) {
 					}
 					if nil != _2.child_nodes {
 						_2Tests = append(_2Tests, []TEST{
-							{"len(child_nodes.path_index)", 2, len(_2.child_nodes.path_index), int(2) == len(_2.child_nodes.path_index)},
+							{"child_nodes.path_btree.Len()", 2, _2.child_nodes.path_btree.Len(), int(2) == _2.child_nodes.path_btree.Len()},
 							{"child_nodes.dirty", true, _2.child_nodes.dirty, true == _2.child_nodes.dirty},
 							{"child_nodes.parent_node", _2, _2.child_nodes.parent_node, _2 == _2.child_nodes.parent_node},
 						}...)
@@ -590,10 +590,10 @@ func TestMainWorkflow(t *testing.T) {
 				}
 
 				if nil != _1.child_nodes {
-					_12 := _1.child_nodes.path_index[byte('2')]
-					_13 := _1.child_nodes.path_index[byte('3')]
-					_14 := _1.child_nodes.path_index[byte('4')]
-					_1a := _1.child_nodes.path_index[byte('a')]
+					_12 := _1.child_nodes.path_btree.Get(byte('2')).(*Node)
+					_13 := _1.child_nodes.path_btree.Get(byte('3')).(*Node)
+					_14 := _1.child_nodes.path_btree.Get(byte('4')).(*Node)
+					_1a := _1.child_nodes.path_btree.Get(byte('a')).(*Node)
 					if nil == _12 {
 						t.Fatalf("unexpect nil pointer for node full path %v", "12")
 					}
@@ -627,7 +627,7 @@ func TestMainWorkflow(t *testing.T) {
 						}
 						if nil != _12.child_nodes {
 							_12Tests = append(_12Tests, []TEST{
-								{"len(child_nodes.path_index)", 2, len(_12.child_nodes.path_index), int(2) == len(_12.child_nodes.path_index)},
+								{"child_nodes.path_btree.Len()", 2, _12.child_nodes.path_btree.Len(), int(2) == _12.child_nodes.path_btree.Len()},
 								{"child_nodes.dirty", true, _12.child_nodes.dirty, true == _12.child_nodes.dirty},
 								{"child_nodes.parent_node", _12, _12.child_nodes.parent_node, _12 == _12.child_nodes.parent_node},
 							}...)
@@ -659,7 +659,7 @@ func TestMainWorkflow(t *testing.T) {
 						}
 						if nil != _13.child_nodes {
 							_13Tests = append(_13Tests, []TEST{
-								{"len(child_nodes.path_index)", 2, len(_13.child_nodes.path_index), int(2) == len(_13.child_nodes.path_index)},
+								{"child_nodes.path_btree.Len()", 2, _13.child_nodes.path_btree.Len(), int(2) == _13.child_nodes.path_btree.Len()},
 								{"child_nodes.dirty", true, _13.child_nodes.dirty, true == _13.child_nodes.dirty},
 								{"child_nodes.parent_node", _13, _13.child_nodes.parent_node, _13 == _13.child_nodes.parent_node},
 							}...)
@@ -691,7 +691,7 @@ func TestMainWorkflow(t *testing.T) {
 						}
 						if nil != _14.child_nodes {
 							_14Tests = append(_14Tests, []TEST{
-								{"len(child_nodes.path_index)", 2, len(_14.child_nodes.path_index), int(2) == len(_14.child_nodes.path_index)},
+								{"child_nodes.path_btree.Len()", 2, _14.child_nodes.path_btree.Len(), int(2) == _14.child_nodes.path_btree.Len()},
 								{"child_nodes.dirty", true, _14.child_nodes.dirty, true == _14.child_nodes.dirty},
 								{"child_nodes.parent_node", _14, _14.child_nodes.parent_node, _14 == _14.child_nodes.parent_node},
 							}...)
@@ -723,7 +723,7 @@ func TestMainWorkflow(t *testing.T) {
 						}
 						if nil != _1a.child_nodes {
 							_1aTests = append(_1aTests, []TEST{
-								{"len(child_nodes.path_index)", 2, len(_1a.child_nodes.path_index), int(2) == len(_1a.child_nodes.path_index)},
+								{"child_nodes.path_btree.Len()", 2, _1a.child_nodes.path_btree.Len(), int(2) == _1a.child_nodes.path_btree.Len()},
 								{"child_nodes.dirty", true, _1a.child_nodes.dirty, true == _1a.child_nodes.dirty},
 								{"child_nodes.parent_node", _1a, _1a.child_nodes.parent_node, _1a == _1a.child_nodes.parent_node},
 							}...)
@@ -737,8 +737,8 @@ func TestMainWorkflow(t *testing.T) {
 					}
 
 					if nil != _12.child_nodes {
-						_123 := _12.child_nodes.path_index[byte('3')]
-						_12a := _12.child_nodes.path_index[byte('a')]
+						_123 := _12.child_nodes.path_btree.Get(byte('3')).(*Node)
+						_12a := _12.child_nodes.path_btree.Get(byte('a')).(*Node)
 						if nil == _123 {
 							t.Fatalf("unexpect nil pointer for node full path %v", "123")
 						}
@@ -766,7 +766,7 @@ func TestMainWorkflow(t *testing.T) {
 							}
 							if nil != _123.child_nodes {
 								_123Tests = append(_123Tests, []TEST{
-									{"len(child_nodes.path_index)", 2, len(_123.child_nodes.path_index), int(2) == len(_123.child_nodes.path_index)},
+									{"child_nodes.path_btree.Len()", 2, _123.child_nodes.path_btree.Len(), int(2) == _123.child_nodes.path_btree.Len()},
 									{"child_nodes.dirty", true, _123.child_nodes.dirty, true == _123.child_nodes.dirty},
 									{"child_nodes.parent_node", _123, _123.child_nodes.parent_node, _123 == _123.child_nodes.parent_node},
 								}...)
@@ -798,7 +798,7 @@ func TestMainWorkflow(t *testing.T) {
 							}
 							if nil != _12a.child_nodes {
 								_12aTests = append(_12aTests, []TEST{
-									{"len(child_nodes.path_index)", 2, len(_12a.child_nodes.path_index), int(2) == len(_12a.child_nodes.path_index)},
+									{"child_nodes.path_btree.Len()", 2, _12a.child_nodes.path_btree.Len(), int(2) == _12a.child_nodes.path_btree.Len()},
 									{"child_nodes.dirty", true, _12a.child_nodes.dirty, true == _12a.child_nodes.dirty},
 									{"child_nodes.parent_node", _12a, _12a.child_nodes.parent_node, _12a == _12a.child_nodes.parent_node},
 								}...)
@@ -812,8 +812,8 @@ func TestMainWorkflow(t *testing.T) {
 						}
 
 						if nil != _123.child_nodes {
-							_1234 := _123.child_nodes.path_index[byte('4')]
-							_123a := _123.child_nodes.path_index[byte('a')]
+							_1234 := _123.child_nodes.path_btree.Get(byte('4')).(*Node)
+							_123a := _123.child_nodes.path_btree.Get(byte('a')).(*Node)
 							if nil == _1234 {
 								t.Fatalf("unexpect nil pointer for node full path %v", "1234")
 							}
@@ -841,7 +841,7 @@ func TestMainWorkflow(t *testing.T) {
 								}
 								if nil != _1234.child_nodes {
 									_1234Tests = append(_1234Tests, []TEST{
-										{"len(child_nodes.path_index)", 2, len(_1234.child_nodes.path_index), int(2) == len(_1234.child_nodes.path_index)},
+										{"child_nodes.path_btree.Len()", 2, _1234.child_nodes.path_btree.Len(), int(2) == _1234.child_nodes.path_btree.Len()},
 										{"child_nodes.dirty", true, _1234.child_nodes.dirty, true == _1234.child_nodes.dirty},
 										{"child_nodes.parent_node", _1234, _1234.child_nodes.parent_node, _1234 == _1234.child_nodes.parent_node},
 									}...)
@@ -873,7 +873,7 @@ func TestMainWorkflow(t *testing.T) {
 								}
 								if nil != _123a.child_nodes {
 									_123aTests = append(_123aTests, []TEST{
-										{"len(child_nodes.path_index)", 2, len(_123a.child_nodes.path_index), int(2) == len(_123a.child_nodes.path_index)},
+										{"child_nodes.path_btree.Len()", 2, _123a.child_nodes.path_btree.Len(), int(2) == _123a.child_nodes.path_btree.Len()},
 										{"child_nodes.dirty", true, _123a.child_nodes.dirty, true == _123a.child_nodes.dirty},
 										{"child_nodes.parent_node", _123a, _123a.child_nodes.parent_node, _123a == _123a.child_nodes.parent_node},
 									}...)
@@ -889,6 +889,28 @@ func TestMainWorkflow(t *testing.T) {
 					}
 				}
 			}
+		}
+
+		//tdb.GenDotFile("./trie_test_mainworkflow.dot", false)
+		tdb.kvdb.Close()
+	}
+
+	// test Get operation to influence the lazy status
+	{
+		tdb, err := testPrepareTrieDB(db_path, rootHash)
+
+		if nil != err {
+			t.Fatal(err)
+		}
+
+		_, err = tdb.Get([]byte("13"))
+		if nil != err {
+			t.Fatal(`Get item "13" should receive node_bytes of that kv item!`)
+		}
+
+		err = tdb.Delete([]byte("12"))
+		if nil != err {
+			t.Fatal(`Delete item "12" should work as expected!`)
 		}
 
 		tdb.GenDotFile("./trie_test_mainworkflow.dot", false)
