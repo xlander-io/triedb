@@ -11,6 +11,24 @@ import (
 	"github.com/xlander-io/kv_leveldb"
 )
 
+func testPrepareTrieDB(dataPath string, rootHash *hash.Hash) (*TrieDB, error) {
+	kvdb, err := kv_leveldb.NewDB(dataPath)
+	if nil != err {
+		return nil, err
+	}
+	//
+	c, err := cache.New(nil)
+	if nil != err {
+		return nil, err
+	}
+	tdb, err := NewTrieDB(kvdb, c, &TrieDBConfig{
+		Root_hash:           rootHash,
+		Commit_thread_limit: 1,
+	})
+
+	return tdb, err
+}
+
 func (tdb *TrieDB) testCommit() (*hash.Hash, error) {
 	rootHash, toUpdate, toDel, err := tdb.CalHash()
 	if err != nil {
@@ -35,9 +53,9 @@ func (tdb *TrieDB) testCommit() (*hash.Hash, error) {
 	return rootHash, err
 }
 
-func TestSimple(t *testing.T) {
+func TestMainWorkflow(t *testing.T) {
 
-	const db_path = "./trie_test_simple.db"
+	const db_path = "./trie_test_mainworkflow.db"
 	os.RemoveAll(db_path)
 
 	type TEST struct {
@@ -49,13 +67,30 @@ func TestSimple(t *testing.T) {
 
 	var rootHash *hash.Hash
 
+	// test delete data in a empty triedb
 	{
-		kvdb, _ := kv_leveldb.NewDB(db_path)
-		//
-		c, _ := cache.New(nil)
-		tdb, _ := NewTrieDB(kvdb, c, &TrieDBConfig{
-			Commit_thread_limit: 1,
-		})
+		tdb, err := testPrepareTrieDB(db_path, rootHash)
+
+		if nil != err {
+			t.Fatal(err)
+		}
+
+		err = tdb.Delete([]byte("hello"))
+
+		if nil != err {
+			t.Fatal("Delete path [hello] should NOT trigger error!")
+		}
+
+		tdb.kvdb.Close()
+	}
+
+	// first:  create many trie data
+	{
+		tdb, err := testPrepareTrieDB(db_path, nil)
+
+		if nil != err {
+			t.Fatal(err)
+		}
 
 		{
 			root := tdb.root_node
@@ -421,23 +456,13 @@ func TestSimple(t *testing.T) {
 
 		rootHash = _rootHash
 
-		kvdb.Close()
+		tdb.kvdb.Close()
 	}
 
+	// second: load the previous triedb in disk, and then create more trie data
 	{
-		kvdb, err := kv_leveldb.NewDB(db_path)
-		if nil != err {
-			t.Fatal(err)
-		}
-		//
-		c, err := cache.New(nil)
-		if nil != err {
-			t.Fatal(err)
-		}
-		tdb, err := NewTrieDB(kvdb, c, &TrieDBConfig{
-			Root_hash:           rootHash,
-			Commit_thread_limit: 1,
-		})
+		tdb, err := testPrepareTrieDB(db_path, rootHash)
+
 		if nil != err {
 			t.Fatal(err)
 		}
@@ -454,8 +479,6 @@ func TestSimple(t *testing.T) {
 		}
 
 		rootHash = _rootHash
-
-		t.Logf("rootHash: %v", rootHash)
 
 		{
 			root := tdb.root_node
@@ -868,7 +891,24 @@ func TestSimple(t *testing.T) {
 			}
 		}
 
-		tdb.GenDotFile("./trie_test_simple.dot", false)
-		kvdb.Close()
+		tdb.GenDotFile("./trie_test_mainworkflow.dot", false)
+		tdb.kvdb.Close()
+	}
+
+	// test delete data which not exist in a nonempty triedb
+	{
+		tdb, err := testPrepareTrieDB(db_path, rootHash)
+
+		if nil != err {
+			t.Fatal(err)
+		}
+
+		err = tdb.Delete([]byte("hello"))
+
+		if nil != err {
+			t.Fatal("Delete path [hello] should NOT trigger error!")
+		}
+
+		tdb.kvdb.Close()
 	}
 }
