@@ -37,12 +37,11 @@ func main() {
 		Commit_thread_limit: 1,
 	})
 
-	tdb.Update([]byte("1"), []byte([]byte("val_1")))
-	tdb.Update([]byte("12"), []byte([]byte("val_12")))
-	tdb.Update([]byte("13"), []byte([]byte("val_13")))
-	tdb.Update([]byte("14"), []byte([]byte("val_14")))
-	tdb.Update([]byte("123"), []byte([]byte("val_123")))
-	tdb.Update([]byte("1234"), []byte([]byte("val_1234")))
+	tdb.Update([]byte("12"), []byte("val_12"))
+	tdb.Update([]byte("13"), []byte("val_13"))
+	tdb.Update([]byte("14"), []byte("val_14"))
+	tdb.Update([]byte("123"), []byte("val_123"))
+	tdb.Update([]byte("1234"), []byte("val_1234"))
 
 	tdb.GenDotFile("./test_pre.dot", false)
 
@@ -51,11 +50,12 @@ func main() {
 		fmt.Println("tdb.CalHash() err:", cal_herr.Error())
 		return
 	}
-	fmt.Println("root_hash:", fmt.Sprintf("%x", root_hash.Bytes()))
-
-	fmt.Println("len(to_update):", len(to_update))
 
 	tdb.GenDotFile("./test_after_hash.dot", false)
+
+	fmt.Println("root_hash:", fmt.Sprintf("%x", root_hash.Bytes()))
+
+	// fmt.Println("len(to_update):", len(to_update))
 
 	b := kv.NewBatch()
 	for hex_string, update_v := range to_update {
@@ -73,54 +73,65 @@ func main() {
 		fmt.Println("write_err:", write_err)
 	}
 
-	///////
-	c2, _ := cache.New(nil)
-	tdb2, _ := triedb.NewTrieDB(kvdb, c2, &triedb.TrieDBConfig{
+	tdb2, _ := triedb.NewTrieDB(kvdb, c, &triedb.TrieDBConfig{
 		Commit_thread_limit: 1,
-		Root_hash:           root_hash,
 	})
 
-	///////
+	tdb2.Update([]byte("2"), []byte("val_2"))
+	tdb2.Update([]byte("1a"), []byte([]byte("val_1a")))
+	tdb2.Update([]byte("12a"), []byte([]byte("val_12a")))
+	tdb2.Update([]byte("123a"), []byte([]byte("val_123a")))
 
-	del_err := tdb2.Delete([]byte("1"))
-	fmt.Println(del_err)
-	del_err = tdb2.Delete([]byte("12"))
-	fmt.Println(del_err)
-	del_err = tdb2.Delete([]byte("13"))
-	fmt.Println(del_err)
+	tdb2.GenDotFile("./read_from_kvdb.dot", false)
 
-	//////
+	// ///////
+	// c2, _ := cache.New(nil)
+	// tdb2, _ := triedb.NewTrieDB(kvdb, c2, &triedb.TrieDBConfig{
+	// 	Commit_thread_limit: 1,
+	// 	Root_hash:           root_hash,
+	// })
 
-	tdb2.GenDotFile("./from kvdb.dot", false)
+	// ///////
 
-	tdb2.GenDotFile("./afterdel.dot", false)
+	// del_err := tdb2.Delete([]byte("1"))
+	// fmt.Println(del_err)
+	// del_err = tdb2.Delete([]byte("12"))
+	// fmt.Println(del_err)
+	// del_err = tdb2.Delete([]byte("13"))
+	// fmt.Println(del_err)
 
-	////here we go
-	fmt.Println("//////////////////////////////")
+	// //////
 
-	root_hash2, to_update2, to_del2, cal_herr2 := tdb2.CalHash()
-	if cal_herr2 != nil {
-		fmt.Println("tdb2.CalHash() err:", cal_herr2.Error())
-		return
-	}
+	// tdb2.GenDotFile("./from kvdb.dot", false)
 
-	fmt.Println("to_update2", len(to_update2))
-	fmt.Println("to_del2", len(to_del2))
+	// tdb2.GenDotFile("./afterdel.dot", false)
 
-	fmt.Println("root_hash2", fmt.Sprintf("%x", root_hash2))
+	// ////here we go
+	// fmt.Println("//////////////////////////////")
 
-	tdb2.GenDotFile("./afterdel_calhash.dot", false)
-
-	///
-	// println("//////// to_update2 ///////////")
-	// for hash_str, _ := range to_update2 {
-	// 	fmt.Println(fmt.Sprintf("%x", hash_str))
+	// root_hash2, to_update2, to_del2, cal_herr2 := tdb2.CalHash()
+	// if cal_herr2 != nil {
+	// 	fmt.Println("tdb2.CalHash() err:", cal_herr2.Error())
+	// 	return
 	// }
 
-	// println("//////// to_del2 ///////////")
-	// for _, hash_ := range to_del2 {
-	// 	fmt.Println(fmt.Sprintf("%x", hash_.Bytes()))
-	// }
+	// fmt.Println("to_update2", len(to_update2))
+	// fmt.Println("to_del2", len(to_del2))
+
+	// fmt.Println("root_hash2", fmt.Sprintf("%x", root_hash2))
+
+	// tdb2.GenDotFile("./afterdel_calhash.dot", false)
+
+	// ///
+	// // println("//////// to_update2 ///////////")
+	// // for hash_str, _ := range to_update2 {
+	// // 	fmt.Println(fmt.Sprintf("%x", hash_str))
+	// // }
+
+	// // println("//////// to_del2 ///////////")
+	// // for _, hash_ := range to_del2 {
+	// // 	fmt.Println(fmt.Sprintf("%x", hash_.Bytes()))
+	// // }
 
 }
 
