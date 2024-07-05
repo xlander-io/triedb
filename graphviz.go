@@ -233,7 +233,13 @@ func (vns *vizNodes) makeTable() string {
 	CELLPADDING := func(n int) string { return fmt.Sprintf(`CELLPADDING="%d"`, n) }
 	ALIGN := func(n string) string { return fmt.Sprintf(`ALIGN="%s"`, n) }
 	FONT := func(text string) string { return fmt.Sprintf(`<FONT COLOR="gray40">%s</FONT>`, text) }
-	COLOR := `COLOR="gray"`
+	COLOR := func() string {
+		if vns.Dirty {
+			return `COLOR="red"`
+		} else {
+			return `COLOR="gray"`
+		}
+	}
 	STYLE := `STYLE="rounded"`
 
 	TR := func(style1, value1, style2, value2 string) string {
@@ -251,11 +257,11 @@ func (vns *vizNodes) makeTable() string {
 
 	bytes := TR(ALIGN("RIGHT"), FONT("nodes bytes"), ALIGN("LEFT"), fmt.Sprint(vns.Bytes))
 	dirty := TR(ALIGN("RIGHT"), FONT("dirty"), ALIGN("LEFT"), strconv.FormatBool(vns.Dirty))
-	styles := strings.Join([]string{BORDER(0), CELLBORDER(1), CELLSPACING(0), CELLPADDING(2), COLOR, STYLE}, " ")
+	styles := strings.Join([]string{BORDER(0), CELLBORDER(1), CELLSPACING(0), CELLPADDING(2), COLOR(), STYLE}, " ")
 	values := strings.Join([]string{bytes, dirty}, "")
 	header := fmt.Sprintf(`<TR><TD COLSPAN="%d"><TABLE %v>%v</TABLE></TD></TR>`, len(vns.Index), styles, values)
 
-	STYLEs := strings.Join([]string{BORDER(1), CELLBORDER(0), CELLSPACING(10), CELLPADDING(5), COLOR, STYLE}, " ")
+	STYLEs := strings.Join([]string{BORDER(1), CELLBORDER(0), CELLSPACING(10), CELLPADDING(5), COLOR(), STYLE}, " ")
 	VALUEs := strings.Join([]string{header, ports()}, "")
 	return fmt.Sprintf(`<TABLE %v>%v</TABLE>`, STYLEs, VALUEs)
 }
