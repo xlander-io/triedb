@@ -1,6 +1,7 @@
 package triedb
 
 import (
+	"bytes"
 	"os"
 	"testing"
 
@@ -38,7 +39,16 @@ func TestSimple(t *testing.T) {
 
 	const db_path = "./trie_test_simple.db"
 	os.RemoveAll(db_path)
+
+	type TEST struct {
+		label    string
+		expected interface{}
+		actual   interface{}
+		ok       bool
+	}
+
 	var rootHash *hash.Hash
+
 	{
 		kvdb, _ := kv_leveldb.NewDB(db_path)
 		//
@@ -47,12 +57,361 @@ func TestSimple(t *testing.T) {
 			Commit_thread_limit: 1,
 		})
 
+		{
+			root := tdb.root_node
+
+			var rootTests = []TEST{
+				{"path", nil, root.path, nil == root.path},
+				{"dirty", false, root.dirty, false == root.dirty},
+				{"parent_nodes", nil, root.parent_nodes, nil == root.parent_nodes},
+
+				{"node_bytes", nil, root.node_bytes, nil == root.node_bytes},
+				{"node_hash", "hash.IsNilHash", root.node_hash, hash.IsNilHash(root.node_hash)},
+				{"node_hash_recovered", true, root.node_hash_recovered, true == root.node_hash_recovered},
+
+				{"val", nil, root.val, nil == root.val},
+				{"val_hash", nil, root.val_hash, nil == root.val_hash},
+				{"val_hash_recovered", true, root.val_hash_recovered, true == root.val_hash_recovered},
+
+				{"child_nodes", nil, root.child_nodes, nil == root.child_nodes},
+				{"child_nodes_hash", nil, root.child_nodes_hash, nil == root.child_nodes_hash},
+				{"child_nodes_hash_recovered", true, root.child_nodes_hash_recovered, true == root.child_nodes_hash_recovered},
+			}
+
+			for _, tt := range rootTests {
+				if !tt.ok {
+					t.Errorf("expect root %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+				}
+			}
+		}
+
 		tdb.Update([]byte("1"), []byte("val_1"))
+		{
+			root := tdb.root_node
+
+			rootTests := []TEST{
+				{"path", nil, root.path, nil == root.path},
+				{"dirty", true, root.dirty, true == root.dirty},
+				{"parent_nodes", nil, root.parent_nodes, nil == root.parent_nodes},
+
+				{"node_bytes", nil, root.node_bytes, nil == root.node_bytes},
+				{"node_hash", "hash.IsNilHash", root.node_hash, hash.IsNilHash(root.node_hash)},
+				{"node_hash_recovered", true, root.node_hash_recovered, true == root.node_hash_recovered},
+
+				{"val", nil, root.val, nil == root.val},
+				{"val_hash", nil, root.val_hash, nil == root.val_hash},
+				{"val_hash_recovered", true, root.val_hash_recovered, true == root.val_hash_recovered},
+
+				{"child_nodes", "!nil", root.child_nodes, nil != root.child_nodes},
+				{"child_nodes_hash", nil, root.child_nodes_hash, nil == root.child_nodes_hash},
+				{"child_nodes_hash_recovered", true, root.child_nodes_hash_recovered, true == root.child_nodes_hash_recovered},
+
+				{"len(child_nodes.path_index)", 1, len(root.child_nodes.path_index), int(1) == len(root.child_nodes.path_index)},
+				{"child_nodes.dirty", true, root.child_nodes.dirty, true == root.child_nodes.dirty},
+				{"child_nodes.parent_node", root, root.child_nodes.parent_node, root == root.child_nodes.parent_node},
+			}
+
+			for _, tt := range rootTests {
+				if !tt.ok {
+					t.Errorf("expect root %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+				}
+			}
+
+			{
+				_1 := root.child_nodes.path_index[byte('1')]
+				if nil == _1 {
+					t.Fatalf("unexpect nil pointer for node %v", '1')
+				}
+				_1Tests := []TEST{
+					{"path", []byte{'1'}, _1.path, bytes.Equal([]byte{'1'}, _1.path)},
+					{"dirty", true, _1.dirty, true == _1.dirty},
+					{"parent_nodes", root.child_nodes, _1.parent_nodes, root.child_nodes == _1.parent_nodes},
+
+					{"node_bytes", nil, _1.node_bytes, nil == _1.node_bytes},
+					{"node_hash", "hash.IsNilHash", _1.node_hash, hash.IsNilHash(_1.node_hash)},
+					{"node_hash_recovered", true, _1.node_hash_recovered, true == _1.node_hash_recovered},
+
+					{"val", []byte("val_1"), _1.val, bytes.Equal([]byte("val_1"), _1.val)},
+					{"val_hash", nil, _1.val_hash, nil == _1.val_hash},
+					{"val_hash_recovered", true, _1.val_hash_recovered, true == _1.val_hash_recovered},
+
+					{"child_nodes", nil, _1.child_nodes, nil == _1.child_nodes},
+					{"child_nodes_hash", nil, _1.child_nodes_hash, nil == _1.child_nodes_hash},
+					{"child_nodes_hash_recovered", true, _1.child_nodes_hash_recovered, true == _1.child_nodes_hash_recovered},
+				}
+
+				for _, tt := range _1Tests {
+					if !tt.ok {
+						t.Errorf("expect node %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+					}
+				}
+			}
+		}
+
 		tdb.Update([]byte("12"), []byte("val_12"))
 		tdb.Update([]byte("13"), []byte("val_13"))
 		tdb.Update([]byte("14"), []byte("val_14"))
 		tdb.Update([]byte("123"), []byte("val_123"))
 		tdb.Update([]byte("1234"), []byte("val_1234"))
+
+		{
+			root := tdb.root_node
+
+			rootTests := []TEST{
+				{"path", nil, root.path, nil == root.path},
+				{"dirty", true, root.dirty, true == root.dirty},
+				{"parent_nodes", nil, root.parent_nodes, nil == root.parent_nodes},
+
+				{"node_bytes", nil, root.node_bytes, nil == root.node_bytes},
+				{"node_hash", "hash.IsNilHash", root.node_hash, hash.IsNilHash(root.node_hash)},
+				{"node_hash_recovered", true, root.node_hash_recovered, true == root.node_hash_recovered},
+
+				{"val", nil, root.val, nil == root.val},
+				{"val_hash", nil, root.val_hash, nil == root.val_hash},
+				{"val_hash_recovered", true, root.val_hash_recovered, true == root.val_hash_recovered},
+
+				{"child_nodes", "!nil", root.child_nodes, nil != root.child_nodes},
+				{"child_nodes_hash", nil, root.child_nodes_hash, nil == root.child_nodes_hash},
+				{"child_nodes_hash_recovered", true, root.child_nodes_hash_recovered, true == root.child_nodes_hash_recovered},
+			}
+			if nil != root.child_nodes {
+				rootTests = append(rootTests, []TEST{
+					{"len(child_nodes.path_index)", 1, len(root.child_nodes.path_index), int(1) == len(root.child_nodes.path_index)},
+					{"child_nodes.dirty", true, root.child_nodes.dirty, true == root.child_nodes.dirty},
+					{"child_nodes.parent_node", root, root.child_nodes.parent_node, root == root.child_nodes.parent_node},
+				}...)
+			}
+
+			for _, tt := range rootTests {
+				if !tt.ok {
+					t.Errorf("expect root %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+				}
+			}
+
+			{
+				_1 := root.child_nodes.path_index[byte('1')]
+				if nil == _1 {
+					t.Fatalf("unexpect nil pointer for node full path %v", "1")
+				}
+				_1Tests := []TEST{
+					{"path", []byte{'1'}, _1.path, bytes.Equal([]byte{'1'}, _1.path)},
+					{"dirty", true, _1.dirty, true == _1.dirty},
+					{"parent_nodes", root.child_nodes, _1.parent_nodes, root.child_nodes == _1.parent_nodes},
+
+					{"node_bytes", nil, _1.node_bytes, nil == _1.node_bytes},
+					{"node_hash", "hash.IsNilHash", _1.node_hash, hash.IsNilHash(_1.node_hash)},
+					{"node_hash_recovered", true, _1.node_hash_recovered, true == _1.node_hash_recovered},
+
+					{"val", []byte("val_1"), _1.val, bytes.Equal([]byte("val_1"), _1.val)},
+					{"val_hash", nil, _1.val_hash, nil == _1.val_hash},
+					{"val_hash_recovered", true, _1.val_hash_recovered, true == _1.val_hash_recovered},
+
+					{"child_nodes", "!nil", _1.child_nodes, nil != _1.child_nodes},
+					{"child_nodes_hash", nil, _1.child_nodes_hash, nil == _1.child_nodes_hash},
+					{"child_nodes_hash_recovered", true, _1.child_nodes_hash_recovered, true == _1.child_nodes_hash_recovered},
+				}
+				if nil != _1.child_nodes {
+					_1Tests = append(_1Tests, []TEST{
+						{"len(child_nodes.path_index)", 3, len(_1.child_nodes.path_index), int(3) == len(_1.child_nodes.path_index)},
+						{"child_nodes.dirty", true, _1.child_nodes.dirty, true == _1.child_nodes.dirty},
+						{"child_nodes.parent_node", _1, _1.child_nodes.parent_node, _1 == _1.child_nodes.parent_node},
+					}...)
+				}
+
+				for _, tt := range _1Tests {
+					if !tt.ok {
+						t.Errorf("expect node %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+				{
+					_12 := _1.child_nodes.path_index[byte('2')]
+					_13 := _1.child_nodes.path_index[byte('3')]
+					_14 := _1.child_nodes.path_index[byte('4')]
+					if nil == _12 {
+						t.Fatalf("unexpect nil pointer for node full path %v", "12")
+					}
+					if nil == _13 {
+						t.Fatalf("unexpect nil pointer for node full path %v", "13")
+					}
+					if nil == _14 {
+						t.Fatalf("unexpect nil pointer for node full path %v", "14")
+					}
+
+					{
+						_12Tests := []TEST{
+							{"path", []byte{'2'}, _12.path, bytes.Equal([]byte{'2'}, _12.path)},
+							{"dirty", true, _12.dirty, true == _12.dirty},
+							{"parent_nodes", _1.child_nodes, _12.parent_nodes, _1.child_nodes == _12.parent_nodes},
+
+							{"node_bytes", nil, _12.node_bytes, nil == _12.node_bytes},
+							{"node_hash", "hash.IsNilHash", _12.node_hash, hash.IsNilHash(_12.node_hash)},
+							{"node_hash_recovered", true, _12.node_hash_recovered, true == _12.node_hash_recovered},
+
+							{"val", []byte("val_12"), _12.val, bytes.Equal([]byte("val_12"), _12.val)},
+							{"val_hash", nil, _12.val_hash, nil == _12.val_hash},
+							{"val_hash_recovered", true, _12.val_hash_recovered, true == _12.val_hash_recovered},
+
+							{"child_nodes", "!nil", _12.child_nodes, nil != _12.child_nodes},
+							{"child_nodes_hash", nil, _12.child_nodes_hash, nil == _12.child_nodes_hash},
+							{"child_nodes_hash_recovered", true, _12.child_nodes_hash_recovered, true == _12.child_nodes_hash_recovered},
+						}
+						if nil != _12.child_nodes {
+							_12Tests = append(_12Tests, []TEST{
+								{"len(child_nodes.path_index)", 1, len(_12.child_nodes.path_index), int(1) == len(_12.child_nodes.path_index)},
+								{"child_nodes.dirty", true, _12.child_nodes.dirty, true == _12.child_nodes.dirty},
+								{"child_nodes.parent_node", _12, _12.child_nodes.parent_node, _12 == _12.child_nodes.parent_node},
+							}...)
+						}
+
+						for _, tt := range _12Tests {
+							if !tt.ok {
+								t.Errorf("expect node %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+							}
+						}
+
+						{
+							_123 := _12.child_nodes.path_index[byte('3')]
+							if nil == _123 {
+								t.Fatalf("unexpect nil pointer for node full path %v", "123")
+							}
+							_123Tests := []TEST{
+								{"path", []byte{'3'}, _123.path, bytes.Equal([]byte{'3'}, _123.path)},
+								{"dirty", true, _123.dirty, true == _123.dirty},
+								{"parent_nodes", _12.child_nodes, _123.parent_nodes, _12.child_nodes == _123.parent_nodes},
+
+								{"node_bytes", nil, _123.node_bytes, nil == _123.node_bytes},
+								{"node_hash", "hash.IsNilHash", _123.node_hash, hash.IsNilHash(_123.node_hash)},
+								{"node_hash_recovered", true, _123.node_hash_recovered, true == _123.node_hash_recovered},
+
+								{"val", []byte("val_123"), _123.val, bytes.Equal([]byte("val_123"), _123.val)},
+								{"val_hash", nil, _123.val_hash, nil == _123.val_hash},
+								{"val_hash_recovered", true, _123.val_hash_recovered, true == _123.val_hash_recovered},
+
+								{"child_nodes", "!nil", _123.child_nodes, nil != _123.child_nodes},
+								{"child_nodes_hash", nil, _123.child_nodes_hash, nil == _123.child_nodes_hash},
+								{"child_nodes_hash_recovered", true, _123.child_nodes_hash_recovered, true == _123.child_nodes_hash_recovered},
+							}
+
+							if nil != _123.child_nodes {
+								_123Tests = append(_123Tests, []TEST{
+									{"len(child_nodes.path_index)", 1, len(_123.child_nodes.path_index), int(1) == len(_123.child_nodes.path_index)},
+									{"child_nodes.dirty", true, _123.child_nodes.dirty, true == _123.child_nodes.dirty},
+									{"child_nodes.parent_node", _123, _123.child_nodes.parent_node, _123 == _123.child_nodes.parent_node},
+								}...)
+							}
+
+							for _, tt := range _123Tests {
+								if !tt.ok {
+									t.Errorf("expect node %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+								}
+							}
+
+							{
+								_1234 := _123.child_nodes.path_index[byte('4')]
+								if nil == _1234 {
+									t.Fatalf("unexpect nil pointer for node full path %v", "1234")
+								}
+								_1234Tests := []TEST{
+									{"path", []byte{'4'}, _1234.path, bytes.Equal([]byte{'4'}, _1234.path)},
+									{"dirty", true, _1234.dirty, true == _1234.dirty},
+									{"parent_nodes", _123.child_nodes, _1234.parent_nodes, _123.child_nodes == _1234.parent_nodes},
+
+									{"node_bytes", nil, _1234.node_bytes, nil == _1234.node_bytes},
+									{"node_hash", "hash.IsNilHash", _1234.node_hash, hash.IsNilHash(_1234.node_hash)},
+									{"node_hash_recovered", true, _1234.node_hash_recovered, true == _1234.node_hash_recovered},
+
+									{"val", []byte("val_1234"), _1234.val, bytes.Equal([]byte("val_1234"), _1234.val)},
+									{"val_hash", nil, _1234.val_hash, nil == _1234.val_hash},
+									{"val_hash_recovered", true, _1234.val_hash_recovered, true == _1234.val_hash_recovered},
+
+									{"child_nodes", nil, _1234.child_nodes, nil == _1234.child_nodes},
+									{"child_nodes_hash", nil, _1234.child_nodes_hash, nil == _1234.child_nodes_hash},
+									{"child_nodes_hash_recovered", true, _1234.child_nodes_hash_recovered, true == _1234.child_nodes_hash_recovered},
+								}
+								if nil != _1234.child_nodes {
+									_1234Tests = append(_1234Tests, []TEST{
+										{"len(child_nodes.path_index)", 1, len(_1234.child_nodes.path_index), int(1) == len(_1234.child_nodes.path_index)},
+										{"child_nodes.dirty", true, _1234.child_nodes.dirty, true == _1234.child_nodes.dirty},
+										{"child_nodes.parent_node", _1234, _1234.child_nodes.parent_node, _1234 == _1234.child_nodes.parent_node},
+									}...)
+								}
+
+								for _, tt := range _1234Tests {
+									if !tt.ok {
+										t.Errorf("expect node %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+									}
+								}
+							}
+						}
+					}
+					{
+						_13Tests := []TEST{
+							{"path", []byte{'3'}, _13.path, bytes.Equal([]byte{'3'}, _13.path)},
+							{"dirty", true, _13.dirty, true == _13.dirty},
+							{"parent_nodes", _1.child_nodes, _13.parent_nodes, _1.child_nodes == _13.parent_nodes},
+
+							{"node_bytes", nil, _13.node_bytes, nil == _13.node_bytes},
+							{"node_hash", "hash.IsNilHash", _13.node_hash, hash.IsNilHash(_13.node_hash)},
+							{"node_hash_recovered", true, _13.node_hash_recovered, true == _13.node_hash_recovered},
+
+							{"val", []byte("val_13"), _13.val, bytes.Equal([]byte("val_13"), _13.val)},
+							{"val_hash", nil, _13.val_hash, nil == _13.val_hash},
+							{"val_hash_recovered", true, _13.val_hash_recovered, true == _13.val_hash_recovered},
+
+							{"child_nodes", nil, _13.child_nodes, nil == _13.child_nodes},
+							{"child_nodes_hash", nil, _13.child_nodes_hash, nil == _13.child_nodes_hash},
+							{"child_nodes_hash_recovered", true, _13.child_nodes_hash_recovered, true == _13.child_nodes_hash_recovered},
+						}
+						if nil != _13.child_nodes {
+							_13Tests = append(_13Tests, []TEST{
+								{"len(child_nodes.path_index)", 3, len(_13.child_nodes.path_index), int(3) == len(_13.child_nodes.path_index)},
+								{"child_nodes.dirty", true, _13.child_nodes.dirty, true == _13.child_nodes.dirty},
+								{"child_nodes.parent_node", _13, _13.child_nodes.parent_node, _13 == _13.child_nodes.parent_node},
+							}...)
+						}
+
+						for _, tt := range _13Tests {
+							if !tt.ok {
+								t.Errorf("expect node %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+							}
+						}
+					}
+					{
+						_14Tests := []TEST{
+							{"path", []byte{'4'}, _14.path, bytes.Equal([]byte{'4'}, _14.path)},
+							{"dirty", true, _14.dirty, true == _14.dirty},
+							{"parent_nodes", _1.child_nodes, _14.parent_nodes, _1.child_nodes == _14.parent_nodes},
+
+							{"node_bytes", nil, _14.node_bytes, nil == _14.node_bytes},
+							{"node_hash", "hash.IsNilHash", _14.node_hash, hash.IsNilHash(_14.node_hash)},
+							{"node_hash_recovered", true, _14.node_hash_recovered, true == _14.node_hash_recovered},
+
+							{"val", []byte("val_14"), _14.val, bytes.Equal([]byte("val_14"), _14.val)},
+							{"val_hash", nil, _14.val_hash, nil == _14.val_hash},
+							{"val_hash_recovered", true, _14.val_hash_recovered, true == _14.val_hash_recovered},
+
+							{"child_nodes", nil, _14.child_nodes, nil == _14.child_nodes},
+							{"child_nodes_hash", nil, _14.child_nodes_hash, nil == _14.child_nodes_hash},
+							{"child_nodes_hash_recovered", true, _14.child_nodes_hash_recovered, true == _14.child_nodes_hash_recovered},
+						}
+						if nil != _14.child_nodes {
+							_14Tests = append(_14Tests, []TEST{
+								{"len(child_nodes.path_index)", 3, len(_14.child_nodes.path_index), int(3) == len(_14.child_nodes.path_index)},
+								{"child_nodes.dirty", true, _14.child_nodes.dirty, true == _14.child_nodes.dirty},
+								{"child_nodes.parent_node", _14, _14.child_nodes.parent_node, _14 == _14.child_nodes.parent_node},
+							}...)
+						}
+
+						for _, tt := range _14Tests {
+							if !tt.ok {
+								t.Errorf("expect node %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+							}
+						}
+					}
+				}
+			}
+		}
 
 		_rootHash, err := tdb.testCommit()
 
@@ -76,22 +435,439 @@ func TestSimple(t *testing.T) {
 			t.Fatal(err)
 		}
 		tdb, err := NewTrieDB(kvdb, c, &TrieDBConfig{
-			Root_hash:           rootHash.Clone(),
+			Root_hash:           rootHash,
 			Commit_thread_limit: 1,
 		})
 		if nil != err {
 			t.Fatal(err)
 		}
 
-		err = tdb.Update([]byte("2"), []byte("val_1"))
+		tdb.Update([]byte("2"), []byte("val_2"))
+		tdb.Update([]byte("1a"), []byte([]byte("val_1a")))
+		tdb.Update([]byte("12a"), []byte([]byte("val_12a")))
+		tdb.Update([]byte("123a"), []byte([]byte("val_123a")))
+
+		_rootHash, err := tdb.testCommit()
+
 		if nil != err {
 			t.Fatal(err)
 		}
-		//tdb.Update([]byte("1a"), []byte([]byte("val_1a")))
-		//tdb.Update([]byte("12a"), []byte([]byte("val_12a")))
-		//tdb.Update([]byte("123a"), []byte([]byte("val_123a")))
 
-		tdb.CalHash()
+		rootHash = _rootHash
+
+		t.Logf("rootHash: %v", rootHash)
+
+		{
+			root := tdb.root_node
+			{
+				rootTests := []TEST{
+					{"path", nil, root.path, nil == root.path},
+					{"dirty", true, root.dirty, true == root.dirty},
+					{"parent_nodes", nil, root.parent_nodes, nil == root.parent_nodes},
+
+					{"node_bytes", "!nil", root.node_bytes, nil != root.node_bytes},
+					{"node_hash", "!hash.IsNilHash", root.node_hash, !hash.IsNilHash(root.node_hash)},
+					{"node_hash_recovered", true, root.node_hash_recovered, true == root.node_hash_recovered},
+
+					{"val", nil, root.val, nil == root.val},
+					{"val_hash", nil, root.val_hash, nil == root.val_hash},
+					{"val_hash_recovered", true, root.val_hash_recovered, true == root.val_hash_recovered},
+
+					{"child_nodes", "!nil", root.child_nodes, nil != root.child_nodes},
+					{"child_nodes_hash", "!hash.IsNilHash", root.child_nodes_hash, !hash.IsNilHash(root.child_nodes_hash)},
+					{"child_nodes_hash_recovered", true, root.child_nodes_hash_recovered, true == root.child_nodes_hash_recovered},
+				}
+				if nil != root.child_nodes {
+					rootTests = append(rootTests, []TEST{
+						{"len(child_nodes.path_index)", 2, len(root.child_nodes.path_index), int(2) == len(root.child_nodes.path_index)},
+						{"child_nodes.dirty", true, root.child_nodes.dirty, true == root.child_nodes.dirty},
+						{"child_nodes.parent_node", root, root.child_nodes.parent_node, root == root.child_nodes.parent_node},
+					}...)
+				}
+
+				for _, tt := range rootTests {
+					if !tt.ok {
+						t.Errorf("expect root %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+					}
+				}
+			}
+			{
+				_1 := root.child_nodes.path_index[byte('1')]
+				_2 := root.child_nodes.path_index[byte('2')]
+				if nil == _1 {
+					t.Fatalf("unexpect nil pointer for node full path %v", "1")
+				}
+				if nil == _2 {
+					t.Fatalf("unexpect nil pointer for node full path %v", "2")
+				}
+
+				{
+					_1Tests := []TEST{
+						{"path", []byte("1"), _1.path, bytes.Equal([]byte("1"), _1.path)},
+						{"dirty", true, _1.dirty, true == _1.dirty},
+						{"parent_nodes", root, _1.parent_nodes, root.child_nodes == _1.parent_nodes},
+
+						{"node_bytes", "!nil", _1.node_bytes, nil != _1.node_bytes},
+						{"node_hash", "!hash.IsNilHash", _1.node_hash, !hash.IsNilHash(_1.node_hash)},
+						{"node_hash_recovered", true, _1.node_hash_recovered, true == _1.node_hash_recovered},
+
+						{"val", []byte("val_1"), _1.val, bytes.Equal([]byte("val_1"), _1.val)},
+						{"val_hash", "!hash.IsNilHash", _1.val_hash, !hash.IsNilHash(_1.val_hash)},
+						{"val_hash_recovered", true, _1.val_hash_recovered, true == _1.val_hash_recovered},
+
+						{"child_nodes", "!nil", _1.child_nodes, nil != _1.child_nodes},
+						{"child_nodes_hash", "!hash.IsNilHash", _1.child_nodes_hash, !hash.IsNilHash(_1.child_nodes_hash)},
+						{"child_nodes_hash_recovered", true, _1.child_nodes_hash_recovered, true == _1.child_nodes_hash_recovered},
+					}
+					if nil != _1.child_nodes {
+						_1Tests = append(_1Tests, []TEST{
+							{"len(child_nodes.path_index)", 4, len(_1.child_nodes.path_index), int(4) == len(_1.child_nodes.path_index)},
+							{"child_nodes.dirty", true, _1.child_nodes.dirty, true == _1.child_nodes.dirty},
+							{"child_nodes.parent_node", _1, _1.child_nodes.parent_node, _1 == _1.child_nodes.parent_node},
+						}...)
+					}
+
+					for _, tt := range _1Tests {
+						if !tt.ok {
+							t.Errorf("expect _1 node %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+						}
+					}
+				}
+				{
+					_2Tests := []TEST{
+						{"path", []byte("2"), _2.path, bytes.Equal([]byte("2"), _2.path)},
+						{"dirty", true, _2.dirty, true == _2.dirty},
+						{"parent_nodes", root, _2.parent_nodes, root.child_nodes == _2.parent_nodes},
+
+						{"node_bytes", "!nil", _2.node_bytes, nil != _2.node_bytes},
+						{"node_hash", "!hash.IsNilHash", _2.node_hash, !hash.IsNilHash(_2.node_hash)},
+						{"node_hash_recovered", true, _2.node_hash_recovered, true == _2.node_hash_recovered},
+
+						{"val", []byte("val_2"), _2.val, bytes.Equal([]byte("val_2"), _2.val)},
+						{"val_hash", "!hash.IsNilHash", _2.val_hash, !hash.IsNilHash(_2.val_hash)},
+						{"val_hash_recovered", true, _2.val_hash_recovered, true == _2.val_hash_recovered},
+
+						{"child_nodes", nil, _2.child_nodes, nil == _2.child_nodes},
+						{"child_nodes_hash", "hash.IsNilHash", _2.child_nodes_hash, hash.IsNilHash(_2.child_nodes_hash)},
+						{"child_nodes_hash_recovered", true, _2.child_nodes_hash_recovered, true == _2.child_nodes_hash_recovered},
+					}
+					if nil != _2.child_nodes {
+						_2Tests = append(_2Tests, []TEST{
+							{"len(child_nodes.path_index)", 2, len(_2.child_nodes.path_index), int(2) == len(_2.child_nodes.path_index)},
+							{"child_nodes.dirty", true, _2.child_nodes.dirty, true == _2.child_nodes.dirty},
+							{"child_nodes.parent_node", _2, _2.child_nodes.parent_node, _2 == _2.child_nodes.parent_node},
+						}...)
+					}
+
+					for _, tt := range _2Tests {
+						if !tt.ok {
+							t.Errorf("expect _2 node %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+						}
+					}
+				}
+
+				if nil != _1.child_nodes {
+					_12 := _1.child_nodes.path_index[byte('2')]
+					_13 := _1.child_nodes.path_index[byte('3')]
+					_14 := _1.child_nodes.path_index[byte('4')]
+					_1a := _1.child_nodes.path_index[byte('a')]
+					if nil == _12 {
+						t.Fatalf("unexpect nil pointer for node full path %v", "12")
+					}
+					if nil == _13 {
+						t.Fatalf("unexpect nil pointer for node full path %v", "13")
+					}
+					if nil == _14 {
+						t.Fatalf("unexpect nil pointer for node full path %v", "14")
+					}
+					if nil == _1a {
+						t.Fatalf("unexpect nil pointer for node full path %v", "1a")
+					}
+
+					{
+						_12Tests := []TEST{
+							{"path", []byte("2"), _12.path, bytes.Equal([]byte("2"), _12.path)},
+							{"dirty", true, _12.dirty, true == _12.dirty},
+							{"parent_nodes", _1, _12.parent_nodes, _1.child_nodes == _12.parent_nodes},
+
+							{"node_bytes", "!nil", _12.node_bytes, nil != _12.node_bytes},
+							{"node_hash", "!hash.IsNilHash", _12.node_hash, !hash.IsNilHash(_12.node_hash)},
+							{"node_hash_recovered", true, _12.node_hash_recovered, true == _12.node_hash_recovered},
+
+							{"val", []byte("val_12"), _12.val, bytes.Equal([]byte("val_12"), _12.val)},
+							{"val_hash", "!hash.IsNilHash", _12.val_hash, !hash.IsNilHash(_12.val_hash)},
+							{"val_hash_recovered", true, _12.val_hash_recovered, true == _12.val_hash_recovered},
+
+							{"child_nodes", "!nil", _12.child_nodes, nil != _12.child_nodes},
+							{"child_nodes_hash", "!hash.IsNilHash", _12.child_nodes_hash, !hash.IsNilHash(_12.child_nodes_hash)},
+							{"child_nodes_hash_recovered", true, _12.child_nodes_hash_recovered, true == _12.child_nodes_hash_recovered},
+						}
+						if nil != _12.child_nodes {
+							_12Tests = append(_12Tests, []TEST{
+								{"len(child_nodes.path_index)", 2, len(_12.child_nodes.path_index), int(2) == len(_12.child_nodes.path_index)},
+								{"child_nodes.dirty", true, _12.child_nodes.dirty, true == _12.child_nodes.dirty},
+								{"child_nodes.parent_node", _12, _12.child_nodes.parent_node, _12 == _12.child_nodes.parent_node},
+							}...)
+						}
+
+						for _, tt := range _12Tests {
+							if !tt.ok {
+								t.Errorf("expect _12 node %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+							}
+						}
+					}
+					{
+						_13Tests := []TEST{
+							{"path", []byte("3"), _13.path, bytes.Equal([]byte("3"), _13.path)},
+							{"dirty", false, _13.dirty, false == _13.dirty},
+							{"parent_nodes", _1, _13.parent_nodes, _1.child_nodes == _13.parent_nodes},
+
+							{"node_bytes", nil, _13.node_bytes, nil == _13.node_bytes},
+							{"node_hash", "!hash.IsNilHash", _13.node_hash, !hash.IsNilHash(_13.node_hash)},
+							{"node_hash_recovered", false, _13.node_hash_recovered, false == _13.node_hash_recovered},
+
+							{"val", nil, _13.val, nil == _13.val},
+							{"val_hash", "hash.IsNilHash", _13.val_hash, hash.IsNilHash(_13.val_hash)},
+							{"val_hash_recovered", false, _13.val_hash_recovered, false == _13.val_hash_recovered},
+
+							{"child_nodes", nil, _13.child_nodes, nil == _13.child_nodes},
+							{"child_nodes_hash", "hash.IsNilHash", _13.child_nodes_hash, hash.IsNilHash(_13.child_nodes_hash)},
+							{"child_nodes_hash_recovered", false, _13.child_nodes_hash_recovered, false == _13.child_nodes_hash_recovered},
+						}
+						if nil != _13.child_nodes {
+							_13Tests = append(_13Tests, []TEST{
+								{"len(child_nodes.path_index)", 2, len(_13.child_nodes.path_index), int(2) == len(_13.child_nodes.path_index)},
+								{"child_nodes.dirty", true, _13.child_nodes.dirty, true == _13.child_nodes.dirty},
+								{"child_nodes.parent_node", _13, _13.child_nodes.parent_node, _13 == _13.child_nodes.parent_node},
+							}...)
+						}
+
+						for _, tt := range _13Tests {
+							if !tt.ok {
+								t.Errorf("expect _13 node %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+							}
+						}
+					}
+					{
+						_14Tests := []TEST{
+							{"path", []byte("4"), _14.path, bytes.Equal([]byte("4"), _14.path)},
+							{"dirty", false, _14.dirty, false == _14.dirty},
+							{"parent_nodes", _1, _14.parent_nodes, _1.child_nodes == _14.parent_nodes},
+
+							{"node_bytes", nil, _14.node_bytes, nil == _14.node_bytes},
+							{"node_hash", "!hash.IsNilHash", _14.node_hash, !hash.IsNilHash(_14.node_hash)},
+							{"node_hash_recovered", false, _14.node_hash_recovered, false == _14.node_hash_recovered},
+
+							{"val", nil, _14.val, nil == _14.val},
+							{"val_hash", "hash.IsNilHash", _14.val_hash, hash.IsNilHash(_14.val_hash)},
+							{"val_hash_recovered", false, _14.val_hash_recovered, false == _14.val_hash_recovered},
+
+							{"child_nodes", nil, _14.child_nodes, nil == _14.child_nodes},
+							{"child_nodes_hash", "hash.IsNilHash", _14.child_nodes_hash, hash.IsNilHash(_14.child_nodes_hash)},
+							{"child_nodes_hash_recovered", false, _14.child_nodes_hash_recovered, false == _14.child_nodes_hash_recovered},
+						}
+						if nil != _14.child_nodes {
+							_14Tests = append(_14Tests, []TEST{
+								{"len(child_nodes.path_index)", 2, len(_14.child_nodes.path_index), int(2) == len(_14.child_nodes.path_index)},
+								{"child_nodes.dirty", true, _14.child_nodes.dirty, true == _14.child_nodes.dirty},
+								{"child_nodes.parent_node", _14, _14.child_nodes.parent_node, _14 == _14.child_nodes.parent_node},
+							}...)
+						}
+
+						for _, tt := range _14Tests {
+							if !tt.ok {
+								t.Errorf("expect _14 node %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+							}
+						}
+					}
+					{
+						_1aTests := []TEST{
+							{"path", []byte("a"), _1a.path, bytes.Equal([]byte("a"), _1a.path)},
+							{"dirty", true, _1a.dirty, true == _1a.dirty},
+							{"parent_nodes", _1, _1a.parent_nodes, _1.child_nodes == _1a.parent_nodes},
+
+							{"node_bytes", "!nil", _1a.node_bytes, nil != _1a.node_bytes},
+							{"node_hash", "!hash.IsNilHash", _1a.node_hash, !hash.IsNilHash(_1a.node_hash)},
+							{"node_hash_recovered", true, _1a.node_hash_recovered, true == _1a.node_hash_recovered},
+
+							{"val", []byte("val_1a"), _1a.val, bytes.Equal([]byte("val_1a"), _1a.val)},
+							{"val_hash", "!hash.IsNilHash", _1a.val_hash, !hash.IsNilHash(_1a.val_hash)},
+							{"val_hash_recovered", true, _1a.val_hash_recovered, true == _1a.val_hash_recovered},
+
+							{"child_nodes", nil, _1a.child_nodes, nil == _1a.child_nodes},
+							{"child_nodes_hash", "hash.IsNilHash", _1a.child_nodes_hash, hash.IsNilHash(_1a.child_nodes_hash)},
+							{"child_nodes_hash_recovered", true, _1a.child_nodes_hash_recovered, true == _1a.child_nodes_hash_recovered},
+						}
+						if nil != _1a.child_nodes {
+							_1aTests = append(_1aTests, []TEST{
+								{"len(child_nodes.path_index)", 2, len(_1a.child_nodes.path_index), int(2) == len(_1a.child_nodes.path_index)},
+								{"child_nodes.dirty", true, _1a.child_nodes.dirty, true == _1a.child_nodes.dirty},
+								{"child_nodes.parent_node", _1a, _1a.child_nodes.parent_node, _1a == _1a.child_nodes.parent_node},
+							}...)
+						}
+
+						for _, tt := range _1aTests {
+							if !tt.ok {
+								t.Errorf("expect _1a node %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+							}
+						}
+					}
+
+					if nil != _12.child_nodes {
+						_123 := _12.child_nodes.path_index[byte('3')]
+						_12a := _12.child_nodes.path_index[byte('a')]
+						if nil == _123 {
+							t.Fatalf("unexpect nil pointer for node full path %v", "123")
+						}
+						if nil == _12a {
+							t.Fatalf("unexpect nil pointer for node full path %v", "12a")
+						}
+
+						{
+							_123Tests := []TEST{
+								{"path", []byte("3"), _123.path, bytes.Equal([]byte("3"), _123.path)},
+								{"dirty", true, _123.dirty, true == _123.dirty},
+								{"parent_nodes", _12, _123.parent_nodes, _12.child_nodes == _123.parent_nodes},
+
+								{"node_bytes", "!nil", _123.node_bytes, nil != _123.node_bytes},
+								{"node_hash", "!hash.IsNilHash", _123.node_hash, !hash.IsNilHash(_123.node_hash)},
+								{"node_hash_recovered", true, _123.node_hash_recovered, true == _123.node_hash_recovered},
+
+								{"val", []byte("val_123"), _123.val, bytes.Equal([]byte("val_123"), _123.val)},
+								{"val_hash", "!hash.IsNilHash", _123.val_hash, !hash.IsNilHash(_123.val_hash)},
+								{"val_hash_recovered", true, _123.val_hash_recovered, true == _123.val_hash_recovered},
+
+								{"child_nodes", "!nil", _123.child_nodes, nil != _123.child_nodes},
+								{"child_nodes_hash", "!hash.IsNilHash", _123.child_nodes_hash, !hash.IsNilHash(_123.child_nodes_hash)},
+								{"child_nodes_hash_recovered", true, _123.child_nodes_hash_recovered, true == _123.child_nodes_hash_recovered},
+							}
+							if nil != _123.child_nodes {
+								_123Tests = append(_123Tests, []TEST{
+									{"len(child_nodes.path_index)", 2, len(_123.child_nodes.path_index), int(2) == len(_123.child_nodes.path_index)},
+									{"child_nodes.dirty", true, _123.child_nodes.dirty, true == _123.child_nodes.dirty},
+									{"child_nodes.parent_node", _123, _123.child_nodes.parent_node, _123 == _123.child_nodes.parent_node},
+								}...)
+							}
+
+							for _, tt := range _123Tests {
+								if !tt.ok {
+									t.Errorf("expect _123 node %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+								}
+							}
+						}
+						{
+							_12aTests := []TEST{
+								{"path", []byte("a"), _12a.path, bytes.Equal([]byte("a"), _12a.path)},
+								{"dirty", true, _12a.dirty, true == _12a.dirty},
+								{"parent_nodes", _12, _12a.parent_nodes, _12.child_nodes == _12a.parent_nodes},
+
+								{"node_bytes", "!nil", _12a.node_bytes, nil != _12a.node_bytes},
+								{"node_hash", "!hash.IsNilHash", _12a.node_hash, !hash.IsNilHash(_12a.node_hash)},
+								{"node_hash_recovered", true, _12a.node_hash_recovered, true == _12a.node_hash_recovered},
+
+								{"val", []byte("val_12a"), _12a.val, bytes.Equal([]byte("val_12a"), _12a.val)},
+								{"val_hash", "!hash.IsNilHash", _12a.val_hash, !hash.IsNilHash(_12a.val_hash)},
+								{"val_hash_recovered", true, _12a.val_hash_recovered, true == _12a.val_hash_recovered},
+
+								{"child_nodes", nil, _12a.child_nodes, nil == _12a.child_nodes},
+								{"child_nodes_hash", "hash.IsNilHash", _12a.child_nodes_hash, hash.IsNilHash(_12a.child_nodes_hash)},
+								{"child_nodes_hash_recovered", true, _12a.child_nodes_hash_recovered, true == _12a.child_nodes_hash_recovered},
+							}
+							if nil != _12a.child_nodes {
+								_12aTests = append(_12aTests, []TEST{
+									{"len(child_nodes.path_index)", 2, len(_12a.child_nodes.path_index), int(2) == len(_12a.child_nodes.path_index)},
+									{"child_nodes.dirty", true, _12a.child_nodes.dirty, true == _12a.child_nodes.dirty},
+									{"child_nodes.parent_node", _12a, _12a.child_nodes.parent_node, _12a == _12a.child_nodes.parent_node},
+								}...)
+							}
+
+							for _, tt := range _12aTests {
+								if !tt.ok {
+									t.Errorf("expect _12a node %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+								}
+							}
+						}
+
+						if nil != _123.child_nodes {
+							_1234 := _123.child_nodes.path_index[byte('4')]
+							_123a := _123.child_nodes.path_index[byte('a')]
+							if nil == _1234 {
+								t.Fatalf("unexpect nil pointer for node full path %v", "1234")
+							}
+							if nil == _123a {
+								t.Fatalf("unexpect nil pointer for node full path %v", "123a")
+							}
+
+							{
+								_1234Tests := []TEST{
+									{"path", []byte("4"), _1234.path, bytes.Equal([]byte("4"), _1234.path)},
+									{"dirty", false, _1234.dirty, false == _1234.dirty},
+									{"parent_nodes", _123, _1234.parent_nodes, _123.child_nodes == _1234.parent_nodes},
+
+									{"node_bytes", nil, _1234.node_bytes, nil == _1234.node_bytes},
+									{"node_hash", "!hash.IsNilHash", _1234.node_hash, !hash.IsNilHash(_1234.node_hash)},
+									{"node_hash_recovered", false, _1234.node_hash_recovered, false == _1234.node_hash_recovered},
+
+									{"val", nil, _1234.val, nil == _1234.val},
+									{"val_hash", "hash.IsNilHash", _1234.val_hash, hash.IsNilHash(_1234.val_hash)},
+									{"val_hash_recovered", false, _1234.val_hash_recovered, false == _1234.val_hash_recovered},
+
+									{"child_nodes", nil, _1234.child_nodes, nil == _1234.child_nodes},
+									{"child_nodes_hash", "hash.IsNilHash", _1234.child_nodes_hash, hash.IsNilHash(_1234.child_nodes_hash)},
+									{"child_nodes_hash_recovered", false, _1234.child_nodes_hash_recovered, false == _1234.child_nodes_hash_recovered},
+								}
+								if nil != _1234.child_nodes {
+									_1234Tests = append(_1234Tests, []TEST{
+										{"len(child_nodes.path_index)", 2, len(_1234.child_nodes.path_index), int(2) == len(_1234.child_nodes.path_index)},
+										{"child_nodes.dirty", true, _1234.child_nodes.dirty, true == _1234.child_nodes.dirty},
+										{"child_nodes.parent_node", _1234, _1234.child_nodes.parent_node, _1234 == _1234.child_nodes.parent_node},
+									}...)
+								}
+
+								for _, tt := range _1234Tests {
+									if !tt.ok {
+										t.Errorf("expect _1234 node %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+									}
+								}
+							}
+							{
+								_123aTests := []TEST{
+									{"path", []byte("a"), _123a.path, bytes.Equal([]byte("a"), _123a.path)},
+									{"dirty", true, _123a.dirty, true == _123a.dirty},
+									{"parent_nodes", _123, _123a.parent_nodes, _123.child_nodes == _123a.parent_nodes},
+
+									{"node_bytes", "!nil", _123a.node_bytes, nil != _123a.node_bytes},
+									{"node_hash", "!hash.IsNilHash", _123a.node_hash, !hash.IsNilHash(_123a.node_hash)},
+									{"node_hash_recovered", true, _123a.node_hash_recovered, true == _123a.node_hash_recovered},
+
+									{"val", []byte("val_123a"), _123a.val, bytes.Equal([]byte("val_123a"), _123a.val)},
+									{"val_hash", "!hash.IsNilHash", _123a.val_hash, !hash.IsNilHash(_123a.val_hash)},
+									{"val_hash_recovered", true, _123a.val_hash_recovered, true == _123a.val_hash_recovered},
+
+									{"child_nodes", nil, _123a.child_nodes, nil == _123a.child_nodes},
+									{"child_nodes_hash", "hash.IsNilHash", _123a.child_nodes_hash, hash.IsNilHash(_123a.child_nodes_hash)},
+									{"child_nodes_hash_recovered", true, _123a.child_nodes_hash_recovered, true == _123a.child_nodes_hash_recovered},
+								}
+								if nil != _123a.child_nodes {
+									_123aTests = append(_123aTests, []TEST{
+										{"len(child_nodes.path_index)", 2, len(_123a.child_nodes.path_index), int(2) == len(_123a.child_nodes.path_index)},
+										{"child_nodes.dirty", true, _123a.child_nodes.dirty, true == _123a.child_nodes.dirty},
+										{"child_nodes.parent_node", _123a, _123a.child_nodes.parent_node, _123a == _123a.child_nodes.parent_node},
+									}...)
+								}
+
+								for _, tt := range _123aTests {
+									if !tt.ok {
+										t.Errorf("expect _123a node %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
 		tdb.GenDotFile("./trie_test_simple.dot", false)
 		kvdb.Close()
 	}
