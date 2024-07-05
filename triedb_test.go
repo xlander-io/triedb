@@ -80,7 +80,7 @@ func TestSimple(t *testing.T) {
 
 			for _, tt := range rootTests {
 				if !tt.ok {
-					t.Errorf("expect root %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+					t.Errorf("root %s expect: %v, but: %v", tt.label, tt.expected, tt.actual)
 				}
 			}
 		}
@@ -113,7 +113,7 @@ func TestSimple(t *testing.T) {
 
 			for _, tt := range rootTests {
 				if !tt.ok {
-					t.Errorf("expect root %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+					t.Errorf("root %s expect: %v, but: %v", tt.label, tt.expected, tt.actual)
 				}
 			}
 
@@ -142,7 +142,7 @@ func TestSimple(t *testing.T) {
 
 				for _, tt := range _1Tests {
 					if !tt.ok {
-						t.Errorf("expect node %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+						t.Errorf("_1 node %s expect: %v, but: %v", tt.label, tt.expected, tt.actual)
 					}
 				}
 			}
@@ -184,7 +184,7 @@ func TestSimple(t *testing.T) {
 
 			for _, tt := range rootTests {
 				if !tt.ok {
-					t.Errorf("expect root %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+					t.Errorf("root %s expect: %v, but: %v", tt.label, tt.expected, tt.actual)
 				}
 			}
 
@@ -220,7 +220,7 @@ func TestSimple(t *testing.T) {
 
 				for _, tt := range _1Tests {
 					if !tt.ok {
-						t.Errorf("expect node %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+						t.Errorf("_1 node %s expect: %v, but: %v", tt.label, tt.expected, tt.actual)
 					}
 				}
 
@@ -266,7 +266,7 @@ func TestSimple(t *testing.T) {
 
 						for _, tt := range _12Tests {
 							if !tt.ok {
-								t.Errorf("expect node %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+								t.Errorf("_12 node %s expect: %v, but: %v", tt.label, tt.expected, tt.actual)
 							}
 						}
 
@@ -303,7 +303,7 @@ func TestSimple(t *testing.T) {
 
 							for _, tt := range _123Tests {
 								if !tt.ok {
-									t.Errorf("expect node %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+									t.Errorf("_123 node %s expect: %v, but: %v", tt.label, tt.expected, tt.actual)
 								}
 							}
 
@@ -339,7 +339,7 @@ func TestSimple(t *testing.T) {
 
 								for _, tt := range _1234Tests {
 									if !tt.ok {
-										t.Errorf("expect node %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+										t.Errorf("_1234 node %s expect: %v, but: %v", tt.label, tt.expected, tt.actual)
 									}
 								}
 							}
@@ -373,7 +373,7 @@ func TestSimple(t *testing.T) {
 
 						for _, tt := range _13Tests {
 							if !tt.ok {
-								t.Errorf("expect node %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+								t.Errorf("_13 node %s expect: %v, but: %v", tt.label, tt.expected, tt.actual)
 							}
 						}
 					}
@@ -405,7 +405,7 @@ func TestSimple(t *testing.T) {
 
 						for _, tt := range _14Tests {
 							if !tt.ok {
-								t.Errorf("expect node %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+								t.Errorf("_14 node %s expect: %v, but: %v", tt.label, tt.expected, tt.actual)
 							}
 						}
 					}
@@ -487,7 +487,7 @@ func TestSimple(t *testing.T) {
 
 				for _, tt := range rootTests {
 					if !tt.ok {
-						t.Errorf("expect root %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+						t.Errorf("root %s expect: %v, but: %v", tt.label, tt.expected, tt.actual)
 					}
 				}
 			}
@@ -529,7 +529,7 @@ func TestSimple(t *testing.T) {
 
 					for _, tt := range _1Tests {
 						if !tt.ok {
-							t.Errorf("expect _1 node %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+							t.Errorf("_1 node %s expect: %v, but: %v", tt.label, tt.expected, tt.actual)
 						}
 					}
 				}
@@ -561,7 +561,7 @@ func TestSimple(t *testing.T) {
 
 					for _, tt := range _2Tests {
 						if !tt.ok {
-							t.Errorf("expect _2 node %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+							t.Errorf("_2 node %s expect: %v, but: %v", tt.label, tt.expected, tt.actual)
 						}
 					}
 				}
@@ -612,7 +612,7 @@ func TestSimple(t *testing.T) {
 
 						for _, tt := range _12Tests {
 							if !tt.ok {
-								t.Errorf("expect _12 node %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+								t.Errorf("_12 node %s expect: %v, but: %v", tt.label, tt.expected, tt.actual)
 							}
 						}
 					}
@@ -644,7 +644,7 @@ func TestSimple(t *testing.T) {
 
 						for _, tt := range _13Tests {
 							if !tt.ok {
-								t.Errorf("expect _13 node %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+								t.Errorf("_13 node %s expect: %v, but: %v", tt.label, tt.expected, tt.actual)
 							}
 						}
 					}
@@ -676,7 +676,7 @@ func TestSimple(t *testing.T) {
 
 						for _, tt := range _14Tests {
 							if !tt.ok {
-								t.Errorf("expect _14 node %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+								t.Errorf("_14 node %s expect: %v, but: %v", tt.label, tt.expected, tt.actual)
 							}
 						}
 					}
@@ -708,7 +708,7 @@ func TestSimple(t *testing.T) {
 
 						for _, tt := range _1aTests {
 							if !tt.ok {
-								t.Errorf("expect _1a node %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+								t.Errorf("_1a node %s expect: %v, but: %v", tt.label, tt.expected, tt.actual)
 							}
 						}
 					}
@@ -751,7 +751,7 @@ func TestSimple(t *testing.T) {
 
 							for _, tt := range _123Tests {
 								if !tt.ok {
-									t.Errorf("expect _123 node %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+									t.Errorf("_123 node %s expect: %v, but: %v", tt.label, tt.expected, tt.actual)
 								}
 							}
 						}
@@ -783,7 +783,7 @@ func TestSimple(t *testing.T) {
 
 							for _, tt := range _12aTests {
 								if !tt.ok {
-									t.Errorf("expect _12a node %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+									t.Errorf("_12a node %s expect: %v, but: %v", tt.label, tt.expected, tt.actual)
 								}
 							}
 						}
@@ -826,7 +826,7 @@ func TestSimple(t *testing.T) {
 
 								for _, tt := range _1234Tests {
 									if !tt.ok {
-										t.Errorf("expect _1234 node %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+										t.Errorf("_1234 node %s expect: %v, but: %v", tt.label, tt.expected, tt.actual)
 									}
 								}
 							}
@@ -858,7 +858,7 @@ func TestSimple(t *testing.T) {
 
 								for _, tt := range _123aTests {
 									if !tt.ok {
-										t.Errorf("expect _123a node %s:%v, but: %v", tt.label, tt.expected, tt.actual)
+										t.Errorf("_123a node %s expect: %v, but: %v", tt.label, tt.expected, tt.actual)
 									}
 								}
 							}
