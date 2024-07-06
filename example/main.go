@@ -97,7 +97,9 @@ func main() {
 		tdb2.Update([]byte("2"), []byte("val_2"))
 		tdb2.Update([]byte("1a"), []byte([]byte("val_1a")))
 		tdb2.Update([]byte("12a"), []byte([]byte("val_12a")))
-		tdb2.Update([]byte("123a"), []byte([]byte("val_123a")))
+		updated_iter, _ := tdb2.Update([]byte("123a"), []byte([]byte("val_123a")))
+
+		fmt.Println("updated related iter -> :", string(updated_iter.FullPath()))
 
 		tdb2.GenDotFile("./read_from_kvdb.dot", false)
 

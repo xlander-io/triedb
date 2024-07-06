@@ -582,6 +582,7 @@ func (trie_db *TrieDB) GetPathLenLimit() int {
 	return PATH_LEN_LIMIT
 }
 
+// update the target and return the updated related Iterator
 func (trie_db *TrieDB) Update(full_path []byte, val []byte) (*Iterator, error) {
 	if len(val) == 0 {
 		return nil, errors.New("update val empty")
