@@ -102,64 +102,7 @@ func main() {
 		tdb2.GenDotFile("./read_from_kvdb.dot", false)
 
 		kvdb.Close()
+
 	}
 
-	// ///////
-	// c2, _ := cache.New(nil)
-	// tdb2, _ := triedb.NewTrieDB(kvdb, c2, &triedb.TrieDBConfig{
-	// 	Commit_thread_limit: 1,
-	// 	Root_hash:           root_hash,
-	// })
-
-	// ///////
-
-	// del_err := tdb2.Delete([]byte("1"))
-	// fmt.Println(del_err)
-	// del_err = tdb2.Delete([]byte("12"))
-	// fmt.Println(del_err)
-	// del_err = tdb2.Delete([]byte("13"))
-	// fmt.Println(del_err)
-
-	// //////
-
-	// tdb2.GenDotFile("./from kvdb.dot", false)
-
-	// tdb2.GenDotFile("./afterdel.dot", false)
-
-	// ////here we go
-	// fmt.Println("//////////////////////////////")
-
-	// root_hash2, to_update2, to_del2, cal_herr2 := tdb2.CalHash()
-	// if cal_herr2 != nil {
-	// 	fmt.Println("tdb2.CalHash() err:", cal_herr2.Error())
-	// 	return
-	// }
-
-	// fmt.Println("to_update2", len(to_update2))
-	// fmt.Println("to_del2", len(to_del2))
-
-	// fmt.Println("root_hash2", fmt.Sprintf("%x", root_hash2))
-
-	// tdb2.GenDotFile("./afterdel_calhash.dot", false)
-
-	// ///
-	// // println("//////// to_update2 ///////////")
-	// // for hash_str, _ := range to_update2 {
-	// // 	fmt.Println(fmt.Sprintf("%x", hash_str))
-	// // }
-
-	// // println("//////// to_del2 ///////////")
-	// // for _, hash_ := range to_del2 {
-	// // 	fmt.Println(fmt.Sprintf("%x", hash_.Bytes()))
-	// // }
-
-}
-
-func getMe(tb *triedb.TrieDB, key string) {
-	val, val_err := tb.Get([]byte(key))
-	if val_err != nil {
-		fmt.Println("get err key :", key, val)
-	} else {
-		fmt.Println(key, " val:", string(val))
-	}
 }

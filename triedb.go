@@ -262,12 +262,6 @@ func (trie_db *TrieDB) recover_child_nodes(node *Node) error {
 		//
 		child_nodes_.deserialize()
 
-		//
-		// for _, c_n := range child_nodes_.path_index {
-		// 	trie_db.attachHash(c_n.node_hash)
-		// 	c_n.parent_nodes = &child_nodes_
-		// }
-
 		path_b_iter := child_nodes_.path_btree.Before(uint8(0))
 		for path_b_iter.Next() {
 			c_n := path_b_iter.Value.(*Node)
@@ -372,7 +366,7 @@ func (trie_db *TrieDB) update_recursive_del(node *Node) error {
 }
 
 // len(left_path) is >0
-func (trie_db *TrieDB) update_target_nodes(target_nodes *Nodes, left_path []byte, val []byte) error {
+func (trie_db *TrieDB) update_target_nodes(target_nodes *Nodes, left_path []byte, val []byte) (*Node, error) {
 
 	/////// target the next node
 
@@ -384,7 +378,7 @@ func (trie_db *TrieDB) update_target_nodes(target_nodes *Nodes, left_path []byte
 	////// no common first byte
 	if val == nil {
 		//nothing todo
-		return nil
+		return nil, nil
 	} else {
 		//simply add a new node
 		new_node := &Node{
@@ -400,17 +394,16 @@ func (trie_db *TrieDB) update_target_nodes(target_nodes *Nodes, left_path []byte
 		target_nodes.path_btree.Set(uint8(left_path[0]), new_node)
 		//mark dirty
 		new_node.mark_dirty()
+		return new_node, nil
 	}
-
-	return nil
 }
 
 // left_path has at least one byte same compared with target_node
-func (trie_db *TrieDB) update_target_node(target_node *Node, left_path []byte, val []byte) error {
+func (trie_db *TrieDB) update_target_node(target_node *Node, left_path []byte, val []byte) (*Node, error) {
 
 	r_err := trie_db.recover_node(target_node)
 	if r_err != nil {
-		return errors.New("update_target_node recover_node err, " + r_err.Error())
+		return nil, errors.New("update_target_node recover_node err, " + r_err.Error())
 	}
 
 	//target exactly
@@ -420,7 +413,9 @@ func (trie_db *TrieDB) update_target_node(target_node *Node, left_path []byte, v
 			//del this node
 			update_r_del_err := trie_db.update_recursive_del(target_node)
 			if update_r_del_err != nil {
-				return update_r_del_err
+				return nil, update_r_del_err
+			} else {
+				return nil, nil
 			}
 		} else {
 			//update this node
@@ -429,9 +424,9 @@ func (trie_db *TrieDB) update_target_node(target_node *Node, left_path []byte, v
 			target_node.val_hash_recovered = true
 			//mark dirty
 			target_node.mark_dirty()
+			//
+			return target_node, nil
 		}
-
-		return nil
 
 	} else if (len(left_path) > len(target_node.path)) && bytes.Equal(target_node.path, left_path[0:len(target_node.path)]) {
 		// left_path start with target_node.path
@@ -439,7 +434,7 @@ func (trie_db *TrieDB) update_target_node(target_node *Node, left_path []byte, v
 		if !target_node.child_nodes_hash_recovered {
 			recover_err := trie_db.recover_child_nodes(target_node)
 			if recover_err != nil {
-				return errors.New("update_target_node recover_child_nodes err:" + recover_err.Error())
+				return nil, errors.New("update_target_node recover_child_nodes err:" + recover_err.Error())
 			}
 		}
 
@@ -450,7 +445,7 @@ func (trie_db *TrieDB) update_target_node(target_node *Node, left_path []byte, v
 
 			//nothing to do
 			if val == nil {
-				return nil
+				return nil, nil
 			}
 
 			// new nodes that dynamically created
@@ -471,7 +466,7 @@ func (trie_db *TrieDB) update_target_node(target_node *Node, left_path []byte, v
 
 		// nothing to do with nil (del action)
 		if val == nil {
-			return nil
+			return nil, nil
 		}
 
 		new_node := &Node{
@@ -503,7 +498,8 @@ func (trie_db *TrieDB) update_target_node(target_node *Node, left_path []byte, v
 		target_node.dirty = true
 		new_node.parent_nodes.mark_dirty()
 
-		return nil
+		//
+		return new_node, nil
 
 	} else {
 
@@ -511,7 +507,7 @@ func (trie_db *TrieDB) update_target_node(target_node *Node, left_path []byte, v
 
 		// nothing to do with nil (del action)
 		if val == nil {
-			return nil
+			return nil, nil
 		}
 
 		////////// find the common bytes prefix
@@ -532,7 +528,7 @@ func (trie_db *TrieDB) update_target_node(target_node *Node, left_path []byte, v
 		common_prefix_bytes_len := len(common_prefix_bytes)
 		///////////
 
-		new_node := Node{
+		new_parent_node := Node{
 			path:                       common_prefix_bytes[:],
 			parent_nodes:               (*target_node).parent_nodes,
 			child_nodes:                nil,
@@ -542,36 +538,41 @@ func (trie_db *TrieDB) update_target_node(target_node *Node, left_path []byte, v
 			dirty:                      true,
 		}
 
-		new_node.child_nodes = &Nodes{
+		new_parent_node.child_nodes = &Nodes{
 			path_btree:  NewPathBTree(),
-			parent_node: &new_node,
+			parent_node: &new_parent_node,
 			dirty:       true,
 		}
 
-		new_node.child_nodes.path_btree.Set(uint8(left_path[common_prefix_bytes_len]), &Node{
+		new_node := Node{
 			path:                       left_path[common_prefix_bytes_len:],
-			parent_nodes:               new_node.child_nodes,
+			parent_nodes:               new_parent_node.child_nodes,
 			val:                        val,
 			dirty:                      true,
 			child_nodes_hash_recovered: true,
 			val_hash_recovered:         true,
 			node_hash_recovered:        true,
-		})
+		}
 
-		new_node.child_nodes.path_btree.Set(uint8(target_node.path[common_prefix_bytes_len]), target_node)
+		new_parent_node.child_nodes.path_btree.Set(uint8(left_path[common_prefix_bytes_len]), &new_node)
+
+		new_parent_node.child_nodes.path_btree.Set(uint8(target_node.path[common_prefix_bytes_len]), target_node)
 
 		target_node.path = target_node.path[common_prefix_bytes_len:]
-		target_node.parent_nodes.path_btree.Set(uint8(new_node.path[0]), &new_node)
-		new_node.parent_nodes = target_node.parent_nodes
-		target_node.parent_nodes = new_node.child_nodes
+		target_node.parent_nodes.path_btree.Set(uint8(new_parent_node.path[0]), &new_parent_node)
+		new_parent_node.parent_nodes = target_node.parent_nodes
+		target_node.parent_nodes = new_parent_node.child_nodes
 
 		//because path changes, recover val is required
-		trie_db.recover_node_val(target_node)
+		recover_node_val_err := trie_db.recover_node_val(target_node)
+		if recover_node_val_err != nil {
+			return nil, recover_node_val_err
+		}
 		//mark dirty
 		target_node.dirty = true
-		new_node.parent_nodes.mark_dirty()
+		new_parent_node.parent_nodes.mark_dirty()
 
-		return nil
+		return &new_node, nil
 	}
 
 }
@@ -581,34 +582,94 @@ func (trie_db *TrieDB) GetPathLenLimit() int {
 	return PATH_LEN_LIMIT
 }
 
-func (trie_db *TrieDB) Update(full_path []byte, val []byte) error {
+func (trie_db *TrieDB) Update(full_path []byte, val []byte) (*Iterator, error) {
 	if len(val) == 0 {
-		return errors.New("update val empty")
+		return nil, errors.New("update val empty")
 	}
-	return trie_db.update_(full_path, val)
+
+	update_node, update_err := trie_db.update_(full_path, val)
+	if update_err != nil {
+		return nil, update_err
+	}
+
+	return &Iterator{
+		triedb:      trie_db,
+		root_node:   update_node,
+		cursor_node: update_node,
+	}, nil
 }
 
 func (trie_db *TrieDB) Delete(full_path []byte) error {
-	return trie_db.update_(full_path, nil)
+	_, del_err := trie_db.update_(full_path, nil)
+	return del_err
 }
 
 // full_path len !=0 is required
 // val == nil stands for del
 // return error may be caused by kvdb io as get reading may happen inside update
-func (trie_db *TrieDB) update_(full_path []byte, val []byte) error {
+func (trie_db *TrieDB) update_(full_path []byte, val []byte) (*Node, error) {
 
 	if len(full_path) == 0 || len(full_path) > PATH_LEN_LIMIT {
-		return errors.New("full_path len err")
+		return nil, errors.New("full_path len err")
 	}
 
 	if len(val) > trie_db.config.Update_val_len_limit {
-		return errors.New("trie val size over limit")
+		return nil, errors.New("trie val size over limit")
 	}
 
 	trie_db.lock.Lock()
 	defer trie_db.lock.Unlock()
 
 	return trie_db.update_target_node(trie_db.root_node, full_path, val)
+}
+
+// //////////////////// Neibour////////////////////////////////////
+
+// return the right neibour node
+func (trie_db *TrieDB) right(node *Node) (*Node, error) {
+	//
+	if node == nil || node.parent_nodes == nil {
+		return nil, nil
+	}
+	//
+	if node.parent_nodes.path_btree == nil || node.parent_nodes.path_btree.Len() <= 1 {
+		return nil, nil
+	}
+	//
+	iter := node.parent_nodes.path_btree.Before(uint8(node.path[0]))
+	if iter == nil {
+		return nil, nil
+	}
+	//
+	iter.Next()
+	if iter.Next() {
+		return iter.Value.(*Node), nil
+	}
+	//
+	return nil, nil
+}
+
+// return the upper right neibour node
+func (trie_db *TrieDB) upper_right(node *Node) (*Node, error) {
+	//
+	if node == nil || node.parent_nodes == nil ||
+		node.parent_nodes.parent_node.parent_nodes == nil ||
+		node.parent_nodes.parent_node.parent_nodes.path_btree.Len() <= 1 {
+		return nil, nil
+	}
+
+	//
+	iter := node.parent_nodes.parent_node.parent_nodes.path_btree.Before(uint8(node.parent_nodes.parent_node.path[0]))
+	if iter == nil {
+		return nil, nil
+	}
+	//
+	iter.Next()
+	if iter.Next() {
+		return iter.Value.(*Node), nil
+	}
+	//
+	return nil, nil
 }
 
 //////////////////////////////////GET/////////////////////////////////////////
@@ -670,7 +731,7 @@ func (trie_db *TrieDB) get_recursive(target_node *Node, left_path []byte) (*Node
 // 1.get from internal nodes which is the lastest val(dirty or not dirty val)
 // 2.get from cache
 // 3.get from kvdb
-func (trie_db *TrieDB) Get(full_path []byte) ([]byte, error) {
+func (trie_db *TrieDB) get_(full_path []byte) (*Node, error) {
 
 	//should never exsit related value
 	if len(full_path) == 0 || len(full_path) > PATH_LEN_LIMIT {
@@ -685,12 +746,26 @@ func (trie_db *TrieDB) Get(full_path []byte) ([]byte, error) {
 	if get_err != nil {
 		return nil, get_err
 	}
+
+	return get_node, nil
+}
+
+func (trie_db *TrieDB) Get(full_path []byte) (*Iterator, error) {
+	n, err := trie_db.get_(full_path)
+	if err != nil {
+		return nil, err
+	}
 	//
-	if get_node == nil {
+	if n == nil {
 		return nil, nil
 	}
 	//
-	return get_node.val, nil
+	return &Iterator{
+		root_node:   n,
+		cursor_node: n,
+		triedb:      trie_db,
+	}, nil
+
 }
 
 ////////////////////////commit ///////////////////////////////
@@ -698,34 +773,16 @@ func (trie_db *TrieDB) Get(full_path []byte) ([]byte, error) {
 // k_v_map to collected all the k_v , string(key) => []byte(value)
 func (trie_db *TrieDB) cal_hash_recursive(node *Node, k_v_map *sync.Map) (*hash.Hash, error) {
 
-	// //why recover?
-	// r_err := trie_db.recover_node(node)
-	// if r_err != nil {
-	// 	return nil, errors.New("cal_hash_recursive recover_node err, " + r_err.Error())
-	// }
-
 	//root node and empty trie check
-	//if node.parent_nodes == nil && node.child_nodes_hash == nil && (node.child_nodes == nil || len(node.child_nodes.path_index) == 0) {
 	if node.parent_nodes == nil && node.child_nodes_hash == nil && (node.child_nodes == nil || node.child_nodes.path_btree.Len() == 0) {
 		node.node_hash = hash.NIL_HASH
 		return hash.NIL_HASH, nil
 	}
 
 	//
-	//if node.child_nodes != nil && len(node.child_nodes.path_index) != 0 {
 	if node.child_nodes != nil && node.child_nodes.path_btree.Len() != 0 {
 
-		//child_result_chan := make(chan error, len(node.child_nodes.path_index))
 		child_result_chan := make(chan error, node.child_nodes.path_btree.Len())
-
-		// for _, cn := range node.child_nodes.path_index {
-		// 	go func() {
-		// 		trie_db.commit_thread_available <- struct{}{}
-		// 		_, cn_h_err := trie_db.cal_hash_recursive(cn, k_v_map)
-		// 		child_result_chan <- cn_h_err
-		// 		<-trie_db.commit_thread_available
-		// 	}()
-		// }
 
 		p_b_iter := node.child_nodes.path_btree.Before(uint8(0))
 		for p_b_iter.Next() {

@@ -29,10 +29,6 @@ func testPrepareTrieDB(dataPath string, rootHash *hash.Hash) (*TrieDB, error) {
 	return tdb, err
 }
 
-func testCloseTrieDB(tdb *TrieDB) {
-	tdb.kvdb.Close()
-}
-
 func (tdb *TrieDB) testCommit() (*hash.Hash, error) {
 	rootHash, toUpdate, toDel, err := tdb.CalHash()
 	if err != nil {
@@ -59,10 +55,10 @@ func (tdb *TrieDB) testCommit() (*hash.Hash, error) {
 
 func TestMainWorkflow(t *testing.T) {
 
-	// dot -Tpdf -O *.dot && open *.dot.pdf
-	// tdb.GenDotFile("./test_mainworkflow.dot", false)
+	// dot -Tpdf -O trie_test_mainworkflow.dot && open trie_test_mainworkflow.dot.pdf
+	// tdb.GenDotFile("./trie_test_mainworkflow.dot", false)
 
-	const db_path = "./triedb_mainworkflow_test.db"
+	const db_path = "./trie_test_mainworkflow.db"
 	os.RemoveAll(db_path)
 
 	type TEST struct {
@@ -88,7 +84,7 @@ func TestMainWorkflow(t *testing.T) {
 			t.Fatal("Delete path [hello] should NOT trigger error!")
 		}
 
-		testCloseTrieDB(tdb)
+		tdb.kvdb.Close()
 	}
 
 	// first:  create many trie data
@@ -463,8 +459,8 @@ func TestMainWorkflow(t *testing.T) {
 
 		rootHash = _rootHash
 
-		tdb.GenDotFile("./test_mainworkflow_1.dot", false)
-		testCloseTrieDB(tdb)
+		// tdb.GenDotFile("./trie_test_mainworkflow.dot", false)
+		tdb.kvdb.Close()
 	}
 
 	// second: load the previous triedb in disk, and then create more trie data
@@ -488,7 +484,7 @@ func TestMainWorkflow(t *testing.T) {
 
 		rootHash = _rootHash
 
-		tdb.GenDotFile("./test_mainworkflow_2.dot", false)
+		tdb.GenDotFile("./trie_test_mainworkflow.dot", false)
 
 		{
 			root := tdb.root_node
@@ -901,7 +897,8 @@ func TestMainWorkflow(t *testing.T) {
 			}
 		}
 
-		testCloseTrieDB(tdb)
+		// tdb.GenDotFile("./trie_test_mainworkflow.dot", false)
+		tdb.kvdb.Close()
 	}
 
 	// test Get operation to influence the lazy status
@@ -922,8 +919,8 @@ func TestMainWorkflow(t *testing.T) {
 			t.Fatal(`Delete item "12" should work as expected!`)
 		}
 
-		tdb.GenDotFile("./test_mainworkflow_3.dot", false)
-		testCloseTrieDB(tdb)
+		// tdb.GenDotFile("./trie_test_mainworkflow.dot", false)
+		tdb.kvdb.Close()
 	}
 
 	// test delete data which not exist in a nonempty triedb
@@ -940,6 +937,6 @@ func TestMainWorkflow(t *testing.T) {
 			t.Fatal("Delete path [hello] should NOT trigger error!")
 		}
 
-		testCloseTrieDB(tdb)
+		tdb.kvdb.Close()
 	}
 }

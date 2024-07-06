@@ -163,6 +163,7 @@ func (n *Nodes) serialize() {
 		result = append(result, node.path...)
 	}
 
+	n.nodes_bytes = result
 }
 
 func (n *Nodes) deserialize() {
