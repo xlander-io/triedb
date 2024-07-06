@@ -18,14 +18,14 @@ var HASH_NODES_PREFIX []byte = []byte("hash_nodes_prefix")
 
 func NewPathBTree() *btree.BTree {
 	return btree.New(PATH_B_TREE_DEGREE, func(a, b interface{}) bool {
-		//node_a := a.(*Node)
-		//node_b := b.(*Node)
 		return uint8(a.(uint8)) < uint8(b.(uint8))
 	})
 }
 
 type Node struct {
 	path []byte //nil for root node
+
+	full_path_cache []byte
 
 	parent_nodes *Nodes //nil for root node
 
@@ -99,6 +99,12 @@ func (n *Node) deserialize() {
 
 // return nil for root empty node
 func (n *Node) get_full_path() []byte {
+
+	//
+	if n.full_path_cache != nil {
+		return n.full_path_cache
+	}
+	//
 	if n.parent_nodes == nil {
 		//may happen in root node
 		return []byte{}
@@ -138,8 +144,7 @@ type Nodes struct {
 	path_btree  *btree.BTree //byte can only ranges from '0' to '255' total 16 different values
 	parent_node *Node
 	nodes_bytes []byte //serialize(self) , nil for new node or dirty node
-	//nodes_hash  *util.Hash //hash(self) , nil for new node or dirty node
-	dirty bool //default false
+	dirty       bool   //default false
 }
 
 // serialize to nodes_bytes
@@ -158,15 +163,6 @@ func (n *Nodes) serialize() {
 		result = append(result, node.path...)
 	}
 
-	// result = append(result, uint8(len(n.path_index)))
-	// for _, node := range n.path_index {
-	// 	result = node.node_hash.PrePend(result)
-	// 	path_len_bytes := make([]byte, 16)
-	// 	binary.LittleEndian.PutUint16(path_len_bytes, uint16(len(node.path)))
-	// 	result = append(result, path_len_bytes...)
-	// 	result = append(result, node.path...)
-	// }
-	// n.nodes_bytes = result
 }
 
 func (n *Nodes) deserialize() {
@@ -187,17 +183,6 @@ func (n *Nodes) deserialize() {
 			n.path_btree.Set(uint8(node_.path[0]), &node_)
 		}
 
-		// n.path_index = make(map[byte]*Node)
-		// for i := 0; i < path_index_len; i++ {
-		// 	node_ := Node{}
-		// 	node_.node_hash = hash.NewHashFromBytes(n.nodes_bytes[deserialize_offset : deserialize_offset+32])
-		// 	deserialize_offset += 32
-		// 	path_len := int(binary.LittleEndian.Uint16(n.nodes_bytes[deserialize_offset : deserialize_offset+16]))
-		// 	deserialize_offset += 16
-		// 	node_.path = n.nodes_bytes[deserialize_offset : deserialize_offset+path_len]
-		// 	deserialize_offset += path_len
-		// 	n.path_index[node_.path[0]] = &node_
-		// }
 	}
 }
 

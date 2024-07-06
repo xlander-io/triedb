@@ -300,11 +300,9 @@ func (trie_db *TrieDB) update_recursive_del(node *Node) error {
 	//
 	if node.child_nodes == nil {
 		//
-		//delete(node.parent_nodes.path_index, node.path[0])
 		node.parent_nodes.path_btree.Delete(uint8(node.path[0]))
 
 		//what is left in parent_nodes
-		//if len(node.parent_nodes.path_index) == 0 {
 		if node.parent_nodes.path_btree.Len() == 0 {
 			//
 			node.parent_nodes.parent_node.child_nodes = nil
@@ -315,24 +313,18 @@ func (trie_db *TrieDB) update_recursive_del(node *Node) error {
 			if node.parent_nodes.parent_node.val == nil {
 				return trie_db.update_recursive_del(node.parent_nodes.parent_node)
 			}
-			//
-			//} else if len(node.parent_nodes.path_index) == 1 &&
+
 		} else if node.parent_nodes.path_btree.Len() == 1 &&
 			node.parent_nodes.parent_node.parent_nodes != nil && // !=nil checks the root node
 			node.parent_nodes.parent_node.val == nil {
+
 			//  do simplification if possible
-
-			// var left_single_node *Node = nil
-			// for _, c_node_ := range node.parent_nodes.path_index {
-			// 	left_single_node = c_node_
-			// }
-
 			_, left_single_node_i := node.parent_nodes.path_btree.Min()
 			var left_single_node *Node = left_single_node_i.(*Node)
 
 			//
 			left_single_node.path = append(left_single_node.parent_nodes.parent_node.path, left_single_node.path...)
-			//node.parent_nodes.parent_node.parent_nodes.path_index[left_single_node.path[0]] = left_single_node
+			left_single_node.full_path_cache = nil //reset pull path cache
 			node.parent_nodes.parent_node.parent_nodes.path_btree.Set(uint8(left_single_node.path[0]), left_single_node)
 			left_single_node.parent_nodes = node.parent_nodes.parent_node.parent_nodes
 
@@ -352,21 +344,15 @@ func (trie_db *TrieDB) update_recursive_del(node *Node) error {
 		//condition child_nodes !=nil && node.val==nil
 
 		//check if child_nodes has only one node => replace it to this node
-		//if len(node.child_nodes.path_index) == 1 {
 		if node.child_nodes.path_btree.Len() == 1 {
-			//
-			// var single_child_node *Node = nil
-			// for _, c_node_ := range node.child_nodes.path_index {
-			// 	single_child_node = c_node_
-			// }
 
 			_, single_child_node_i := node.child_nodes.path_btree.Min()
 			var single_child_node *Node = single_child_node_i.(*Node)
 
 			//replace
-			//node.parent_nodes.path_index[node.path[0]] = single_child_node
 			node.parent_nodes.path_btree.Set(uint8(node.path[0]), single_child_node)
 			single_child_node.path = append(node.path, single_child_node.path...)
+			single_child_node.full_path_cache = nil
 			single_child_node.parent_nodes = node.parent_nodes
 
 			//because path changes, recover val is required
@@ -375,8 +361,8 @@ func (trie_db *TrieDB) update_recursive_del(node *Node) error {
 			//path changes mark dirty
 			single_child_node.mark_dirty()
 		} else {
-			node.val_hash_recovered = true
 			node.val = nil
+			node.val_hash_recovered = true
 			node.mark_dirty()
 		}
 
@@ -389,9 +375,6 @@ func (trie_db *TrieDB) update_recursive_del(node *Node) error {
 func (trie_db *TrieDB) update_target_nodes(target_nodes *Nodes, left_path []byte, val []byte) error {
 
 	/////// target the next node
-	// if target_nodes.path_index[left_path[0]] != nil {
-	// 	return trie_db.update_target_node(target_nodes.path_index[left_path[0]], left_path, val)
-	// }
 
 	next_target_node_i := target_nodes.path_btree.Get(uint8(left_path[0]))
 	if next_target_node_i != nil {
@@ -414,7 +397,6 @@ func (trie_db *TrieDB) update_target_nodes(target_nodes *Nodes, left_path []byte
 			val_hash_recovered:         true,
 		}
 		//
-		//target_nodes.path_index[left_path[0]] = new_node
 		target_nodes.path_btree.Set(uint8(left_path[0]), new_node)
 		//mark dirty
 		new_node.mark_dirty()
@@ -473,7 +455,6 @@ func (trie_db *TrieDB) update_target_node(target_node *Node, left_path []byte, v
 
 			// new nodes that dynamically created
 			target_node.child_nodes = &Nodes{
-				//path_index:  make(map[byte]*Node),
 				path_btree:  NewPathBTree(),
 				parent_node: target_node,
 				dirty:       true,
@@ -505,18 +486,15 @@ func (trie_db *TrieDB) update_target_node(target_node *Node, left_path []byte, v
 		}
 
 		new_node.child_nodes = &Nodes{
-			//path_index:  make(map[byte]*Node),
 			path_btree:  NewPathBTree(),
 			parent_node: new_node,
 			dirty:       true,
 		}
 
 		target_node.path = target_node.path[len(left_path):]
-		//target_node.parent_nodes.path_index[new_node.path[0]] = new_node
 		target_node.parent_nodes.path_btree.Set(uint8(new_node.path[0]), new_node)
 		new_node.parent_nodes = target_node.parent_nodes
 		target_node.parent_nodes = new_node.child_nodes
-		//new_node.child_nodes.path_index[target_node.path[0]] = target_node
 		new_node.child_nodes.path_btree.Set(uint8(target_node.path[0]), target_node)
 		//because path changes, recover val is required
 		trie_db.recover_node_val(target_node)
@@ -565,21 +543,10 @@ func (trie_db *TrieDB) update_target_node(target_node *Node, left_path []byte, v
 		}
 
 		new_node.child_nodes = &Nodes{
-			//path_index:  make(map[byte]*Node),
 			path_btree:  NewPathBTree(),
 			parent_node: &new_node,
 			dirty:       true,
 		}
-
-		// new_node.child_nodes.path_index[left_path[common_prefix_bytes_len]] = &Node{
-		// 	path:                       left_path[common_prefix_bytes_len:],
-		// 	parent_nodes:               new_node.child_nodes,
-		// 	val:                        val,
-		// 	dirty:                      true,
-		// 	child_nodes_hash_recovered: true,
-		// 	val_hash_recovered:         true,
-		// 	node_hash_recovered:        true,
-		// }
 
 		new_node.child_nodes.path_btree.Set(uint8(left_path[common_prefix_bytes_len]), &Node{
 			path:                       left_path[common_prefix_bytes_len:],
@@ -591,11 +558,9 @@ func (trie_db *TrieDB) update_target_node(target_node *Node, left_path []byte, v
 			node_hash_recovered:        true,
 		})
 
-		//new_node.child_nodes.path_index[target_node.path[common_prefix_bytes_len]] = target_node
 		new_node.child_nodes.path_btree.Set(uint8(target_node.path[common_prefix_bytes_len]), target_node)
 
 		target_node.path = target_node.path[common_prefix_bytes_len:]
-		//target_node.parent_nodes.path_index[new_node.path[0]] = &new_node
 		target_node.parent_nodes.path_btree.Set(uint8(new_node.path[0]), &new_node)
 		new_node.parent_nodes = target_node.parent_nodes
 		target_node.parent_nodes = new_node.child_nodes
