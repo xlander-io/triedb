@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/xlander-io/cache"
-	"github.com/xlander-io/hash"
 	"github.com/xlander-io/kv"
 	"github.com/xlander-io/kv_leveldb"
 	"github.com/xlander-io/triedb"
@@ -32,7 +31,7 @@ func main() {
 	const db_path = "./kv_leveldb_test.db"
 	os.RemoveAll(db_path)
 
-	var rootHash *hash.Hash
+	//var rootHash *hash.Hash
 
 	{
 		kvdb, _ := kv_leveldb.NewDB(db_path)
@@ -43,12 +42,15 @@ func main() {
 			Commit_thread_limit: 1,
 		})
 
-		tdb.Update([]byte("1"), []byte("val_1"))
-		tdb.Update([]byte("12"), []byte("val_12"))
-		tdb.Update([]byte("13"), []byte("val_13"))
-		tdb.Update([]byte("14"), []byte("val_14"))
-		tdb.Update([]byte("123"), []byte("val_123"))
-		tdb.Update([]byte("1234"), []byte("val_1234"))
+		tdb.Update([]byte("/"), []byte("/"))
+		tdb.Update([]byte("/abc/def"), []byte("/abc/def"))
+		test_n, _ := tdb.Update([]byte("/abcddddd"), []byte("/abcddddd"))
+		pn, _ := test_n.ParentNode()
+		fmt.Println("parent node path:", string(pn.FullPath()))
+
+		//	tdb.Update([]byte("14"), []byte("val_14"))
+
+		//	tdb.Update([]byte("1234"), []byte("val_1234"))
 
 		tdb.GenDotFile("./test_pre.dot", false)
 
@@ -80,31 +82,42 @@ func main() {
 			fmt.Println("write_err:", write_err)
 		}
 
-		rootHash = root_hash
+		//rootHash = root_hash
 		kvdb.Close()
 	}
 
-	{
-		kvdb, _ := kv_leveldb.NewDB(db_path)
-		//
-		c, _ := cache.New(nil)
+	// {
+	// 	kvdb, _ := kv_leveldb.NewDB(db_path)
+	// 	//
+	// 	c, _ := cache.New(nil)
 
-		tdb2, _ := triedb.NewTrieDB(kvdb, c, &triedb.TrieDBConfig{
-			Root_hash:           rootHash,
-			Commit_thread_limit: 1,
-		})
+	// 	tdb2, _ := triedb.NewTrieDB(kvdb, c, &triedb.TrieDBConfig{
+	// 		Root_hash:           rootHash,
+	// 		Commit_thread_limit: 1,
+	// 	})
 
-		tdb2.Update([]byte("2"), []byte("val_2"))
-		tdb2.Update([]byte("1a"), []byte([]byte("val_1a")))
-		tdb2.Update([]byte("12a"), []byte([]byte("val_12a")))
-		updated_iter, _ := tdb2.Update([]byte("123a"), []byte([]byte("val_123a")))
+	// 	tdb2.Update([]byte("2"), []byte("val_2"))
+	// 	tdb2.Update([]byte("1a"), []byte([]byte("val_1a")))
+	// 	tdb2.Update([]byte("12a"), []byte([]byte("val_12a")))
+	// 	updated_node, _ := tdb2.Update([]byte("123a"), []byte([]byte("val_123a")))
 
-		fmt.Println("updated related iter -> :", string(updated_iter.FullPath()))
+	// 	tdb2.CalHash()
 
-		tdb2.GenDotFile("./read_from_kvdb.dot", false)
+	// 	fmt.Println("updated  fullpath:", string(updated_node.FullPath()))
+	// 	fmt.Println("updated  path:", string(updated_node.Path()))
+	// 	fmt.Println("updated  hash:", fmt.Sprintf("%x", string(updated_node.Hash().Bytes())))
+	// 	fmt.Println("updated  val:", string(updated_node.Val()))
 
-		kvdb.Close()
+	// 	tdb2.GenDotFile("./read_from_kvdb.dot", false)
 
-	}
+	// 	tnode, _ := tdb2.Get([]byte("123a"))
+
+	// 	fmt.Println("tnode, fullpath", string(tnode.FullPath()))
+	// 	fmt.Println("tnode, path", string(tnode.Path()))
+	// 	fmt.Println("tnode, val", string(tnode.Val()))
+
+	// 	kvdb.Close()
+
+	// }
 
 }

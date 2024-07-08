@@ -122,7 +122,7 @@ func (vn *vizNode) fromTrieNode(n *Node) {
 	}
 }
 
-func (vns *vizNodes) fromTrieNodes(ns *Nodes) {
+func (vns *vizNodes) fromTrieNodes(ns *nodes) {
 	vns.Index = make([]*vizIndex, 0, ns.path_btree.Len())
 	vns.Bytes = bytes.Clone(ns.nodes_bytes)
 	vns.Dirty = ns.dirty
