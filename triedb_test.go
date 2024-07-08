@@ -917,16 +917,18 @@ func TestMainWorkflow(t *testing.T) {
 			t.Fatal(`Get item "13" should receive node_bytes of that kv item!`)
 		}
 
+		tdb.GenDotFile("./test_mainworkflow_3.dot", false)
 		err = tdb.Delete([]byte("12"))
 		if nil != err {
 			t.Fatal(`Delete item "12" should work as expected!`)
 		}
 
-		tdb.GenDotFile("./test_mainworkflow_3.dot", false)
+		tdb.testCommit()
+		tdb.GenDotFile("./test_mainworkflow_4.dot", false)
 		testCloseTrieDB(tdb)
 	}
 
-	// test delete data which not exist in a nonempty triedb
+	// test Delete data which not exist in a nonempty triedb
 	{
 		tdb, err := testPrepareTrieDB(db_path, rootHash)
 
