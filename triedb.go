@@ -548,6 +548,7 @@ func (trie_db *TrieDB) get_recursive(target_node *Node, left_path []byte) (*Node
 
 	//may be root node
 	if target_node.parent_nodes == nil || bytes.Equal(target_node.path, left_path[0:len(target_node.path)]) {
+
 		//check child nodes
 		r_err := target_node.recover_child_nodes()
 		if r_err != nil {
@@ -638,7 +639,6 @@ func (trie_db *TrieDB) cal_hash_recursive(node *Node, k_v_map *sync.Map) (*hash.
 	}
 
 	//
-
 	if node.dirty {
 		//
 		if node.child_nodes != nil && node.child_nodes.dirty {

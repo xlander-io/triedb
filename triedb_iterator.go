@@ -8,7 +8,7 @@ type Iterator struct {
 	cursor_node *Node // current pointed node
 }
 
-func NewIterator(parent_n *Node, cursor_n *Node) (*Iterator, error) {
+func NewChildIterator(parent_n *Node, cursor_n *Node) (*Iterator, error) {
 	if parent_n == nil {
 		return nil, errors.New("parent node nil")
 	}
@@ -178,83 +178,81 @@ func (iter *Iterator) get_recursive_upper_right(target_node *Node) (*Node, error
 	}
 }
 
-/*
- *  if hasnext then cursor will point to the next node and return true
- *	otherwise stay in the current cursor position and return false
- */
-func (iter *Iterator) Next() (bool, error) {
+func (iter *Iterator) Next(keep_cursor bool) (*Node, error) {
 	//
 	next_n, err := iter.get_next()
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 	//
 	if next_n == nil {
-		return false, nil
+		return nil, nil
 	} else {
-		iter.cursor_node = next_n
-		return true, nil
+		if !keep_cursor {
+			iter.cursor_node = next_n
+		}
+		return next_n, nil
 	}
 }
 
-func (iter *Iterator) SkipNext() (bool, error) {
+func (iter *Iterator) SkipNext(keep_cursor bool) (*Node, error) {
 	r_n, err := iter.cursor_node.right_node()
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
 	if r_n != nil {
 		r_n_v_err := r_n.recover_node_val()
 		if r_n_v_err != nil {
-			return false, r_n_v_err
+			return nil, r_n_v_err
 		}
 		if r_n.val != nil {
-			iter.cursor_node = r_n
-			return true, nil
+			if !keep_cursor {
+				iter.cursor_node = r_n
+			}
+			return r_n, nil
 		} else {
 			next_n, err := iter.next_recursive(r_n)
 			if err != nil {
-				return false, err
+				return nil, err
 			} else {
-				iter.cursor_node = next_n
-				return true, nil
+				if !keep_cursor {
+					iter.cursor_node = next_n
+				} else {
+					return next_n, nil
+				}
 			}
 		}
 	}
 
 	up_r_n, err := iter.cursor_node.upper_right_node()
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
 	if up_r_n == nil {
-		return false, nil
+		return nil, nil
 	} else {
 		r_n_v_err := up_r_n.recover_node_val()
 		if r_n_v_err != nil {
-			return false, r_n_v_err
+			return nil, r_n_v_err
 		}
 		if up_r_n.val != nil {
-			iter.cursor_node = up_r_n
-			return true, nil
+			if !keep_cursor {
+				iter.cursor_node = up_r_n
+			}
+			return up_r_n, nil
 		} else {
 			next_n, err := iter.next_recursive(up_r_n)
 			if err != nil {
-				return false, err
+				return nil, err
 			} else {
-				iter.cursor_node = next_n
-				return true, nil
+				if !keep_cursor {
+					iter.cursor_node = next_n
+				}
+				return next_n, nil
 			}
 		}
 	}
 
-}
-
-// cursor won't move
-func (iter *Iterator) GetNextNode() (*Node, error) {
-	return iter.get_next()
-}
-
-func (iter *Iterator) GetNode() (*Node, error) {
-	return iter.cursor_node, nil
 }
