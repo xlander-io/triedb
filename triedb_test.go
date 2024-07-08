@@ -923,8 +923,32 @@ func TestMainWorkflow(t *testing.T) {
 			t.Fatal(`Delete item "12" should work as expected!`)
 		}
 
-		tdb.testCommit()
 		tdb.GenDotFile("./test_mainworkflow_4.dot", false)
+
+		tdb.Update([]byte("13a"), []byte([]byte("val_13a")))
+		tdb.Update([]byte("14a"), []byte([]byte("val_14a")))
+
+		tdb.testCommit()
+		tdb.GenDotFile("./test_mainworkflow_5.dot", false)
+		testCloseTrieDB(tdb)
+	}
+
+	// test Delete the child node which parent node has only one child
+	{
+		tdb, err := testPrepareTrieDB(db_path, rootHash)
+
+		if nil != err {
+			t.Fatal(err)
+		}
+
+		tdb.GenDotFile("./test_mainworkflow_6.dot", false)
+		err = tdb.Delete([]byte("13a"))
+		if nil != err {
+			t.Fatal(`Delete item "13a" should work as expected!`, err)
+		}
+
+		tdb.testCommit()
+		tdb.GenDotFile("./test_mainworkflow_7.dot", false)
 		testCloseTrieDB(tdb)
 	}
 
