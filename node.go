@@ -326,6 +326,7 @@ func (node *Node) recover_child_nodes() error {
 //////////////////// Neibour////////////////////////////////////
 
 // return the right neibour node in the same nodes container
+// val not related
 func (node *Node) right_node() (*Node, error) {
 	//
 	if node == nil || node.parent_nodes == nil {
@@ -350,6 +351,7 @@ func (node *Node) right_node() (*Node, error) {
 }
 
 // return the upper right neibour node
+// val not related
 func (node *Node) upper_right_node() (*Node, error) {
 	//
 	if node == nil || node.parent_nodes == nil ||
@@ -397,12 +399,4 @@ func (node *Node) ParentNode() (*Node, error) {
 		}
 	}
 
-}
-
-func (node *Node) ChildIterator() *Iterator {
-	return &Iterator{
-		triedb:      node.triedb,
-		root_node:   node,
-		cursor_node: node,
-	}
 }

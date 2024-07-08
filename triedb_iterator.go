@@ -32,7 +32,7 @@ func NewIterator(parent_n *Node, cursor_n *Node) (*Iterator, error) {
 			return &Iterator{
 				triedb:      parent_n.triedb,
 				root_node:   parent_n,
-				cursor_node: cursor_p_n,
+				cursor_node: cursor_n,
 			}, nil
 		}
 	}
@@ -73,8 +73,8 @@ func (iter *Iterator) get_next() (*Node, error) {
 
 func (iter *Iterator) next_recursive(current_node *Node) (*Node, error) {
 
-	//
-	if current_node.parent_nodes == iter.root_node.parent_nodes {
+	//root node & no child
+	if iter.root_node == current_node && current_node.child_nodes == nil {
 		return nil, nil
 	}
 
@@ -86,55 +86,7 @@ func (iter *Iterator) next_recursive(current_node *Node) (*Node, error) {
 		}
 	}
 
-	//root node & no child
-	if current_node.child_nodes == nil && iter.root_node == current_node {
-		return nil, nil
-	}
-
-	// not root node
-	if current_node.child_nodes == nil {
-		//check my right neighbor node
-		right_n, err := current_node.right_node()
-		if err != nil {
-			return nil, nil
-		}
-
-		//
-		if right_n != nil {
-			//
-			right_n.recover_node_val()
-			if right_n.val != nil {
-				return right_n, nil
-			}
-			//
-			return iter.next_recursive(right_n)
-		}
-
-		//return upper right
-		upper_right_n, err := current_node.upper_right_node()
-		if err != nil {
-			return nil, nil
-		}
-
-		//
-		if upper_right_n == nil || upper_right_n.parent_nodes == iter.root_node.parent_nodes {
-
-			return nil, nil
-
-		} else {
-			//
-			r_n_v_err := upper_right_n.recover_node_val()
-			if r_n_v_err != nil {
-				return nil, r_n_v_err
-			}
-			if upper_right_n.val != nil {
-				return upper_right_n, nil
-			}
-			//
-			return iter.next_recursive(upper_right_n)
-		}
-
-	} else {
+	if current_node.child_nodes != nil {
 
 		//// condition below current_node.child_nodes != nil
 
@@ -170,6 +122,59 @@ func (iter *Iterator) next_recursive(current_node *Node) (*Node, error) {
 		}
 
 		return nil, nil
+
+	} else {
+
+		// condition current_node not root node
+
+		//check my right neighbor node
+		right_n, err := current_node.right_node()
+		if err != nil {
+			return nil, nil
+		}
+
+		//
+		if right_n != nil {
+			//
+			right_n.recover_node_val()
+			if right_n.val != nil {
+				return right_n, nil
+			}
+			//
+			return iter.next_recursive(right_n)
+		}
+
+		////////////
+		return iter.get_recursive_upper_right(current_node)
+	}
+}
+
+func (iter *Iterator) get_recursive_upper_right(target_node *Node) (*Node, error) {
+
+	//
+	if target_node.parent_nodes.parent_node == iter.root_node {
+		return nil, nil
+	}
+
+	// return upper right
+	upper_right_n, err := target_node.upper_right_node()
+	if err != nil {
+		return nil, err
+	}
+
+	if upper_right_n == nil {
+		return iter.get_recursive_upper_right(target_node.parent_nodes.parent_node)
+	} else {
+		//
+		r_n_v_err := upper_right_n.recover_node_val()
+		if r_n_v_err != nil {
+			return nil, r_n_v_err
+		}
+		if upper_right_n.val != nil {
+			return upper_right_n, nil
+		} else {
+			return iter.next_recursive(upper_right_n)
+		}
 	}
 }
 
@@ -246,6 +251,10 @@ func (iter *Iterator) SkipNext() (bool, error) {
 }
 
 // cursor won't move
-func (iter *Iterator) GetNext() (*Node, error) {
+func (iter *Iterator) GetNextNode() (*Node, error) {
 	return iter.get_next()
+}
+
+func (iter *Iterator) GetNode() (*Node, error) {
+	return iter.cursor_node, nil
 }

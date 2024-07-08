@@ -43,10 +43,32 @@ func main() {
 		})
 
 		tdb.Update([]byte("/"), []byte("/"))
+		test_n, _ := tdb.Update([]byte("/abc/"), []byte("/abc/"))
 		tdb.Update([]byte("/abc/def"), []byte("/abc/def"))
-		test_n, _ := tdb.Update([]byte("/abcddddd"), []byte("/abcddddd"))
+		tdb.Update([]byte("/abc/defgde"), []byte("/abc/defgde"))
+		tdb.Update([]byte("/abc/123"), []byte("/abc/123"))
+		tdb.Update([]byte("/abcddddd"), []byte("/abcddddd"))
 		pn, _ := test_n.ParentNode()
 		fmt.Println("parent node path:", string(pn.FullPath()))
+
+		iter, err := triedb.NewIterator(pn, test_n)
+		if err != nil {
+			panic("new iter err" + err.Error())
+		}
+
+		for {
+			n, err := iter.GetNode()
+			if err != nil {
+				panic(err)
+			}
+			fmt.Println("path:", string(n.FullPath()))
+			fmt.Println("val:", string(n.Val()))
+
+			next_ok, _ := iter.SkipNext()
+			if !next_ok {
+				break
+			}
+		}
 
 		//	tdb.Update([]byte("14"), []byte("val_14"))
 
