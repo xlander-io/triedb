@@ -912,9 +912,9 @@ func TestMainWorkflow(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		_, err = tdb.Get([]byte("13"))
+		_, err = tdb.Get([]byte("123"))
 		if nil != err {
-			t.Fatal(`Get item "13" should receive node_bytes of that kv item!`)
+			t.Fatal(`Get item "123" should receive node_bytes of that kv item!`)
 		}
 
 		tdb.GenDotFile("./test_mainworkflow_3.dot", false)
@@ -928,7 +928,14 @@ func TestMainWorkflow(t *testing.T) {
 		tdb.Update([]byte("13a"), []byte([]byte("val_13a")))
 		tdb.Update([]byte("14a"), []byte([]byte("val_14a")))
 
-		tdb.testCommit()
+		_rootHash, err := tdb.testCommit()
+
+		if nil != err {
+			t.Fatal(err)
+		}
+
+		rootHash = _rootHash
+
 		tdb.GenDotFile("./test_mainworkflow_5.dot", false)
 		testCloseTrieDB(tdb)
 	}
@@ -947,7 +954,14 @@ func TestMainWorkflow(t *testing.T) {
 			t.Fatal(`Delete item "13a" should work as expected!`, err)
 		}
 
-		tdb.testCommit()
+		_rootHash, err := tdb.testCommit()
+
+		if nil != err {
+			t.Fatal(err)
+		}
+
+		rootHash = _rootHash
+
 		tdb.GenDotFile("./test_mainworkflow_7.dot", false)
 		testCloseTrieDB(tdb)
 	}
