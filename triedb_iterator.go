@@ -214,6 +214,7 @@ func (iter *Iterator) SkipNext(update_cursor bool) (*Node, error) {
 		return nil, err
 	}
 
+	//
 	if r_n != nil {
 		r_n_v_err := r_n.recover_node_val()
 		if r_n_v_err != nil {
@@ -238,6 +239,7 @@ func (iter *Iterator) SkipNext(update_cursor bool) (*Node, error) {
 		}
 	}
 
+	//
 	up_r_n, err := iter.cursor_node.upper_right_node()
 	if err != nil {
 		return nil, err

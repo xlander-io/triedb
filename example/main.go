@@ -57,7 +57,7 @@ func main() {
 		fmt.Println(string(next_n.FullPath()))
 
 		//
-		next_n, _ = iter.SkipNext(true)
+		next_n, _ = iter.Next(true)
 		fmt.Println(string(next_n.FullPath()))
 
 		//
@@ -66,7 +66,7 @@ func main() {
 
 		//
 		next_n, _ = iter.SkipNext(true)
-		fmt.Println(next_n)
+		fmt.Println(string(next_n.FullPath()))
 
 		// next_n, _ = iter.Next(true)
 		// fmt.Println(string(next_n.FullPath()))
