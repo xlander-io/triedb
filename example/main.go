@@ -40,19 +40,39 @@ func main() {
 		})
 
 		root_folder_n, _ := tdb.Update([]byte("/"), []byte("/"))
+		tdb.Update([]byte("/123"), []byte("/123"))
 		tdb.Update([]byte("/abc/"), []byte("/abc/"))
 		tdb.Update([]byte("/abc/def"), []byte("/abc/def"))
 		tdb.Update([]byte("/abc/fdef"), []byte("/abc/fdef"))
+		tdb.Update([]byte("/fff"), []byte("/fff"))
+		tdb.Update([]byte("/ggg"), []byte("/ggg"))
 
 		iter, _ := triedb.NewChildIterator(root_folder_n, nil)
-		for {
-			next_n, _ := iter.Next(false)
-			if next_n == nil {
-				break
-			}
 
-			fmt.Println(string(next_n.FullPath()))
-		}
+		next_n, _ := iter.SkipNext(true)
+		fmt.Println(string(next_n.FullPath()))
+
+		//
+		next_n, _ = iter.SkipNext(true)
+		fmt.Println(string(next_n.FullPath()))
+
+		//
+		next_n, _ = iter.SkipNext(true)
+		fmt.Println(string(next_n.FullPath()))
+
+		//
+		next_n, _ = iter.SkipNext(true)
+		fmt.Println(string(next_n.FullPath()))
+
+		//
+		next_n, _ = iter.SkipNext(true)
+		fmt.Println(next_n)
+
+		// next_n, _ = iter.Next(true)
+		// fmt.Println(string(next_n.FullPath()))
+
+		// next_n, _ = iter.SkipNext(true)
+		// fmt.Println(string(next_n.FullPath()))
 
 		//next_n, _ := iter.SkipNext(false)
 

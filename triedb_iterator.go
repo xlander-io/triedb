@@ -178,7 +178,7 @@ func (iter *Iterator) get_recursive_upper_right(target_node *Node) (*Node, error
 	}
 }
 
-func (iter *Iterator) Next(keep_cursor bool) (*Node, error) {
+func (iter *Iterator) Next(update_cursor bool) (*Node, error) {
 	//
 	next_n, err := iter.get_next()
 	if err != nil {
@@ -188,14 +188,27 @@ func (iter *Iterator) Next(keep_cursor bool) (*Node, error) {
 	if next_n == nil {
 		return nil, nil
 	} else {
-		if !keep_cursor {
+		if update_cursor {
 			iter.cursor_node = next_n
 		}
 		return next_n, nil
 	}
 }
 
-func (iter *Iterator) SkipNext(keep_cursor bool) (*Node, error) {
+func (iter *Iterator) SkipNext(update_cursor bool) (*Node, error) {
+
+	if iter.cursor_node == iter.root_node {
+		next_n, err := iter.get_next()
+		if err != nil {
+			return nil, err
+		}
+
+		if update_cursor {
+			iter.cursor_node = next_n
+		}
+		return next_n, nil
+	}
+
 	r_n, err := iter.cursor_node.right_node()
 	if err != nil {
 		return nil, err
@@ -207,7 +220,7 @@ func (iter *Iterator) SkipNext(keep_cursor bool) (*Node, error) {
 			return nil, r_n_v_err
 		}
 		if r_n.val != nil {
-			if !keep_cursor {
+			if update_cursor {
 				iter.cursor_node = r_n
 			}
 			return r_n, nil
@@ -216,7 +229,7 @@ func (iter *Iterator) SkipNext(keep_cursor bool) (*Node, error) {
 			if err != nil {
 				return nil, err
 			} else {
-				if !keep_cursor {
+				if update_cursor {
 					iter.cursor_node = next_n
 				} else {
 					return next_n, nil
@@ -238,7 +251,7 @@ func (iter *Iterator) SkipNext(keep_cursor bool) (*Node, error) {
 			return nil, r_n_v_err
 		}
 		if up_r_n.val != nil {
-			if !keep_cursor {
+			if update_cursor {
 				iter.cursor_node = up_r_n
 			}
 			return up_r_n, nil
@@ -247,7 +260,7 @@ func (iter *Iterator) SkipNext(keep_cursor bool) (*Node, error) {
 			if err != nil {
 				return nil, err
 			} else {
-				if !keep_cursor {
+				if update_cursor {
 					iter.cursor_node = next_n
 				}
 				return next_n, nil
