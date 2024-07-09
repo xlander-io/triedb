@@ -123,18 +123,17 @@ func (vn *vizNode) fromTrieNode(n *Node) {
 }
 
 func (vns *vizNodes) fromTrieNodes(ns *nodes) {
-	vns.Index = make([]*vizIndex, 0, ns.path_btree.Len())
+	vns.Index = make([]*vizIndex, 0, len(ns.path_index))
 	vns.Bytes = bytes.Clone(ns.nodes_bytes)
 	vns.Dirty = ns.dirty
 
-	iter := ns.path_btree.Before(uint8(0))
-	for iter.Next() {
-		n := iter.Value.(*Node)
+	for _, n := range ns.path_index {
 		var vn vizNode
 		vn.fromTrieNode(n)
 		vi := vizIndex{Key: string(n.path[0]), Node: &vn}
 		vns.Index = append(vns.Index, &vi)
 	}
+
 }
 
 func (vg *vizGraph) recursiveUpdateID(vn *vizNode) {
