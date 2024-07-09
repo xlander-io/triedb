@@ -72,31 +72,7 @@ func TestMainWorkflow(t *testing.T) {
 		ok       bool
 	}
 
-	var rootHash *hash.Hash
-
-	// test delete data in a empty triedb
-	{
-		tdb, err := testPrepareTrieDB(db_path, rootHash)
-
-		if nil != err {
-			t.Fatal(err)
-		}
-
-		err = tdb.Delete([]byte("hello"))
-
-		if nil != err {
-			t.Fatal("Delete path [hello] should NOT trigger error!")
-		}
-
-		_rootHash, err := tdb.testCommit()
-
-		if nil != err {
-			t.Fatal(err)
-		}
-
-		rootHash = _rootHash
-		testCloseTrieDB(tdb)
-	}
+	var rootHash *hash.Hash = nil
 
 	// first:  create many trie data
 	{
@@ -990,6 +966,34 @@ func TestMainWorkflow(t *testing.T) {
 
 		testCloseTrieDB(tdb)
 	}
+}
+
+// test delete data on empty triedb
+func TestDeleteOnEmptyTrieDB(t *testing.T) {
+
+	tdb, err := testPrepareTrieDB("triedb_deleteonempty_test.db", nil)
+
+	if nil != err {
+		t.Fatal(err)
+	}
+
+	err = tdb.Delete([]byte("hello"))
+
+	if nil != err {
+		t.Fatal("Delete path [hello] should NOT trigger error!")
+	}
+
+	_rootHash, err := tdb.testCommit()
+
+	if nil != err {
+		t.Fatal(err)
+	}
+
+	if !hash.IsNilHash(_rootHash) {
+		t.Errorf("Delete on an empty triedb, then calc hash, root hash should be: %v, but: %v", nil, _rootHash)
+	}
+
+	testCloseTrieDB(tdb)
 }
 
 func TestLongPath(t *testing.T) {
