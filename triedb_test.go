@@ -57,6 +57,123 @@ func (tdb *TrieDB) testCommit() (*hash.Hash, error) {
 	return rootHash, err
 }
 
+type TEST struct {
+	label    string
+	expected interface{}
+	actual   interface{}
+	ok       bool
+}
+
+type nilOrNot interface {
+	isOk(o interface{}) bool
+}
+
+type isNil struct {
+	object interface{}
+}
+
+type isNotNil struct {
+	object interface{}
+}
+
+func (x isNil) isOk(o interface{}) bool {
+	if O, ok := o.(*hash.Hash); ok {
+		return hash.IsNilHash(O)
+	}
+	return nil == x.object && x.object == o
+}
+
+func (x isNotNil) isOk(o interface{}) bool {
+	if O, ok := o.(*hash.Hash); ok {
+		return !hash.IsNilHash(O)
+	}
+	return x.object != o
+}
+
+type Expect struct {
+	path         []byte
+	dirty        bool
+	parent_nodes nilOrNot
+
+	node_bytes          []byte
+	node_hash           nilOrNot
+	node_hash_recovered bool
+
+	val                []byte
+	val_hash           nilOrNot
+	val_hash_recovered bool
+
+	child_nodes                nilOrNot
+	child_nodes_hash           nilOrNot
+	child_nodes_hash_recovered bool
+
+	child_nodes_path_index_len int
+	child_nodes_dirty          bool
+}
+
+func (ex Expect) makeTests(o *Node) []TEST {
+	tests := []TEST{
+		{"path", ex.path, o.path, bytes.Equal(ex.path, o.path)},
+		{"dirty", ex.dirty, o.dirty, ex.dirty == o.dirty},
+
+		{"node_hash_recovered", ex.node_hash_recovered, o.node_hash_recovered, ex.node_hash_recovered == o.node_hash_recovered},
+		{"val_hash_recovered", ex.val_hash_recovered, o.val_hash_recovered, ex.val_hash_recovered == o.val_hash_recovered},
+		{"child_nodes_hash_recovered", ex.child_nodes_hash_recovered, o.child_nodes_hash_recovered, ex.child_nodes_hash_recovered == o.child_nodes_hash_recovered},
+	}
+
+	if nil == ex.parent_nodes {
+		tests = append(tests, TEST{"parent_nodes", ex.parent_nodes, o.parent_nodes, nil == o.parent_nodes})
+	} else {
+		tests = append(tests, TEST{"parent_nodes", ex.parent_nodes, o.parent_nodes, ex.parent_nodes.isOk(o.parent_nodes)})
+	}
+
+	if nil == ex.child_nodes {
+		tests = append(tests, TEST{"child_nodes", ex.child_nodes, o.child_nodes, nil == o.child_nodes})
+	} else {
+		tests = append(tests, TEST{"child_nodes", ex.child_nodes, o.child_nodes, ex.child_nodes.isOk(o.child_nodes)})
+	}
+
+	if nil == ex.node_bytes {
+		tests = append(tests, TEST{"node_bytes", ex.node_bytes, o.node_bytes, nil == o.node_bytes})
+	} else {
+		tests = append(tests, TEST{"node_bytes", ex.node_bytes, o.node_bytes, bytes.Equal(ex.node_bytes, o.node_bytes)})
+	}
+
+	if nil == ex.val {
+		tests = append(tests, TEST{"val", ex.val, o.val, nil == o.val})
+	} else {
+		tests = append(tests, TEST{"val", ex.val, o.val, bytes.Equal(ex.val, o.val)})
+	}
+
+	if nil == ex.node_hash {
+		tests = append(tests, TEST{"node_hash", ex.node_hash, o.node_hash, hash.IsNilHash(o.node_hash)})
+	} else {
+		tests = append(tests, TEST{"node_hash", ex.node_hash, o.node_hash, ex.node_hash.isOk(o.node_hash)})
+	}
+
+	if nil == ex.val_hash {
+		tests = append(tests, TEST{"val_hash", ex.val_hash, o.val_hash, hash.IsNilHash(o.val_hash)})
+	} else {
+		tests = append(tests, TEST{"val_hash", ex.val_hash, o.val_hash, ex.val_hash.isOk(o.val_hash)})
+	}
+
+	if nil == ex.child_nodes_hash {
+		tests = append(tests, TEST{"child_nodes_hash", ex.child_nodes_hash, o.child_nodes_hash, hash.IsNilHash(o.child_nodes_hash)})
+	} else {
+		tests = append(tests, TEST{"child_nodes_hash", ex.child_nodes_hash, o.child_nodes_hash, ex.child_nodes_hash.isOk(o.child_nodes_hash)})
+	}
+
+	if nil != o.child_nodes {
+		tests = append(tests, []TEST{
+			{"len(child_nodes.path_index)", ex.child_nodes_path_index_len, len(o.child_nodes.path_index), ex.child_nodes_path_index_len == len(o.child_nodes.path_index)},
+			{"child_nodes.dirty", ex.child_nodes_dirty, o.child_nodes.dirty, ex.child_nodes_dirty == o.child_nodes.dirty},
+			{"child_nodes.parent_node", o, o.child_nodes.parent_node, o == o.child_nodes.parent_node},
+		}...)
+	}
+
+	return tests
+}
+
 func TestMainWorkflow(t *testing.T) {
 
 	// dot -Tpdf -O *.dot && open *.dot.pdf
@@ -64,13 +181,6 @@ func TestMainWorkflow(t *testing.T) {
 
 	const db_path = "./triedb_mainworkflow_test.db"
 	os.RemoveAll(db_path)
-
-	type TEST struct {
-		label    string
-		expected interface{}
-		actual   interface{}
-		ok       bool
-	}
 
 	var rootHash *hash.Hash = nil
 
@@ -85,23 +195,26 @@ func TestMainWorkflow(t *testing.T) {
 		{
 			root := tdb.root_node
 
-			var rootTests = []TEST{
-				{"path", nil, root.path, nil == root.path},
-				{"dirty", false, root.dirty, false == root.dirty},
-				{"parent_nodes", nil, root.parent_nodes, nil == root.parent_nodes},
+			rootTests := Expect{
+				path:         nil,
+				dirty:        false,
+				parent_nodes: nil,
 
-				{"node_bytes", nil, root.node_bytes, nil == root.node_bytes},
-				{"node_hash", "hash.IsNilHash", root.node_hash, hash.IsNilHash(root.node_hash)},
-				{"node_hash_recovered", true, root.node_hash_recovered, true == root.node_hash_recovered},
+				node_bytes:          nil,
+				node_hash:           nil,
+				node_hash_recovered: true,
 
-				{"val", nil, root.val, nil == root.val},
-				{"val_hash", nil, root.val_hash, nil == root.val_hash},
-				{"val_hash_recovered", true, root.val_hash_recovered, true == root.val_hash_recovered},
+				val:                nil,
+				val_hash:           nil,
+				val_hash_recovered: true,
 
-				{"child_nodes", nil, root.child_nodes, nil == root.child_nodes},
-				{"child_nodes_hash", nil, root.child_nodes_hash, nil == root.child_nodes_hash},
-				{"child_nodes_hash_recovered", true, root.child_nodes_hash_recovered, true == root.child_nodes_hash_recovered},
-			}
+				child_nodes:                nil,
+				child_nodes_hash:           nil,
+				child_nodes_hash_recovered: true,
+
+				// child_nodes_path_index_len: 0,
+				// child_nodes_dirty:          false,
+			}.makeTests(root)
 
 			for _, tt := range rootTests {
 				if !tt.ok {
@@ -114,27 +227,26 @@ func TestMainWorkflow(t *testing.T) {
 		{
 			root := tdb.root_node
 
-			rootTests := []TEST{
-				{"path", nil, root.path, nil == root.path},
-				{"dirty", true, root.dirty, true == root.dirty},
-				{"parent_nodes", nil, root.parent_nodes, nil == root.parent_nodes},
+			rootTests := Expect{
+				path:         nil,
+				dirty:        true,
+				parent_nodes: nil,
 
-				{"node_bytes", nil, root.node_bytes, nil == root.node_bytes},
-				{"node_hash", "hash.IsNilHash", root.node_hash, hash.IsNilHash(root.node_hash)},
-				{"node_hash_recovered", true, root.node_hash_recovered, true == root.node_hash_recovered},
+				node_bytes:          nil,
+				node_hash:           isNil{},
+				node_hash_recovered: true,
 
-				{"val", nil, root.val, nil == root.val},
-				{"val_hash", nil, root.val_hash, nil == root.val_hash},
-				{"val_hash_recovered", true, root.val_hash_recovered, true == root.val_hash_recovered},
+				val:                nil,
+				val_hash:           nil,
+				val_hash_recovered: true,
 
-				{"child_nodes", "!nil", root.child_nodes, nil != root.child_nodes},
-				{"child_nodes_hash", nil, root.child_nodes_hash, nil == root.child_nodes_hash},
-				{"child_nodes_hash_recovered", true, root.child_nodes_hash_recovered, true == root.child_nodes_hash_recovered},
+				child_nodes:                isNotNil{},
+				child_nodes_hash:           nil,
+				child_nodes_hash_recovered: true,
 
-				{"len(child_nodes.path_index)", 1, len(root.child_nodes.path_index), int(1) == len(root.child_nodes.path_index)},
-				{"child_nodes.dirty", true, root.child_nodes.dirty, true == root.child_nodes.dirty},
-				{"child_nodes.parent_node", root, root.child_nodes.parent_node, root == root.child_nodes.parent_node},
-			}
+				child_nodes_path_index_len: 1,
+				child_nodes_dirty:          true,
+			}.makeTests(root)
 
 			for _, tt := range rootTests {
 				if !tt.ok {
@@ -664,6 +776,7 @@ func TestMainWorkflow(t *testing.T) {
 							}
 						}
 					}
+
 					{
 						_14Tests := []TEST{
 							{"path", []byte("4"), _14.path, bytes.Equal([]byte("4"), _14.path)},
