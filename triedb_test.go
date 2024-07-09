@@ -88,12 +88,19 @@ func TestMainWorkflow(t *testing.T) {
 			t.Fatal("Delete path [hello] should NOT trigger error!")
 		}
 
+		_rootHash, err := tdb.testCommit()
+
+		if nil != err {
+			t.Fatal(err)
+		}
+
+		rootHash = _rootHash
 		testCloseTrieDB(tdb)
 	}
 
 	// first:  create many trie data
 	{
-		tdb, err := testPrepareTrieDB(db_path, nil)
+		tdb, err := testPrepareTrieDB(db_path, rootHash)
 
 		if nil != err {
 			t.Fatal(err)
@@ -912,18 +919,20 @@ func TestMainWorkflow(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		tdb.GenDotFile("./test_mainworkflow_3.dot", false)
+
 		_, err = tdb.Get([]byte("123"))
 		if nil != err {
 			t.Fatal(`Get item "123" should receive node_bytes of that kv item!`)
 		}
 
-		tdb.GenDotFile("./test_mainworkflow_3.dot", false)
+		tdb.GenDotFile("./test_mainworkflow_4.dot", false)
 		err = tdb.Delete([]byte("12"))
 		if nil != err {
 			t.Fatal(`Delete item "12" should work as expected!`)
 		}
 
-		tdb.GenDotFile("./test_mainworkflow_4.dot", false)
+		tdb.GenDotFile("./test_mainworkflow_5.dot", false)
 
 		tdb.Update([]byte("13a"), []byte([]byte("val_13a")))
 		tdb.Update([]byte("14a"), []byte([]byte("val_14a")))
@@ -936,7 +945,7 @@ func TestMainWorkflow(t *testing.T) {
 
 		rootHash = _rootHash
 
-		tdb.GenDotFile("./test_mainworkflow_5.dot", false)
+		tdb.GenDotFile("./test_mainworkflow_6.dot", false)
 		testCloseTrieDB(tdb)
 	}
 
@@ -948,7 +957,6 @@ func TestMainWorkflow(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		tdb.GenDotFile("./test_mainworkflow_6.dot", false)
 		err = tdb.Delete([]byte("13a"))
 		if nil != err {
 			t.Fatal(`Delete item "13a" should work as expected!`, err)
@@ -1000,8 +1008,4 @@ func TestLongPath(t *testing.T) {
 	tdb.testCommit()
 	tdb.GenDotFile("./test_longpath.dot", false)
 	testCloseTrieDB(tdb)
-}
-
-func TestNextAndSkip(t *testing.T) {
-
 }
