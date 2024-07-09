@@ -904,7 +904,7 @@ func TestMainWorkflow(t *testing.T) {
 		testCloseTrieDB(tdb)
 	}
 
-	// test Get operation to influence the lazy status
+	// test Get and Delete operations to influence the lazy status
 	{
 		tdb, err := testPrepareTrieDB(db_path, rootHash)
 
@@ -982,4 +982,30 @@ func TestMainWorkflow(t *testing.T) {
 
 		testCloseTrieDB(tdb)
 	}
+}
+
+func TestLongPath(t *testing.T) {
+	tdb, err := testPrepareTrieDB("triedb_longpath_test.db", nil)
+
+	if nil != err {
+		t.Fatal(err)
+	}
+
+	n, err := tdb.Update([]byte("hello"), []byte("world"))
+
+	if nil != err {
+		t.Fatal("Update path [hello] should NOT trigger error!")
+	}
+
+	if !bytes.Equal(n.FullPath(), []byte("hello")) {
+		t.Errorf("Expect full path: %s, but: %v", "hello", n.FullPath())
+	}
+
+	tdb.testCommit()
+	tdb.GenDotFile("./test_longpath.dot", false)
+	testCloseTrieDB(tdb)
+}
+
+func TestNextAndSkip(t *testing.T) {
+
 }
