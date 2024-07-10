@@ -690,30 +690,26 @@ func TestMainWorkflow(t *testing.T) {
 					}
 
 					{
-						_12Tests := []TEST{
-							{"path", []byte("2"), _12.path, bytes.Equal([]byte("2"), _12.path)},
-							{"dirty", true, _12.dirty, true == _12.dirty},
-							{"parent_nodes", _1, _12.parent_nodes, _1.child_nodes == _12.parent_nodes},
+						_12Tests := Expect{
+							path:         []byte{'2'},
+							dirty:        true,
+							parent_nodes: isEqualTo{_1.child_nodes},
 
-							{"node_bytes", "!nil", _12.node_bytes, nil != _12.node_bytes},
-							{"node_hash", "!hash.IsNilHash", _12.node_hash, !hash.IsNilHash(_12.node_hash)},
-							{"node_hash_recovered", true, _12.node_hash_recovered, true == _12.node_hash_recovered},
+							node_bytes:          isNotNil{},
+							node_hash:           isNotNil{},
+							node_hash_recovered: true,
 
-							{"val", []byte("val_12"), _12.val, bytes.Equal([]byte("val_12"), _12.val)},
-							{"val_hash", "!hash.IsNilHash", _12.val_hash, !hash.IsNilHash(_12.val_hash)},
-							{"val_hash_recovered", true, _12.val_hash_recovered, true == _12.val_hash_recovered},
+							val:                []byte("val_12"),
+							val_hash:           isNotNil{},
+							val_hash_recovered: true,
 
-							{"child_nodes", "!nil", _12.child_nodes, nil != _12.child_nodes},
-							{"child_nodes_hash", "!hash.IsNilHash", _12.child_nodes_hash, !hash.IsNilHash(_12.child_nodes_hash)},
-							{"child_nodes_hash_recovered", true, _12.child_nodes_hash_recovered, true == _12.child_nodes_hash_recovered},
-						}
-						if nil != _12.child_nodes {
-							_12Tests = append(_12Tests, []TEST{
-								{"len(child_nodes.path_index)", 2, len(_12.child_nodes.path_index), int(2) == len(_12.child_nodes.path_index)},
-								{"child_nodes.dirty", true, _12.child_nodes.dirty, true == _12.child_nodes.dirty},
-								{"child_nodes.parent_node", _12, _12.child_nodes.parent_node, _12 == _12.child_nodes.parent_node},
-							}...)
-						}
+							child_nodes:                isNotNil{},
+							child_nodes_hash:           isNotNil{},
+							child_nodes_hash_recovered: true,
+
+							child_nodes_path_index_len: 2,
+							child_nodes_dirty:          true,
+						}.makeTests(_12)
 
 						for _, tt := range _12Tests {
 							if !tt.ok {
@@ -722,30 +718,26 @@ func TestMainWorkflow(t *testing.T) {
 						}
 					}
 					{
-						_13Tests := []TEST{
-							{"path", []byte("3"), _13.path, bytes.Equal([]byte("3"), _13.path)},
-							{"dirty", false, _13.dirty, false == _13.dirty},
-							{"parent_nodes", _1, _13.parent_nodes, _1.child_nodes == _13.parent_nodes},
+						_13Tests := Expect{
+							path:         []byte{'3'},
+							dirty:        false,
+							parent_nodes: isEqualTo{_1.child_nodes},
 
-							{"node_bytes", nil, _13.node_bytes, nil == _13.node_bytes},
-							{"node_hash", "!hash.IsNilHash", _13.node_hash, !hash.IsNilHash(_13.node_hash)},
-							{"node_hash_recovered", false, _13.node_hash_recovered, false == _13.node_hash_recovered},
+							node_bytes:          nil,
+							node_hash:           isNotNil{},
+							node_hash_recovered: false,
 
-							{"val", nil, _13.val, nil == _13.val},
-							{"val_hash", "hash.IsNilHash", _13.val_hash, hash.IsNilHash(_13.val_hash)},
-							{"val_hash_recovered", false, _13.val_hash_recovered, false == _13.val_hash_recovered},
+							val:                nil,
+							val_hash:           nil,
+							val_hash_recovered: false,
 
-							{"child_nodes", nil, _13.child_nodes, nil == _13.child_nodes},
-							{"child_nodes_hash", "hash.IsNilHash", _13.child_nodes_hash, hash.IsNilHash(_13.child_nodes_hash)},
-							{"child_nodes_hash_recovered", false, _13.child_nodes_hash_recovered, false == _13.child_nodes_hash_recovered},
-						}
-						if nil != _13.child_nodes {
-							_13Tests = append(_13Tests, []TEST{
-								{"len(child_nodes.path_index)", 2, len(_13.child_nodes.path_index), int(2) == len(_13.child_nodes.path_index)},
-								{"child_nodes.dirty", true, _13.child_nodes.dirty, true == _13.child_nodes.dirty},
-								{"child_nodes.parent_node", _13, _13.child_nodes.parent_node, _13 == _13.child_nodes.parent_node},
-							}...)
-						}
+							child_nodes:                nil,
+							child_nodes_hash:           nil,
+							child_nodes_hash_recovered: false,
+
+							// child_nodes_path_index_len: 2,
+							// child_nodes_dirty:          true,
+						}.makeTests(_13)
 
 						for _, tt := range _13Tests {
 							if !tt.ok {
@@ -755,30 +747,26 @@ func TestMainWorkflow(t *testing.T) {
 					}
 
 					{
-						_14Tests := []TEST{
-							{"path", []byte("4"), _14.path, bytes.Equal([]byte("4"), _14.path)},
-							{"dirty", false, _14.dirty, false == _14.dirty},
-							{"parent_nodes", _1, _14.parent_nodes, _1.child_nodes == _14.parent_nodes},
+						_14Tests := Expect{
+							path:         []byte{'4'},
+							dirty:        false,
+							parent_nodes: isEqualTo{_1.child_nodes},
 
-							{"node_bytes", nil, _14.node_bytes, nil == _14.node_bytes},
-							{"node_hash", "!hash.IsNilHash", _14.node_hash, !hash.IsNilHash(_14.node_hash)},
-							{"node_hash_recovered", false, _14.node_hash_recovered, false == _14.node_hash_recovered},
+							node_bytes:          nil,
+							node_hash:           isNotNil{},
+							node_hash_recovered: false,
 
-							{"val", nil, _14.val, nil == _14.val},
-							{"val_hash", "hash.IsNilHash", _14.val_hash, hash.IsNilHash(_14.val_hash)},
-							{"val_hash_recovered", false, _14.val_hash_recovered, false == _14.val_hash_recovered},
+							val:                nil,
+							val_hash:           nil,
+							val_hash_recovered: false,
 
-							{"child_nodes", nil, _14.child_nodes, nil == _14.child_nodes},
-							{"child_nodes_hash", "hash.IsNilHash", _14.child_nodes_hash, hash.IsNilHash(_14.child_nodes_hash)},
-							{"child_nodes_hash_recovered", false, _14.child_nodes_hash_recovered, false == _14.child_nodes_hash_recovered},
-						}
-						if nil != _14.child_nodes {
-							_14Tests = append(_14Tests, []TEST{
-								{"len(child_nodes.path_index)", 2, len(_14.child_nodes.path_index), int(2) == len(_14.child_nodes.path_index)},
-								{"child_nodes.dirty", true, _14.child_nodes.dirty, true == _14.child_nodes.dirty},
-								{"child_nodes.parent_node", _14, _14.child_nodes.parent_node, _14 == _14.child_nodes.parent_node},
-							}...)
-						}
+							child_nodes:                nil,
+							child_nodes_hash:           nil,
+							child_nodes_hash_recovered: false,
+
+							// child_nodes_path_index_len: 2,
+							// child_nodes_dirty:          true,
+						}.makeTests(_14)
 
 						for _, tt := range _14Tests {
 							if !tt.ok {
@@ -787,30 +775,26 @@ func TestMainWorkflow(t *testing.T) {
 						}
 					}
 					{
-						_1aTests := []TEST{
-							{"path", []byte("a"), _1a.path, bytes.Equal([]byte("a"), _1a.path)},
-							{"dirty", true, _1a.dirty, true == _1a.dirty},
-							{"parent_nodes", _1, _1a.parent_nodes, _1.child_nodes == _1a.parent_nodes},
+						_1aTests := Expect{
+							path:         []byte{'a'},
+							dirty:        true,
+							parent_nodes: isEqualTo{_1.child_nodes},
 
-							{"node_bytes", "!nil", _1a.node_bytes, nil != _1a.node_bytes},
-							{"node_hash", "!hash.IsNilHash", _1a.node_hash, !hash.IsNilHash(_1a.node_hash)},
-							{"node_hash_recovered", true, _1a.node_hash_recovered, true == _1a.node_hash_recovered},
+							node_bytes:          isNotNil{},
+							node_hash:           isNotNil{},
+							node_hash_recovered: true,
 
-							{"val", []byte("val_1a"), _1a.val, bytes.Equal([]byte("val_1a"), _1a.val)},
-							{"val_hash", "!hash.IsNilHash", _1a.val_hash, !hash.IsNilHash(_1a.val_hash)},
-							{"val_hash_recovered", true, _1a.val_hash_recovered, true == _1a.val_hash_recovered},
+							val:                []byte("val_1a"),
+							val_hash:           isNotNil{},
+							val_hash_recovered: true,
 
-							{"child_nodes", nil, _1a.child_nodes, nil == _1a.child_nodes},
-							{"child_nodes_hash", "hash.IsNilHash", _1a.child_nodes_hash, hash.IsNilHash(_1a.child_nodes_hash)},
-							{"child_nodes_hash_recovered", true, _1a.child_nodes_hash_recovered, true == _1a.child_nodes_hash_recovered},
-						}
-						if nil != _1a.child_nodes {
-							_1aTests = append(_1aTests, []TEST{
-								{"len(child_nodes.path_index)", 2, len(_1a.child_nodes.path_index), int(2) == len(_1a.child_nodes.path_index)},
-								{"child_nodes.dirty", true, _1a.child_nodes.dirty, true == _1a.child_nodes.dirty},
-								{"child_nodes.parent_node", _1a, _1a.child_nodes.parent_node, _1a == _1a.child_nodes.parent_node},
-							}...)
-						}
+							child_nodes:                nil,
+							child_nodes_hash:           nil,
+							child_nodes_hash_recovered: true,
+
+							// child_nodes_path_index_len: 2,
+							// child_nodes_dirty:          true,
+						}.makeTests(_1a)
 
 						for _, tt := range _1aTests {
 							if !tt.ok {
@@ -830,30 +814,26 @@ func TestMainWorkflow(t *testing.T) {
 						}
 
 						{
-							_123Tests := []TEST{
-								{"path", []byte("3"), _123.path, bytes.Equal([]byte("3"), _123.path)},
-								{"dirty", true, _123.dirty, true == _123.dirty},
-								{"parent_nodes", _12, _123.parent_nodes, _12.child_nodes == _123.parent_nodes},
+							_123Tests := Expect{
+								path:         []byte{'3'},
+								dirty:        true,
+								parent_nodes: isEqualTo{_12.child_nodes},
 
-								{"node_bytes", "!nil", _123.node_bytes, nil != _123.node_bytes},
-								{"node_hash", "!hash.IsNilHash", _123.node_hash, !hash.IsNilHash(_123.node_hash)},
-								{"node_hash_recovered", true, _123.node_hash_recovered, true == _123.node_hash_recovered},
+								node_bytes:          isNotNil{},
+								node_hash:           isNotNil{},
+								node_hash_recovered: true,
 
-								{"val", []byte("val_123"), _123.val, bytes.Equal([]byte("val_123"), _123.val)},
-								{"val_hash", "!hash.IsNilHash", _123.val_hash, !hash.IsNilHash(_123.val_hash)},
-								{"val_hash_recovered", true, _123.val_hash_recovered, true == _123.val_hash_recovered},
+								val:                []byte("val_123"),
+								val_hash:           isNotNil{},
+								val_hash_recovered: true,
 
-								{"child_nodes", "!nil", _123.child_nodes, nil != _123.child_nodes},
-								{"child_nodes_hash", "!hash.IsNilHash", _123.child_nodes_hash, !hash.IsNilHash(_123.child_nodes_hash)},
-								{"child_nodes_hash_recovered", true, _123.child_nodes_hash_recovered, true == _123.child_nodes_hash_recovered},
-							}
-							if nil != _123.child_nodes {
-								_123Tests = append(_123Tests, []TEST{
-									{"len(child_nodes.path_index)", 2, len(_123.child_nodes.path_index), int(2) == len(_123.child_nodes.path_index)},
-									{"child_nodes.dirty", true, _123.child_nodes.dirty, true == _123.child_nodes.dirty},
-									{"child_nodes.parent_node", _123, _123.child_nodes.parent_node, _123 == _123.child_nodes.parent_node},
-								}...)
-							}
+								child_nodes:                isNotNil{},
+								child_nodes_hash:           isNotNil{},
+								child_nodes_hash_recovered: true,
+
+								child_nodes_path_index_len: 2,
+								child_nodes_dirty:          true,
+							}.makeTests(_123)
 
 							for _, tt := range _123Tests {
 								if !tt.ok {
@@ -862,30 +842,26 @@ func TestMainWorkflow(t *testing.T) {
 							}
 						}
 						{
-							_12aTests := []TEST{
-								{"path", []byte("a"), _12a.path, bytes.Equal([]byte("a"), _12a.path)},
-								{"dirty", true, _12a.dirty, true == _12a.dirty},
-								{"parent_nodes", _12, _12a.parent_nodes, _12.child_nodes == _12a.parent_nodes},
+							_12aTests := Expect{
+								path:         []byte{'a'},
+								dirty:        true,
+								parent_nodes: isEqualTo{_12.child_nodes},
 
-								{"node_bytes", "!nil", _12a.node_bytes, nil != _12a.node_bytes},
-								{"node_hash", "!hash.IsNilHash", _12a.node_hash, !hash.IsNilHash(_12a.node_hash)},
-								{"node_hash_recovered", true, _12a.node_hash_recovered, true == _12a.node_hash_recovered},
+								node_bytes:          isNotNil{},
+								node_hash:           isNotNil{},
+								node_hash_recovered: true,
 
-								{"val", []byte("val_12a"), _12a.val, bytes.Equal([]byte("val_12a"), _12a.val)},
-								{"val_hash", "!hash.IsNilHash", _12a.val_hash, !hash.IsNilHash(_12a.val_hash)},
-								{"val_hash_recovered", true, _12a.val_hash_recovered, true == _12a.val_hash_recovered},
+								val:                []byte("val_12a"),
+								val_hash:           isNotNil{},
+								val_hash_recovered: true,
 
-								{"child_nodes", nil, _12a.child_nodes, nil == _12a.child_nodes},
-								{"child_nodes_hash", "hash.IsNilHash", _12a.child_nodes_hash, hash.IsNilHash(_12a.child_nodes_hash)},
-								{"child_nodes_hash_recovered", true, _12a.child_nodes_hash_recovered, true == _12a.child_nodes_hash_recovered},
-							}
-							if nil != _12a.child_nodes {
-								_12aTests = append(_12aTests, []TEST{
-									{"len(child_nodes.path_index)", 2, len(_12a.child_nodes.path_index), int(2) == len(_12a.child_nodes.path_index)},
-									{"child_nodes.dirty", true, _12a.child_nodes.dirty, true == _12a.child_nodes.dirty},
-									{"child_nodes.parent_node", _12a, _12a.child_nodes.parent_node, _12a == _12a.child_nodes.parent_node},
-								}...)
-							}
+								child_nodes:                nil,
+								child_nodes_hash:           nil,
+								child_nodes_hash_recovered: true,
+
+								// child_nodes_path_index_len: 2,
+								// child_nodes_dirty:          true,
+							}.makeTests(_12a)
 
 							for _, tt := range _12aTests {
 								if !tt.ok {
@@ -905,30 +881,26 @@ func TestMainWorkflow(t *testing.T) {
 							}
 
 							{
-								_1234Tests := []TEST{
-									{"path", []byte("4"), _1234.path, bytes.Equal([]byte("4"), _1234.path)},
-									{"dirty", false, _1234.dirty, false == _1234.dirty},
-									{"parent_nodes", _123, _1234.parent_nodes, _123.child_nodes == _1234.parent_nodes},
+								_1234Tests := Expect{
+									path:         []byte{'4'},
+									dirty:        false,
+									parent_nodes: isEqualTo{_123.child_nodes},
 
-									{"node_bytes", nil, _1234.node_bytes, nil == _1234.node_bytes},
-									{"node_hash", "!hash.IsNilHash", _1234.node_hash, !hash.IsNilHash(_1234.node_hash)},
-									{"node_hash_recovered", false, _1234.node_hash_recovered, false == _1234.node_hash_recovered},
+									node_bytes:          nil,
+									node_hash:           isNotNil{},
+									node_hash_recovered: false,
 
-									{"val", nil, _1234.val, nil == _1234.val},
-									{"val_hash", "hash.IsNilHash", _1234.val_hash, hash.IsNilHash(_1234.val_hash)},
-									{"val_hash_recovered", false, _1234.val_hash_recovered, false == _1234.val_hash_recovered},
+									val:                nil,
+									val_hash:           nil,
+									val_hash_recovered: false,
 
-									{"child_nodes", nil, _1234.child_nodes, nil == _1234.child_nodes},
-									{"child_nodes_hash", "hash.IsNilHash", _1234.child_nodes_hash, hash.IsNilHash(_1234.child_nodes_hash)},
-									{"child_nodes_hash_recovered", false, _1234.child_nodes_hash_recovered, false == _1234.child_nodes_hash_recovered},
-								}
-								if nil != _1234.child_nodes {
-									_1234Tests = append(_1234Tests, []TEST{
-										{"len(child_nodes.path_index)", 2, len(_1234.child_nodes.path_index), int(2) == len(_1234.child_nodes.path_index)},
-										{"child_nodes.dirty", true, _1234.child_nodes.dirty, true == _1234.child_nodes.dirty},
-										{"child_nodes.parent_node", _1234, _1234.child_nodes.parent_node, _1234 == _1234.child_nodes.parent_node},
-									}...)
-								}
+									child_nodes:                nil,
+									child_nodes_hash:           nil,
+									child_nodes_hash_recovered: false,
+
+									// child_nodes_path_index_len: 2,
+									// child_nodes_dirty:          true,
+								}.makeTests(_1234)
 
 								for _, tt := range _1234Tests {
 									if !tt.ok {
@@ -937,30 +909,26 @@ func TestMainWorkflow(t *testing.T) {
 								}
 							}
 							{
-								_123aTests := []TEST{
-									{"path", []byte("a"), _123a.path, bytes.Equal([]byte("a"), _123a.path)},
-									{"dirty", true, _123a.dirty, true == _123a.dirty},
-									{"parent_nodes", _123, _123a.parent_nodes, _123.child_nodes == _123a.parent_nodes},
+								_123aTests := Expect{
+									path:         []byte{'a'},
+									dirty:        true,
+									parent_nodes: isEqualTo{_123.child_nodes},
 
-									{"node_bytes", "!nil", _123a.node_bytes, nil != _123a.node_bytes},
-									{"node_hash", "!hash.IsNilHash", _123a.node_hash, !hash.IsNilHash(_123a.node_hash)},
-									{"node_hash_recovered", true, _123a.node_hash_recovered, true == _123a.node_hash_recovered},
+									node_bytes:          isNotNil{},
+									node_hash:           isNotNil{},
+									node_hash_recovered: true,
 
-									{"val", []byte("val_123a"), _123a.val, bytes.Equal([]byte("val_123a"), _123a.val)},
-									{"val_hash", "!hash.IsNilHash", _123a.val_hash, !hash.IsNilHash(_123a.val_hash)},
-									{"val_hash_recovered", true, _123a.val_hash_recovered, true == _123a.val_hash_recovered},
+									val:                []byte("val_123a"),
+									val_hash:           isNotNil{},
+									val_hash_recovered: true,
 
-									{"child_nodes", nil, _123a.child_nodes, nil == _123a.child_nodes},
-									{"child_nodes_hash", "hash.IsNilHash", _123a.child_nodes_hash, hash.IsNilHash(_123a.child_nodes_hash)},
-									{"child_nodes_hash_recovered", true, _123a.child_nodes_hash_recovered, true == _123a.child_nodes_hash_recovered},
-								}
-								if nil != _123a.child_nodes {
-									_123aTests = append(_123aTests, []TEST{
-										{"len(child_nodes.path_index)", 2, len(_123a.child_nodes.path_index), int(2) == len(_123a.child_nodes.path_index)},
-										{"child_nodes.dirty", true, _123a.child_nodes.dirty, true == _123a.child_nodes.dirty},
-										{"child_nodes.parent_node", _123a, _123a.child_nodes.parent_node, _123a == _123a.child_nodes.parent_node},
-									}...)
-								}
+									child_nodes:                nil,
+									child_nodes_hash:           nil,
+									child_nodes_hash_recovered: true,
+
+									// child_nodes_path_index_len: 2,
+									// child_nodes_dirty:          true,
+								}.makeTests(_123a)
 
 								for _, tt := range _123aTests {
 									if !tt.ok {
