@@ -2,7 +2,6 @@ package triedb
 
 import (
 	"bytes"
-	"fmt"
 	"os"
 	"reflect"
 	"testing"
@@ -1393,16 +1392,12 @@ func TestLongPath(t *testing.T) {
 	testCloseTrieDB(tdb)
 }
 
-func TestMorePressure(t *testing.T) {
-	const db_path = "./triedb_withmorepressure_test.db"
-	os.RemoveAll(db_path)
+type withFatal interface {
+	Fatal(args ...any)
+	Fatalf(string, ...any)
+}
 
-	tdb, err := testPrepareTrieDB(db_path, nil)
-
-	if nil != err {
-		t.Fatal(err)
-	}
-
+func prepareSampleDatabase(t withFatal, tdb *TrieDB) [][]byte {
 	existingKeys := make(map[string]struct{}, 0)
 
 	// about 218 seconds
@@ -1469,6 +1464,25 @@ func TestMorePressure(t *testing.T) {
 		}
 	}
 
+	bytesForExistingKeys := make([][]byte, 0)
+	for k, _ := range existingKeys {
+		bytesForExistingKeys = append(bytesForExistingKeys, string2Bytes(k))
+	}
+	return bytesForExistingKeys
+}
+
+func TestMorePressure(t *testing.T) {
+	const db_path = "./triedb_morepressure_test.db"
+	os.RemoveAll(db_path)
+
+	tdb, err := testPrepareTrieDB(db_path, nil)
+
+	if nil != err {
+		t.Fatal(err)
+	}
+
+	prepareSampleDatabase(t, tdb)
+
 	tdb.testCommit()
 	// tdb.GenDotFile("./test_withmorepressure.dot", false)
 	testCloseTrieDB(tdb)
@@ -1476,7 +1490,7 @@ func TestMorePressure(t *testing.T) {
 
 // give more pressure to do more operations
 func BenchmarkMoreOperations(b *testing.B) {
-	const db_path = "./triedb_domoreoperations_test.db"
+	const db_path = "./triedb_moreoperations_test.db"
 	defer os.RemoveAll(db_path)
 
 	tdb, err := testPrepareTrieDB(db_path, nil)
@@ -1484,15 +1498,50 @@ func BenchmarkMoreOperations(b *testing.B) {
 	if nil != err {
 		b.Fatal(err)
 	}
+	existingKeys := prepareSampleDatabase(b, tdb)
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		k := fmt.Sprint("hello", i)
-		v := fmt.Sprint("val_hello", i)
-		bk := bytes.NewBufferString(k)
-		bv := bytes.NewBufferString(v)
-		tdb.Update(bk.Bytes(), bv.Bytes())
-	}
+	b.Run("Update", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			tokenKey := make([]byte, mrand.Intn(16)+1)
+			tokenVal := make([]byte, mrand.Intn(16)+1)
+			crand.Read(tokenKey)
+			crand.Read(tokenVal)
+			err := tdb.Update(tokenKey, tokenVal)
+			if nil != err {
+				b.Fatal(err)
+			}
+		}
+	})
+	b.Run("Get", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			if len(existingKeys) > 0 {
+				n := mrand.Intn(len(existingKeys))
+				tokenKey := existingKeys[n]
+				val, err := tdb.Get(tokenKey)
+				if nil != err {
+					b.Fatal(err)
+				}
+				if nil == val {
+					b.Fatal("unexpected nil value for key: ", tokenKey)
+				}
+			}
+		}
+	})
+	b.Run("Delete", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			if len(existingKeys) > 0 {
+				n := mrand.Intn(len(existingKeys))
+				tokenKey := existingKeys[n]
+				err := tdb.Delete(tokenKey)
+				if nil != err {
+					b.Fatal(err)
+				}
+			} else {
+				break
+			}
+		}
+	})
 
 	tdb.testCommit()
 	// tdb.GenDotFile("./test_domoreoperations.dot", false)
