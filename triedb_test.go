@@ -2,9 +2,13 @@ package triedb
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"reflect"
 	"testing"
+
+	crand "crypto/rand"
+	mrand "math/rand"
 
 	"github.com/xlander-io/cache"
 	"github.com/xlander-io/hash"
@@ -184,6 +188,15 @@ func (ex Expect) makeTests(o *Node) []TEST {
 	}
 
 	return tests
+}
+
+func string2Bytes(x string) []byte {
+	b := bytes.NewBufferString(x)
+	return bytes.Clone(b.Bytes())
+}
+func bytes2String(x []byte) string {
+	b := bytes.NewBuffer(x)
+	return b.String()
 }
 
 func TestMainWorkflow(t *testing.T) {
@@ -1377,5 +1390,113 @@ func TestLongPath(t *testing.T) {
 
 	tdb.testCommit()
 	tdb.GenDotFile("./test_longpath_3.dot", false)
+	testCloseTrieDB(tdb)
+}
+
+func Test_withMorePressure(t *testing.T) {
+	const db_path = "./triedb_withmorepressure_test.db"
+	os.RemoveAll(db_path)
+
+	tdb, err := testPrepareTrieDB(db_path, nil)
+
+	if nil != err {
+		t.Fatal(err)
+	}
+
+	existingKeys := make(map[string]struct{}, 0)
+
+	// about 88 seconds
+	for i := 0; i < 10000*100*1; i++ {
+		percent := mrand.Intn(100)
+		if percent < 55 { // 55% Update
+			tokenKey := make([]byte, 8)
+			tokenVal := make([]byte, 8)
+			{
+				n, err := crand.Read(tokenKey)
+				if nil != err {
+					t.Fatal("unexpected random token error: ", err)
+				}
+				if n < 8 {
+					t.Fatal("unexpected random token length: ", n)
+				}
+			}
+			{
+				n, err := crand.Read(tokenVal)
+				if nil != err {
+					t.Fatal("unexpected random token error: ", err)
+				}
+				if n < 8 {
+					t.Fatal("unexpected random token length: ", n)
+				}
+			}
+			// fmt.Println(n, tokenKey, tokenVal)
+			err := tdb.Update(tokenKey, tokenVal)
+			if nil != err {
+				t.Fatal("unexpected Update error: ", err)
+			}
+			existingKeys[bytes2String(tokenKey)] = struct{}{}
+		} else if percent < 90 { // 35% Get
+			for k := range existingKeys {
+				v, err := tdb.Get(string2Bytes(k))
+				if nil != err {
+					t.Fatal("unexpected Get error: ", err)
+				}
+				if nil == v {
+					t.Fatalf("value for key [%#v] must NOT be nil, but: %#v", k, v)
+				}
+				break
+			}
+		} else { // 10% Delete
+			var deletingKey []byte
+			//index := 0
+			for k := range existingKeys {
+				deletingKey = string2Bytes(k)
+				break
+				// if mrand.Intn(len(existingKeys)) < index {
+				// 	index++
+				// 	deletingKey = string2Bytes(k)
+				// 	break
+				// }
+			}
+			if nil == deletingKey {
+				t.Fatal("unexpected nil key for deleting!")
+			}
+			{
+				err := tdb.Delete(deletingKey)
+				if nil != err {
+					t.Fatal("unexpected Delete error: ", err)
+				}
+				delete(existingKeys, bytes2String(deletingKey))
+			}
+		}
+	}
+
+	tdb.testCommit()
+	// tdb.GenDotFile("./test_withmorepressure.dot", false)
+	testCloseTrieDB(tdb)
+}
+
+// give more pressure to do more operations
+func Benchmark_doMoreOperations(b *testing.B) {
+	const db_path = "./triedb_domoreoperations_test.db"
+	defer os.RemoveAll(db_path)
+
+	tdb, err := testPrepareTrieDB(db_path, nil)
+
+	if nil != err {
+		b.Fatal(err)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		k := fmt.Sprint("hello", i)
+		v := fmt.Sprint("val_hello", i)
+		bk := bytes.NewBufferString(k)
+		bv := bytes.NewBufferString(v)
+		tdb.Update(bk.Bytes(), bv.Bytes())
+	}
+
+	tdb.testCommit()
+	// tdb.GenDotFile("./test_domoreoperations.dot", false)
 	testCloseTrieDB(tdb)
 }
