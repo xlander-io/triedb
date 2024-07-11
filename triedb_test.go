@@ -1405,7 +1405,7 @@ func Test_withMorePressure(t *testing.T) {
 
 	existingKeys := make(map[string]struct{}, 0)
 
-	// about 88 seconds
+	// about 18 seconds
 	for i := 0; i < 10000*100*1; i++ {
 		percent := mrand.Intn(100)
 		if percent < 55 { // 55% Update
