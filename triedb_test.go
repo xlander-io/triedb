@@ -1393,7 +1393,7 @@ func TestLongPath(t *testing.T) {
 	testCloseTrieDB(tdb)
 }
 
-func Test_withMorePressure(t *testing.T) {
+func TestMorePressure(t *testing.T) {
 	const db_path = "./triedb_withmorepressure_test.db"
 	os.RemoveAll(db_path)
 
@@ -1405,7 +1405,7 @@ func Test_withMorePressure(t *testing.T) {
 
 	existingKeys := make(map[string]struct{}, 0)
 
-	// about 18 seconds
+	// about 218 seconds
 	for i := 0; i < 10000*100*1; i++ {
 		percent := mrand.Intn(100)
 		if percent < 55 { // 55% Update
@@ -1448,20 +1448,18 @@ func Test_withMorePressure(t *testing.T) {
 			}
 		} else { // 10% Delete
 			var deletingKey []byte
-			//index := 0
-			for k := range existingKeys {
-				deletingKey = string2Bytes(k)
-				break
-				// if mrand.Intn(len(existingKeys)) < index {
-				// 	index++
-				// 	deletingKey = string2Bytes(k)
-				// 	break
-				// }
+			if len(existingKeys) > 0 {
+				index := mrand.Intn(len(existingKeys))
+				for k := range existingKeys {
+					if index <= 0 {
+						deletingKey = string2Bytes(k)
+						break
+					}
+					index--
+				}
 			}
-			if nil == deletingKey {
-				t.Fatal("unexpected nil key for deleting!")
-			}
-			{
+
+			if nil != deletingKey {
 				err := tdb.Delete(deletingKey)
 				if nil != err {
 					t.Fatal("unexpected Delete error: ", err)
@@ -1477,7 +1475,7 @@ func Test_withMorePressure(t *testing.T) {
 }
 
 // give more pressure to do more operations
-func Benchmark_doMoreOperations(b *testing.B) {
+func BenchmarkMoreOperations(b *testing.B) {
 	const db_path = "./triedb_domoreoperations_test.db"
 	defer os.RemoveAll(db_path)
 
