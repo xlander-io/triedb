@@ -192,7 +192,7 @@ func TestMainWorkflow(t *testing.T) {
 	// tdb.GenDotFile("./test_mainworkflow.dot", false)
 
 	const db_path = "./triedb_mainworkflow_test.db"
-	os.RemoveAll(db_path)
+	defer os.RemoveAll(db_path)
 
 	var rootHash *hash.Hash = nil
 
@@ -1029,7 +1029,10 @@ func TestMainWorkflow(t *testing.T) {
 // test delete data on empty triedb
 func TestDeleteOnEmptyTrieDB(t *testing.T) {
 
-	tdb, err := testPrepareTrieDB("triedb_deleteonempty_test.db", nil)
+	const db_path = "triedb_deleteonempty_test.db"
+	defer os.RemoveAll(db_path)
+
+	tdb, err := testPrepareTrieDB(db_path, nil)
 
 	if nil != err {
 		t.Fatal(err)
@@ -1055,7 +1058,10 @@ func TestDeleteOnEmptyTrieDB(t *testing.T) {
 }
 
 func TestLongPath(t *testing.T) {
-	tdb, err := testPrepareTrieDB("triedb_longpath_test.db", nil)
+	const db_path = "./triedb_longpath_test.db"
+	defer os.RemoveAll(db_path)
+
+	tdb, err := testPrepareTrieDB(db_path, nil)
 
 	if nil != err {
 		t.Fatal(err)
