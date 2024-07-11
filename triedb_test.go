@@ -1061,13 +1061,315 @@ func TestLongPath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = tdb.Update([]byte("hello"), []byte("world"))
+	{
+		root := tdb.root_node
+		rootTests := Expect{
+			path:         nil,
+			dirty:        false,
+			parent_nodes: nil,
 
+			node_bytes:          nil,
+			node_hash:           nil,
+			node_hash_recovered: true,
+
+			val:                nil,
+			val_hash:           nil,
+			val_hash_recovered: true,
+
+			child_nodes:                nil,
+			child_nodes_hash:           nil,
+			child_nodes_hash_recovered: true,
+
+			// child_nodes_path_index_len: 0,
+			// child_nodes_dirty:          false,
+		}.makeTests(root)
+
+		for _, tt := range rootTests {
+			if !tt.ok {
+				t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+			}
+		}
+	}
+
+	err = tdb.Update([]byte("hello"), []byte("val_hello"))
 	if nil != err {
-		t.Fatal("Update path [hello] should NOT trigger error!")
+		t.Fatal(err)
+	}
+
+	{
+		root := tdb.root_node
+		rootTests := Expect{
+			path:         nil,
+			dirty:        true,
+			parent_nodes: nil,
+
+			node_bytes:          nil,
+			node_hash:           nil,
+			node_hash_recovered: true,
+
+			val:                nil,
+			val_hash:           nil,
+			val_hash_recovered: true,
+
+			child_nodes:                isNotNil{},
+			child_nodes_hash:           nil,
+			child_nodes_hash_recovered: true,
+
+			child_nodes_path_index_len: 1,
+			child_nodes_dirty:          true,
+		}.makeTests(root)
+
+		for _, tt := range rootTests {
+			if !tt.ok {
+				t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+			}
+		}
+
+		{
+			hello := root.child_nodes.path_index['h']
+
+			helloTests := Expect{
+				path:         []byte("hello"),
+				dirty:        true,
+				parent_nodes: isEqualTo{root.child_nodes},
+
+				node_bytes:          nil,
+				node_hash:           nil,
+				node_hash_recovered: true,
+
+				val:                []byte("val_hello"),
+				val_hash:           nil,
+				val_hash_recovered: true,
+
+				child_nodes:                nil,
+				child_nodes_hash:           nil,
+				child_nodes_hash_recovered: true,
+
+				// child_nodes_path_index_len: 0,
+				// child_nodes_dirty:          false,
+			}.makeTests(hello)
+
+			for _, tt := range helloTests {
+				if !tt.ok {
+					t.Errorf("hello %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+				}
+			}
+		}
+	}
+
+	tdb.GenDotFile("./test_longpath_1.dot", false)
+
+	err = tdb.Update([]byte("hellO"), []byte("val_hellO"))
+	if nil != err {
+		t.Fatal(err)
+	}
+
+	{
+		root := tdb.root_node
+		rootTests := Expect{
+			path:         nil,
+			dirty:        true,
+			parent_nodes: nil,
+
+			node_bytes:          nil,
+			node_hash:           nil,
+			node_hash_recovered: true,
+
+			val:                nil,
+			val_hash:           nil,
+			val_hash_recovered: true,
+
+			child_nodes:                isNotNil{},
+			child_nodes_hash:           nil,
+			child_nodes_hash_recovered: true,
+
+			child_nodes_path_index_len: 1,
+			child_nodes_dirty:          true,
+		}.makeTests(root)
+
+		for _, tt := range rootTests {
+			if !tt.ok {
+				t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+			}
+		}
+
+		{
+			hell := root.child_nodes.path_index['h']
+
+			if nil == hell {
+				t.Fatalf("unexpect nil pointer for node full path %v", "hell")
+			}
+
+			hellTests := Expect{
+				path:         []byte("hell"),
+				dirty:        true,
+				parent_nodes: isEqualTo{root.child_nodes},
+
+				node_bytes:          nil,
+				node_hash:           nil,
+				node_hash_recovered: true,
+
+				val:                nil,
+				val_hash:           nil,
+				val_hash_recovered: true,
+
+				child_nodes:                isNotNil{},
+				child_nodes_hash:           nil,
+				child_nodes_hash_recovered: true,
+
+				child_nodes_path_index_len: 2,
+				child_nodes_dirty:          true,
+			}.makeTests(hell)
+
+			for _, tt := range hellTests {
+				if !tt.ok {
+					t.Errorf("hell %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+				}
+			}
+
+			{
+				hello := hell.child_nodes.path_index['o']
+				if nil == hello {
+					t.Fatalf("unexpect nil pointer for node full path %v", "hello")
+				}
+
+				helloTests := Expect{
+					path:         []byte("o"),
+					dirty:        true,
+					parent_nodes: isEqualTo{hell.child_nodes},
+
+					node_bytes:          nil,
+					node_hash:           nil,
+					node_hash_recovered: true,
+
+					val:                []byte("val_hello"),
+					val_hash:           nil,
+					val_hash_recovered: true,
+
+					child_nodes:                nil,
+					child_nodes_hash:           nil,
+					child_nodes_hash_recovered: true,
+
+					child_nodes_path_index_len: 2,
+					child_nodes_dirty:          true,
+				}.makeTests(hello)
+
+				for _, tt := range helloTests {
+					if !tt.ok {
+						t.Errorf("hello %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+			}
+			{
+				hellO := hell.child_nodes.path_index['O']
+
+				if nil == hellO {
+					t.Fatalf("unexpect nil pointer for node full path %v", "hellO")
+				}
+
+				hellOTests := Expect{
+					path:         []byte("O"),
+					dirty:        true,
+					parent_nodes: isEqualTo{hell.child_nodes},
+
+					node_bytes:          nil,
+					node_hash:           nil,
+					node_hash_recovered: true,
+
+					val:                []byte("val_hellO"),
+					val_hash:           nil,
+					val_hash_recovered: true,
+
+					child_nodes:                nil,
+					child_nodes_hash:           nil,
+					child_nodes_hash_recovered: true,
+
+					// child_nodes_path_index_len: 2,
+					// child_nodes_dirty:          true,
+				}.makeTests(hellO)
+
+				for _, tt := range hellOTests {
+					if !tt.ok {
+						t.Errorf("hellO %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+			}
+		}
+	}
+
+	tdb.GenDotFile("./test_longpath_2.dot", false)
+
+	err = tdb.Delete([]byte("hello"))
+	if nil != err {
+		t.Fatal(err)
+	}
+
+	{
+		root := tdb.root_node
+		rootTests := Expect{
+			path:         nil,
+			dirty:        true,
+			parent_nodes: nil,
+
+			node_bytes:          nil,
+			node_hash:           nil,
+			node_hash_recovered: true,
+
+			val:                nil,
+			val_hash:           nil,
+			val_hash_recovered: true,
+
+			child_nodes:                isNotNil{},
+			child_nodes_hash:           nil,
+			child_nodes_hash_recovered: true,
+
+			child_nodes_path_index_len: 1,
+			child_nodes_dirty:          true,
+		}.makeTests(root)
+
+		for _, tt := range rootTests {
+			if !tt.ok {
+				t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+			}
+		}
+
+		{
+			hellO := root.child_nodes.path_index['h']
+
+			if nil == hellO {
+				t.Fatalf("unexpect nil pointer for node full path %v", "hellO")
+			}
+
+			hellOTests := Expect{
+				path:         []byte("hellO"),
+				dirty:        true,
+				parent_nodes: isEqualTo{root.child_nodes},
+
+				node_bytes:          nil,
+				node_hash:           nil,
+				node_hash_recovered: true,
+
+				val:                []byte("val_hellO"),
+				val_hash:           nil,
+				val_hash_recovered: true,
+
+				child_nodes:                nil,
+				child_nodes_hash:           nil,
+				child_nodes_hash_recovered: true,
+
+				// child_nodes_path_index_len: 2,
+				// child_nodes_dirty:          true,
+			}.makeTests(hellO)
+
+			for _, tt := range hellOTests {
+				if !tt.ok {
+					t.Errorf("hellO %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+				}
+			}
+		}
 	}
 
 	tdb.testCommit()
-	tdb.GenDotFile("./test_longpath.dot", false)
+	tdb.GenDotFile("./test_longpath_3.dot", false)
 	testCloseTrieDB(tdb)
 }
