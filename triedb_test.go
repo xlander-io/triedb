@@ -1500,13 +1500,35 @@ func BenchmarkMoreOperations(b *testing.B) {
 	}
 	existingKeys := prepareSampleDatabase(b, tdb)
 
+	randomUpdateKeys := make([][]byte, 0)
+	randomUpdateVals := make([][]byte, 0)
+
+	for i := 0; i < 10000*500; i++ {
+		tokenKey := make([]byte, mrand.Intn(16)+1)
+		tokenVal := make([]byte, mrand.Intn(16)+1)
+		crand.Read(tokenKey)
+		crand.Read(tokenVal)
+		randomUpdateKeys = append(randomUpdateKeys, tokenKey)
+		randomUpdateVals = append(randomUpdateVals, tokenVal)
+	}
+
+	randomGetKeys := make([][]byte, 0)
+	for i := 0; i < 10000*500; i++ {
+		j := mrand.Intn(len(existingKeys))
+		randomGetKeys = append(randomGetKeys, existingKeys[j])
+	}
+
+	randomDeleteKeys := make([][]byte, 0)
+	for i := 0; i < 10000*500; i++ {
+		j := mrand.Intn(len(existingKeys))
+		randomDeleteKeys = append(randomDeleteKeys, existingKeys[j])
+	}
+
 	b.ResetTimer()
 	b.Run("Update", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			tokenKey := make([]byte, mrand.Intn(16)+1)
-			tokenVal := make([]byte, mrand.Intn(16)+1)
-			crand.Read(tokenKey)
-			crand.Read(tokenVal)
+			tokenKey := randomUpdateKeys[i]
+			tokenVal := randomUpdateVals[i]
 			err := tdb.Update(tokenKey, tokenVal)
 			if nil != err {
 				b.Fatal(err)
@@ -1516,8 +1538,7 @@ func BenchmarkMoreOperations(b *testing.B) {
 	b.Run("Get", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			if len(existingKeys) > 0 {
-				n := mrand.Intn(len(existingKeys))
-				tokenKey := existingKeys[n]
+				tokenKey := randomGetKeys[i]
 				val, err := tdb.Get(tokenKey)
 				if nil != err {
 					b.Fatal(err)
@@ -1531,8 +1552,7 @@ func BenchmarkMoreOperations(b *testing.B) {
 	b.Run("Delete", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			if len(existingKeys) > 0 {
-				n := mrand.Intn(len(existingKeys))
-				tokenKey := existingKeys[n]
+				tokenKey := randomDeleteKeys[i]
 				err := tdb.Delete(tokenKey)
 				if nil != err {
 					b.Fatal(err)
