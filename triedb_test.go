@@ -1500,10 +1500,12 @@ func BenchmarkMoreOperations(b *testing.B) {
 	}
 	existingKeys := prepareSampleDatabase(b, tdb)
 
-	randomUpdateKeys := make([][]byte, 0)
-	randomUpdateVals := make([][]byte, 0)
+	const COUNT = 10000 * 500
 
-	for i := 0; i < 10000*500; i++ {
+	randomUpdateKeys := make([][]byte, 0, COUNT)
+	randomUpdateVals := make([][]byte, 0, COUNT)
+
+	for i := 0; i < COUNT; i++ {
 		tokenKey := make([]byte, mrand.Intn(16)+1)
 		tokenVal := make([]byte, mrand.Intn(16)+1)
 		crand.Read(tokenKey)
@@ -1512,14 +1514,14 @@ func BenchmarkMoreOperations(b *testing.B) {
 		randomUpdateVals = append(randomUpdateVals, tokenVal)
 	}
 
-	randomGetKeys := make([][]byte, 0)
-	for i := 0; i < 10000*500; i++ {
+	randomGetKeys := make([][]byte, 0, COUNT)
+	for i := 0; i < COUNT; i++ {
 		j := mrand.Intn(len(existingKeys))
 		randomGetKeys = append(randomGetKeys, existingKeys[j])
 	}
 
-	randomDeleteKeys := make([][]byte, 0)
-	for i := 0; i < 10000*500; i++ {
+	randomDeleteKeys := make([][]byte, 0, COUNT)
+	for i := 0; i < COUNT; i++ {
 		j := mrand.Intn(len(existingKeys))
 		randomDeleteKeys = append(randomDeleteKeys, existingKeys[j])
 	}
