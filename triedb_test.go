@@ -27,20 +27,26 @@ func TestUpdateTrieDB(t *testing.T) {
 		t.Error(err)
 	}
 
-	_, update_err := tdb.Update(Path([]byte("abc")), []byte("val"), true)
+	n, update_err := tdb.Update(Path([]byte("abc")), []byte("val"), true)
 	if update_err != nil {
 		t.Error(update_err)
 	}
+
+	fmt.Println("flat path:", n.node_path_flat_str())
 
 	update_n, update_err := tdb.Update(Path([]byte("abc"), []byte("de")), []byte("val2"), true)
 	if update_err != nil {
 		t.Error(update_err)
 	}
 
+	fmt.Println("flat path:", update_n.node_path_flat_str())
+
 	update_n, update_err = tdb.Update(Path([]byte("a"), []byte("de")), []byte("val2"), true)
 	if update_err != nil {
 		t.Error(update_err)
 	}
+	fmt.Println("flat path:", update_n.node_path_flat_str())
 
-	fmt.Println(update_n)
+	fmt.Println("flat path:", tdb.root_node.node_path_flat_str())
+
 }

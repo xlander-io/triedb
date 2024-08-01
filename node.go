@@ -2,6 +2,7 @@ package triedb
 
 import (
 	"encoding/binary"
+	"strconv"
 
 	"github.com/xlander-io/btree"
 	"github.com/xlander-io/hash"
@@ -132,7 +133,8 @@ func (n *Node) node_path() [][]byte {
 	}
 
 	if n.parent_nodes.is_folder_child_nodes {
-		return append(n.parent_nodes.parent_node.node_path(), []byte{})
+		return append(n.parent_nodes.parent_node.node_path(), n.prefix)
+
 	} else {
 		parent_full_path := n.parent_nodes.parent_node.node_path()
 		parent_full_path[len(parent_full_path)-1] = append(parent_full_path[len(parent_full_path)-1], n.prefix...)
@@ -143,6 +145,7 @@ func (n *Node) node_path() [][]byte {
 func (n *Node) node_path_flat() []byte {
 	node_path := n.node_path()
 	node_path_flat := []byte{}
+
 	for _, path := range node_path {
 		path_len_bytes := make([]byte, 16)
 		binary.LittleEndian.PutUint16(path_len_bytes, uint16(len(path)))
@@ -150,6 +153,27 @@ func (n *Node) node_path_flat() []byte {
 		node_path_flat = append(node_path_flat, path...)
 	}
 	return node_path_flat
+}
+
+func (n *Node) node_path_flat_str() string {
+	path_flat := n.node_path_flat()
+	if len(path_flat) == 0 {
+		return ""
+	}
+
+	result := ""
+	offset := 0
+	for {
+		if len(path_flat) >= offset+16 {
+			path_len := int(binary.LittleEndian.Uint16(path_flat[offset : offset+16]))
+			result = result + strconv.Itoa(path_len) + string(path_flat[offset+16:offset+16+path_len])
+			offset = offset + 16 + path_len
+		} else {
+			break
+		}
+	}
+
+	return result
 }
 
 // later will recalculate related value

@@ -758,36 +758,84 @@ func (trie_db *TrieDB) recursive_del_simplify(node *Node) error {
 
 }
 
-// func (trie_db *TrieDB) del_target_node(target_node *Node, full_path [][]byte, path_level int, left_prefix []byte) (bool, error) {
+func (trie_db *TrieDB) del_target_node(target_node *Node, full_path [][]byte, path_level int, left_prefix []byte) (bool, error) {
 
-// 	is_final_path := ((len(full_path) - 1) == path_level)
+	//target exactly
+	if bytes.Equal(target_node.prefix, left_prefix) {
+		//
+		is_final_path := ((len(full_path) - 1) == path_level)
+		//
+		if is_final_path {
+			del_err := trie_db.recursive_del_simplify(target_node)
+			if del_err != nil {
+				return false, del_err
+			} else {
+				return true, nil
+			}
 
-// 	r_err := trie_db.recover_node(target_node)
-// 	if r_err != nil {
-// 		return false, errors.New("del_target_node recover_node err, " + r_err.Error())
-// 	}
+		} else {
+			recover_err := trie_db.recover_child_nodes(target_node, true, false)
+			if recover_err != nil {
+				return false, recover_err
+			}
 
-// 	//target exactly
-// 	if bytes.Equal(target_node.prefix, left_prefix) {
+			if target_node.folder_child_nodes == nil {
+				//not found
+				return false, nil
+			}
 
-// 	}
+			c_n_i := target_node.folder_child_nodes.btree.Get(uint8(full_path[path_level+1][0]))
+			if c_n_i == nil {
+				//not found
+				return false, nil
+			}
 
-// 	return false, nil
-// }
+			return trie_db.del_target_node(c_n_i.(*Node), full_path, path_level+1, full_path[path_level+1])
+		}
+	} else if (len(left_prefix) > len(target_node.prefix)) && bytes.Equal(target_node.prefix, left_prefix[0:len(target_node.prefix)]) {
+		// left_prefix start with target_node.prefix
 
-// func (trie_db *TrieDB) Del(full_path [][]byte) (bool, error) {
+		recover_err := trie_db.recover_child_nodes(target_node, false, true)
+		if recover_err != nil {
+			return false, recover_err
+		}
 
-// 	//path limit check
-// 	if len(full_path) <= 0 {
-// 		return false, errors.New("full_path empty")
-// 	}
+		if target_node.prefix_child_nodes == nil {
+			//not found
+			return false, nil
+		}
 
-// 	//path empty check
-// 	for _, path := range full_path {
-// 		if len(path) == 0 {
-// 			return false, errors.New("empty path error")
-// 		}
-// 	}
+		c_n_i := target_node.folder_child_nodes.btree.Get(uint8(left_prefix[len(target_node.prefix)]))
+		if c_n_i == nil {
+			//not found
+			return false, nil
+		}
 
-// 	return trie_db.del_target_node(trie_db.root_node, full_path, 0, full_path[0])
-// }
+		return trie_db.del_target_node(c_n_i.(*Node), full_path, path_level, left_prefix[len(target_node.prefix):])
+
+	} else {
+		// conditon target_node.prefix start with left_prefix or
+		// condition target_node.path, left_prefix, they have common prefix
+
+		//not found
+		return false, nil
+	}
+
+}
+
+func (trie_db *TrieDB) Del(full_path [][]byte) (bool, error) {
+
+	//path limit check
+	if len(full_path) <= 0 {
+		return false, errors.New("full_path empty")
+	}
+
+	//path empty check
+	for _, path := range full_path {
+		if len(path) == 0 {
+			return false, errors.New("empty path error")
+		}
+	}
+
+	return trie_db.del_target_node(trie_db.root_node, full_path, 0, full_path[0])
+}
