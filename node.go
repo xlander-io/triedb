@@ -38,6 +38,8 @@ type Node struct {
 	node_bytes []byte     //serialize(self) , nil for new node or dirty node
 	node_hash  *hash.Hash //hash(self.node_bytes) , nil for new node or dirty node
 
+	node_path_cache [][]byte
+
 	dirty bool //default false
 }
 
@@ -47,6 +49,10 @@ func (n *Node) has_folder_child() bool {
 
 func (n *Node) has_prefix_child() bool {
 	return n.prefix_child_nodes != nil || (!n.prefix_child_nodes_hash_recovered && n.prefix_child_nodes_hash != nil)
+}
+
+func (n *Node) has_val() bool {
+	return n.val != nil || (!n.val_hash_recovered && n.val_hash != nil)
 }
 
 func (n *Node) encode_node_type() uint8 {
@@ -126,17 +132,24 @@ func (n *Node) deserialize() {
 }
 
 func (n *Node) node_path() [][]byte {
+
 	if n.parent_nodes == nil {
 		return make([][]byte, 1)
 	}
 
+	if n.node_path_cache != nil {
+		return n.node_path_cache
+	}
+
 	if n.parent_nodes.is_folder_child_nodes {
-		return append(n.parent_nodes.parent_node.node_path(), n.prefix)
+		n.node_path_cache = append(n.parent_nodes.parent_node.node_path(), n.prefix)
+		return n.node_path_cache
 
 	} else {
 		parent_full_path := n.parent_nodes.parent_node.node_path()
 		parent_full_path[len(parent_full_path)-1] = append(parent_full_path[len(parent_full_path)-1], n.prefix...)
-		return parent_full_path
+		n.node_path_cache = parent_full_path
+		return n.node_path_cache
 	}
 }
 

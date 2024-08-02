@@ -27,32 +27,47 @@ func TestUpdateTrieDB(t *testing.T) {
 		t.Error(err)
 	}
 
-	n, update_err := tdb.Update(Path([]byte("abc")), []byte("val"), true)
+	n, update_err := tdb.Update(Path([]byte("abc")), []byte("valabc"), true)
 	if update_err != nil {
 		t.Error(update_err)
 	}
-
 	fmt.Println("flat path:", n.node_path_flat_str())
 
-	update_n, update_err := tdb.Update(Path([]byte("abc"), []byte("de")), []byte("val2"), true)
+	////////////
+
+	n, update_err = tdb.Update(Path([]byte("ab")), []byte("valab"), true)
 	if update_err != nil {
 		t.Error(update_err)
 	}
+	fmt.Println("flat path:", n.node_path_flat_str())
 
-	fmt.Println("flat path:", update_n.node_path_flat_str())
-
-	update_n, update_err = tdb.Update(Path([]byte("a"), []byte("de")), []byte("val2"), true)
+	/////
+	n, update_err = tdb.Update(Path([]byte("a")), []byte("vala"), true)
 	if update_err != nil {
 		t.Error(update_err)
 	}
-	fmt.Println("flat path:", update_n.node_path_flat_str())
+	fmt.Println("flat path:", n.node_path_flat_str())
 
-	fmt.Println("flat path:", tdb.root_node.node_path_flat_str())
+	/////
+	n, update_err = tdb.Update(Path([]byte("a"), []byte("a"), []byte("a")), []byte("valaaa"), true)
+	if update_err != nil {
+		t.Error(update_err)
+	}
+	fmt.Println("flat path:", n.node_path_flat_str())
 
-	fmt.Println(tdb.Del(Path([]byte("abc"))))
-	fmt.Println(tdb.Del(Path([]byte("adsf"), []byte("adsf"))))
-	fmt.Println(tdb.Del(Path([]byte("abc"), []byte("de"))))
-	fmt.Println(tdb.Del(Path([]byte("a"))))
-	fmt.Println(tdb.Del(Path([]byte("a"), []byte("de"))))
+	/////
+	n, update_err = tdb.Update(Path([]byte("ab"), []byte("cd")), []byte("valabcd"), true)
+	if update_err != nil {
+		t.Error(update_err)
+	}
+	fmt.Println("flat path:", n.node_path_flat_str())
+
+	///
+	fmt.Println(tdb.Del(Path([]byte("ab"), []byte("cd"))))
+
+	///
+	fmt.Println(tdb.Get(Path([]byte("a"), []byte("a"), []byte("a"))))
+
+	fmt.Println("end")
 
 }

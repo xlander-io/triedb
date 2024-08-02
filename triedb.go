@@ -425,8 +425,8 @@ func (trie_db *TrieDB) update_target_nodes(target_nodes *nodes, full_path [][]by
 				dirty:                             true,
 			}
 
-			new_node.prefix_child_nodes = &nodes{
-				is_folder_child_nodes: false,
+			new_node.folder_child_nodes = &nodes{
+				is_folder_child_nodes: true,
 				btree:                 new_nodes_btree(),
 				parent_node:           new_node,
 				dirty:                 true,
@@ -436,7 +436,7 @@ func (trie_db *TrieDB) update_target_nodes(target_nodes *nodes, full_path [][]by
 			//
 			target_nodes.mark_dirty()
 			//
-			return trie_db.update_target_nodes(new_node.prefix_child_nodes, full_path, path_level+1, full_path[path_level+1], val, gen_hash_index)
+			return trie_db.update_target_nodes(new_node.folder_child_nodes, full_path, path_level+1, full_path[path_level+1], val, gen_hash_index)
 
 		}
 
@@ -844,4 +844,87 @@ func (trie_db *TrieDB) Del(full_path [][]byte) (bool, error) {
 	}
 
 	return trie_db.del_target_node(trie_db.root_node, full_path, 0, full_path[0])
+}
+
+////////
+
+func (trie_db *TrieDB) get_target_nodes(target_nodes *nodes, full_path [][]byte, path_level int, left_prefix []byte) (*Node, error) {
+	next_target_node_i := target_nodes.btree.Get(uint8(left_prefix[0]))
+	if next_target_node_i != nil {
+		return trie_db.get_target_node(next_target_node_i.(*Node), full_path, path_level, left_prefix)
+	}
+	//not found
+	return nil, nil
+}
+
+func (trie_db *TrieDB) get_target_node(target_node *Node, full_path [][]byte, path_level int, left_prefix []byte) (*Node, error) {
+	is_final_path := ((len(full_path) - 1) == path_level)
+
+	//target exactly
+	if bytes.Equal(target_node.prefix, left_prefix) {
+
+		if !is_final_path {
+
+			recover_err := trie_db.recover_child_nodes(target_node, true, false)
+			if recover_err != nil {
+				return nil, recover_err
+			}
+
+			//not found
+			if target_node.folder_child_nodes == nil {
+				return nil, nil
+			}
+
+			return trie_db.get_target_nodes(target_node.folder_child_nodes, full_path, path_level+1, full_path[path_level+1])
+
+		} else {
+
+			if !target_node.has_val() && !target_node.has_folder_child() {
+				return nil, nil
+			}
+
+			recover_err := trie_db.recover_node_val(target_node)
+			if recover_err != nil {
+				return nil, recover_err
+			}
+
+			return target_node, nil
+
+		}
+	} else if (len(left_prefix) > len(target_node.prefix)) && bytes.Equal(target_node.prefix, left_prefix[0:len(target_node.prefix)]) {
+		// left_prefix start with target_node.prefix
+		recover_err := trie_db.recover_child_nodes(target_node, false, true)
+		if recover_err != nil {
+			return nil, recover_err
+		}
+
+		//not found
+		if target_node.prefix_child_nodes == nil {
+			return nil, nil
+		}
+
+		return trie_db.get_target_nodes(target_node.prefix_child_nodes, full_path, path_level, left_prefix[len(target_node.prefix):])
+
+	} else {
+		// conditions:
+		// target_node.prefix start with left_prefixelse
+		// target_node.path, left_prefix, they have common prefix
+		return nil, nil
+	}
+}
+
+func (trie_db *TrieDB) Get(full_path [][]byte) (*Node, error) {
+
+	if len(full_path) == 0 {
+		return trie_db.root_node, nil
+	}
+
+	//path empty check
+	for _, path := range full_path {
+		if len(path) == 0 {
+			return nil, errors.New("empty path error")
+		}
+	}
+
+	return trie_db.get_target_node(trie_db.root_node, full_path, 0, full_path[0])
 }
