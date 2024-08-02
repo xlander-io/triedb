@@ -35,18 +35,24 @@ type vizGraph struct {
 }
 
 type vizNode struct {
-	ID                int
-	Prefix            string
-	Value             string
-	HashNode          string
-	HashChildren      string
-	HashValue         string
-	RecoveredNode     bool
-	RecoveredChildren bool
-	RecoveredValue    bool
-	Bytes             []byte
-	Children          *vizNodes
-	Dirty             bool
+	ID       int
+	Prefix   string
+	Value    string
+	PathFlat string
+
+	HashIndex string
+	HashNode  string
+
+	HashChildrenPrefix      string
+	HashChildrenFolder      string
+	HashValue               string
+	RecoveredChildrenPrefix bool
+	RecoveredChildrenFolder bool
+	RecoveredValue          bool
+
+	Bytes    []byte
+	Children *vizNodes
+	Dirty    bool
 }
 
 type vizNodes struct {
@@ -103,18 +109,26 @@ func (vg *vizGraph) fromTrieDB(tdb *TrieDB) {
 
 func (vn *vizNode) fromTrieNode(n *Node) {
 	vn.Prefix = string(bytes.Clone(n.prefix))
+	vn.PathFlat = n.node_path_flat_str()
 	vn.Value = string(bytes.Clone(n.val))
 	vn.Bytes = bytes.Clone(n.node_bytes)
-	//vn.RecoveredNode = n.node_hash_recovered
-	//vn.RecoveredChildren = n.child_nodes_hash_recovered
+
+	vn.RecoveredChildrenPrefix = n.prefix_child_nodes_hash_recovered
+	vn.RecoveredChildrenFolder = n.folder_child_nodes_hash_recovered
 	vn.RecoveredValue = n.val_hash_recovered
 	vn.Dirty = n.dirty
 
+	if !hash.IsNilHash(n.index_hash) {
+		vn.HashIndex = hex.EncodeToString(n.index_hash.Bytes())
+	}
 	if !hash.IsNilHash(n.node_hash) {
 		vn.HashNode = hex.EncodeToString(n.node_hash.Bytes())
 	}
 	if !hash.IsNilHash(n.prefix_child_nodes_hash) {
-		vn.HashChildren = hex.EncodeToString(n.prefix_child_nodes_hash.Bytes())
+		vn.HashChildrenPrefix = hex.EncodeToString(n.prefix_child_nodes_hash.Bytes())
+	}
+	if !hash.IsNilHash(n.folder_child_nodes_hash) {
+		vn.HashChildrenFolder = hex.EncodeToString(n.folder_child_nodes_hash.Bytes())
 	}
 	if !hash.IsNilHash(n.val_hash) {
 		vn.HashValue = hex.EncodeToString(n.val_hash.Bytes())
@@ -190,7 +204,9 @@ func (vns *vizNodes) makeName() string {
 func (vn *vizNode) applyFullMode(fullMode bool) {
 	if !fullMode {
 		vn.HashNode = shortenText(vn.HashNode, 8, 5, "...")
-		vn.HashChildren = shortenText(vn.HashChildren, 8, 5, "...")
+		vn.HashIndex = shortenText(vn.HashIndex, 8, 5, "...")
+		vn.HashChildrenPrefix = shortenText(vn.HashChildrenPrefix, 8, 5, "...")
+		vn.HashChildrenFolder = shortenText(vn.HashChildrenFolder, 8, 5, "...")
 		vn.HashValue = shortenText(vn.HashValue, 8, 5, "...")
 
 		vn.Bytes = shortenBytes(vn.Bytes, 5, 0, []byte(nil))
@@ -222,15 +238,18 @@ func (vn *vizNode) makeTable() string {
 		return fmt.Sprintf(`<TR><TD %s>%s</TD><TD %s>%v</TD></TR>`, style1, value1, style2, value2)
 	}
 
-	path_ := TR(ALIGN("RIGHT"), FONT("prefix"), ALIGN("LEFT"), vn.Prefix)
+	pathFlat := TR(ALIGN("RIGHT"), FONT("flat path"), ALIGN("LEFT"), vn.PathFlat)
+	prefix := TR(ALIGN("RIGHT"), FONT("prefix"), ALIGN("LEFT"), vn.Prefix)
 	value := TR(ALIGN("RIGHT"), FONT("value"), ALIGN("LEFT"), vn.Value)
 
 	hashNode := TR(ALIGN("RIGHT"), FONT("node hash"), ALIGN("LEFT"), vn.HashNode)
-	hashChildren := TR(ALIGN("RIGHT"), FONT("children hash"), ALIGN("LEFT"), vn.HashChildren)
+	hashIndex := TR(ALIGN("RIGHT"), FONT("index hash"), ALIGN("LEFT"), vn.HashIndex)
+	hashChildrenPrefix := TR(ALIGN("RIGHT"), FONT("prefix children hash"), ALIGN("LEFT"), vn.HashChildrenPrefix)
+	hashChildrenFolder := TR(ALIGN("RIGHT"), FONT("folder children hash"), ALIGN("LEFT"), vn.HashChildrenFolder)
 	hashValue := TR(ALIGN("RIGHT"), FONT("value hash"), ALIGN("LEFT"), vn.HashValue)
 
-	recoveredNode := TR(ALIGN("RIGHT"), FONT("recovered node hash"), ALIGN("LEFT"), strconv.FormatBool(vn.RecoveredNode))
-	recoveredChildren := TR(ALIGN("RIGHT"), FONT("recovered children hash"), ALIGN("LEFT"), strconv.FormatBool(vn.RecoveredChildren))
+	recoveredChildrenPrefix := TR(ALIGN("RIGHT"), FONT("recovered prefix children hash"), ALIGN("LEFT"), strconv.FormatBool(vn.RecoveredChildrenPrefix))
+	recoveredChildrenFolder := TR(ALIGN("RIGHT"), FONT("recovered folder children hash"), ALIGN("LEFT"), strconv.FormatBool(vn.RecoveredChildrenFolder))
 	recoveredValue := TR(ALIGN("RIGHT"), FONT("recovered value hash"), ALIGN("LEFT"), strconv.FormatBool(vn.RecoveredValue))
 
 	bytes := TR(ALIGN("RIGHT"), FONT("node bytes"), ALIGN("LEFT"), fmt.Sprint(vn.Bytes))
@@ -238,12 +257,15 @@ func (vn *vizNode) makeTable() string {
 
 	STYLEs := strings.Join([]string{BORDER(0), CELLBORDER(1), CELLSPACING(0), CELLPADDING(1), COLOR()}, " ")
 	VALUEs := strings.Join([]string{
-		path_,
+		pathFlat,
+		prefix,
 		value,
 		hashNode,
-		recoveredNode,
-		hashChildren,
-		recoveredChildren,
+		hashIndex,
+		hashChildrenPrefix,
+		recoveredChildrenPrefix,
+		hashChildrenFolder,
+		recoveredChildrenFolder,
 		hashValue,
 		recoveredValue,
 		bytes,
