@@ -13,6 +13,9 @@ import (
 	"github.com/xlander-io/hash"
 )
 
+const _KIND_PREFIX = "prefix"
+const _KIND_FOLDER = "folder"
+
 type makeNameFunc interface {
 	makeName() string
 }
@@ -33,7 +36,7 @@ type vizGraph struct {
 
 type vizNode struct {
 	ID                int
-	Path              string
+	Prefix            string
 	Value             string
 	HashNode          string
 	HashChildren      string
@@ -52,6 +55,7 @@ type vizNodes struct {
 	Bytes     []byte
 	Index     []*vizIndex
 	Dirty     bool
+	Kind      string // prefix or folder
 }
 
 type vizIndex struct {
@@ -98,7 +102,7 @@ func (vg *vizGraph) fromTrieDB(tdb *TrieDB) {
 }
 
 func (vn *vizNode) fromTrieNode(n *Node) {
-	vn.Path = string(bytes.Clone(n.prefix))
+	vn.Prefix = string(bytes.Clone(n.prefix))
 	vn.Value = string(bytes.Clone(n.val))
 	vn.Bytes = bytes.Clone(n.node_bytes)
 	//vn.RecoveredNode = n.node_hash_recovered
@@ -116,16 +120,29 @@ func (vn *vizNode) fromTrieNode(n *Node) {
 		vn.HashValue = hex.EncodeToString(n.val_hash.Bytes())
 	}
 
-	if nil != n.prefix_child_nodes {
+	if nil != n.prefix_child_nodes || nil != n.folder_child_nodes {
 		vn.Children = &vizNodes{}
+	}
+
+	if nil != n.prefix_child_nodes {
 		vn.Children.fromTrieNodes(n.prefix_child_nodes)
+	}
+
+	if nil != n.folder_child_nodes {
+		vn.Children.fromTrieNodes(n.folder_child_nodes)
 	}
 }
 
 func (vns *vizNodes) fromTrieNodes(ns *nodes) {
-	vns.Index = make([]*vizIndex, 0, ns.btree.Len())
+
 	vns.Bytes = bytes.Clone(ns.nodes_bytes)
-	vns.Dirty = ns.dirty
+	vns.Dirty = vns.Dirty || ns.dirty
+
+	if ns.is_folder_child_nodes {
+		vns.Kind = _KIND_FOLDER
+	} else {
+		vns.Kind = _KIND_PREFIX
+	}
 
 	iter := ns.btree.Before(uint8(0))
 	for iter.Next() {
@@ -205,7 +222,7 @@ func (vn *vizNode) makeTable() string {
 		return fmt.Sprintf(`<TR><TD %s>%s</TD><TD %s>%v</TD></TR>`, style1, value1, style2, value2)
 	}
 
-	path_ := TR(ALIGN("RIGHT"), FONT("path"), ALIGN("LEFT"), vn.Path)
+	path_ := TR(ALIGN("RIGHT"), FONT("prefix"), ALIGN("LEFT"), vn.Prefix)
 	value := TR(ALIGN("RIGHT"), FONT("value"), ALIGN("LEFT"), vn.Value)
 
 	hashNode := TR(ALIGN("RIGHT"), FONT("node hash"), ALIGN("LEFT"), vn.HashNode)
@@ -263,10 +280,11 @@ func (vns *vizNodes) makeTable() string {
 		return fmt.Sprintf("<TR>%s</TR>", b.String())
 	}
 
+	kind := TR(ALIGN("RIGHT"), FONT("kind"), ALIGN("LEFT"), fmt.Sprint(vns.Kind))
 	bytes := TR(ALIGN("RIGHT"), FONT("nodes bytes"), ALIGN("LEFT"), fmt.Sprint(vns.Bytes))
 	dirty := TR(ALIGN("RIGHT"), FONT("dirty"), ALIGN("LEFT"), strconv.FormatBool(vns.Dirty))
 	styles := strings.Join([]string{BORDER(0), CELLBORDER(1), CELLSPACING(0), CELLPADDING(2), COLOR(), STYLE}, " ")
-	values := strings.Join([]string{bytes, dirty}, "")
+	values := strings.Join([]string{kind, bytes, dirty}, "")
 	header := fmt.Sprintf(`<TR><TD COLSPAN="%d"><TABLE %v>%v</TABLE></TD></TR>`, len(vns.Index), styles, values)
 
 	STYLEs := strings.Join([]string{BORDER(1), CELLBORDER(0), CELLSPACING(10), CELLPADDING(5), COLOR(), STYLE}, " ")
