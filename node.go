@@ -146,11 +146,18 @@ func (n *Node) node_path() [][]byte {
 		return n.node_path_cache
 
 	} else {
-		parent_full_path := n.parent_nodes.parent_node.node_path()
-		parent_full_path[len(parent_full_path)-1] = append(parent_full_path[len(parent_full_path)-1], n.prefix...)
-		n.node_path_cache = parent_full_path
+
+		//deep copy
+		path_array := make([][]byte, len(n.parent_nodes.parent_node.node_path()))
+		for n, path := range n.parent_nodes.parent_node.node_path() {
+			path_array[n] = append([]byte{}, path...)
+		}
+
+		path_array[len(path_array)-1] = append(path_array[len(path_array)-1], n.prefix...)
+		n.node_path_cache = path_array
 		return n.node_path_cache
 	}
+
 }
 
 func (n *Node) node_path_flat() []byte {

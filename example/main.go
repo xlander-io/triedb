@@ -1,5 +1,18 @@
 package main
 
+import "fmt"
+
+func main() {
+	x := make([][]byte, 1)
+
+	y := append(x, [][]byte{[]byte("aaa")}...)
+
+	x[0] = append(x[0], []byte("xxxx")...)
+
+	fmt.Println(x)
+	fmt.Println(y)
+}
+
 // import (
 // 	"os"
 
