@@ -766,6 +766,12 @@ func (trie_db *TrieDB) del_target_node(target_node *Node, full_path [][]byte, pa
 		is_final_path := ((len(full_path) - 1) == path_level)
 		//
 		if is_final_path {
+			if target_node.val == nil && (target_node.val_hash_recovered || target_node.val_hash == nil) {
+				//nothing to del
+				return false, nil
+			}
+
+			//del
 			del_err := trie_db.recursive_del_simplify(target_node)
 			if del_err != nil {
 				return false, del_err
@@ -805,7 +811,7 @@ func (trie_db *TrieDB) del_target_node(target_node *Node, full_path [][]byte, pa
 			return false, nil
 		}
 
-		c_n_i := target_node.folder_child_nodes.btree.Get(uint8(left_prefix[len(target_node.prefix)]))
+		c_n_i := target_node.prefix_child_nodes.btree.Get(uint8(left_prefix[len(target_node.prefix)]))
 		if c_n_i == nil {
 			//not found
 			return false, nil

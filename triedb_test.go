@@ -49,4 +49,10 @@ func TestUpdateTrieDB(t *testing.T) {
 
 	fmt.Println("flat path:", tdb.root_node.node_path_flat_str())
 
+	fmt.Println(tdb.Del(Path([]byte("abc"))))
+	fmt.Println(tdb.Del(Path([]byte("adsf"), []byte("adsf"))))
+	fmt.Println(tdb.Del(Path([]byte("abc"), []byte("de"))))
+	fmt.Println(tdb.Del(Path([]byte("a"))))
+	fmt.Println(tdb.Del(Path([]byte("a"), []byte("de"))))
+
 }

@@ -17,8 +17,6 @@ func new_nodes_btree() *btree.BTree {
 }
 
 type Node struct {
-	//trie_db *TrieDB
-
 	index_hash *hash.Hash
 
 	prefix []byte //nil for root node
