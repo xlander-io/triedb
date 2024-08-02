@@ -31,6 +31,9 @@ func TestGraphviz(t *testing.T) {
 	tdb.Update(Path([]byte("a"), []byte("a"), []byte("a")), []byte("valaaa"), true)
 	tdb.Update(Path([]byte("ab"), []byte("cd")), []byte("valabcd"), true)
 
+	fmt.Println(tdb.Del(Path([]byte("a"), []byte("a"), []byte("a"))))
+	fmt.Println(tdb.Del(Path([]byte("1a"))))
+
 	//tdb.CalHash()
 
 	fmt.Println(tdb.GenDotString(true))
