@@ -34,6 +34,7 @@ type Node struct {
 	val                []byte     //always nil for root node
 	val_hash           *hash.Hash //always nil for root node
 	val_hash_recovered bool
+	val_dirty          bool
 
 	node_bytes []byte     //serialize(self) , nil for new node or dirty node
 	node_hash  *hash.Hash //hash(self.node_bytes) , nil for new node or dirty node

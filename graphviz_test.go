@@ -18,21 +18,22 @@ func TestGraphviz(t *testing.T) {
 	c, _ := cache.New(nil)
 	tdb, _ := NewTrieDB(kvdb, c, nil)
 
-	tdb.Update(Path([]byte("12")), []byte("val12"), true)
-	tdb.Update(Path([]byte("1a")), []byte("val1a"), true)
-	tdb.Update(Path([]byte("1b")), []byte("val1b"), true)
-	tdb.Update(Path([]byte("1ab")), []byte("val1ab"), true)
-	tdb.Update(Path([]byte("123")), []byte("val123"), true)
-	tdb.Update(Path([]byte("12a")), []byte("val12a"), true)
-	tdb.Update(Path([]byte("12b")), []byte("val12b"), true)
-	tdb.Update(Path([]byte("1234")), []byte("val1234"), true)
-	tdb.Update(Path([]byte("123a")), []byte("val123a"), true)
+	tdb.Put(Path([]byte("12")), []byte("val12"), true)
+	tdb.Put(Path([]byte("1a")), []byte("val1a"), true)
+	tdb.Put(Path([]byte("1b")), []byte("val1b"), true)
+	tdb.Put(Path([]byte("1ab")), []byte("val1ab"), true)
+	tdb.Put(Path([]byte("123")), []byte("val123"), true)
+	tdb.Put(Path([]byte("12a")), []byte("val12a"), true)
+	tdb.Put(Path([]byte("12b")), []byte("val12b"), true)
+	tdb.Put(Path([]byte("1234")), []byte("val1234"), true)
+	tdb.Put(Path([]byte("123a")), []byte("val123a"), true)
 
-	tdb.Update(Path([]byte("a"), []byte("a"), []byte("a")), []byte("valaaa"), true)
-	tdb.Update(Path([]byte("ab"), []byte("cd")), []byte("valabcd"), true)
+	tdb.Put(Path([]byte("a"), []byte("a"), []byte("a")), []byte("valaaa"), true)
+	tdb.Put(Path([]byte("ab"), []byte("cd")), []byte("valabcd"), true)
 
 	fmt.Println(tdb.Del(Path([]byte("a"), []byte("a"), []byte("a"))))
 	fmt.Println(tdb.Del(Path([]byte("1a"))))
+	fmt.Println(tdb.Del(Path([]byte("ab"), []byte("cd"))))
 
 	//tdb.CalHash()
 

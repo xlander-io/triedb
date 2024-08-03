@@ -20,14 +20,15 @@ func TestUpdateTrieDB(t *testing.T) {
 		t.Error(err)
 	}
 	tdb, err := NewTrieDB(kvdb, c, &TrieDBConfig{
-		Root_hash: nil,
+		Root_hash:           nil,
+		Commit_thread_limit: 1,
 	})
 
 	if err != nil {
 		t.Error(err)
 	}
 
-	n, update_err := tdb.Update(Path([]byte("abc")), []byte("valabc"), true)
+	n, update_err := tdb.Put(Path([]byte("abc")), []byte("valabc"), true)
 	if update_err != nil {
 		t.Error(update_err)
 	}
@@ -35,28 +36,28 @@ func TestUpdateTrieDB(t *testing.T) {
 
 	////////////
 
-	n, update_err = tdb.Update(Path([]byte("ab")), []byte("valab"), true)
+	n, update_err = tdb.Put(Path([]byte("ab")), []byte("valab"), true)
 	if update_err != nil {
 		t.Error(update_err)
 	}
 	fmt.Println("flat path:", n.node_path_flat_str())
 
 	/////
-	n, update_err = tdb.Update(Path([]byte("a")), []byte("vala"), true)
+	n, update_err = tdb.Put(Path([]byte("a")), []byte("vala"), true)
 	if update_err != nil {
 		t.Error(update_err)
 	}
 	fmt.Println("flat path:", n.node_path_flat_str())
 
 	/////
-	n, update_err = tdb.Update(Path([]byte("a"), []byte("a"), []byte("a")), []byte("valaaa"), true)
+	n, update_err = tdb.Put(Path([]byte("a"), []byte("a"), []byte("a")), []byte("valaaa"), true)
 	if update_err != nil {
 		t.Error(update_err)
 	}
 	fmt.Println("flat path:", n.node_path_flat_str())
 
 	/////
-	n, update_err = tdb.Update(Path([]byte("ab"), []byte("cd")), []byte("valabcd"), true)
+	n, update_err = tdb.Put(Path([]byte("ab"), []byte("cd")), []byte("valabcd"), true)
 	if update_err != nil {
 		t.Error(update_err)
 	}
@@ -67,6 +68,12 @@ func TestUpdateTrieDB(t *testing.T) {
 
 	///
 	fmt.Println(tdb.Get(Path([]byte("a"), []byte("a"), []byte("a"))))
+
+	root_hash, updated, deleted, _ := tdb.Commit()
+
+	fmt.Println("commit root hash:", root_hash)
+	fmt.Println("commit updated:", updated)
+	fmt.Println("commit deleted:", deleted)
 
 	fmt.Println("end")
 
