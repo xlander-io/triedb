@@ -143,7 +143,7 @@ func (n *Node) deserialize() {
 func (n *Node) node_path() [][]byte {
 
 	if n.parent_nodes == nil {
-		return make([][]byte, 1)
+		return make([][]byte, 0)
 	}
 
 	if n.node_path_cache != nil {

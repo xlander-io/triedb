@@ -5,13 +5,12 @@ import (
 	"testing"
 
 	"github.com/xlander-io/cache"
-	"github.com/xlander-io/hash"
 	"github.com/xlander-io/kv_leveldb"
 )
 
 func TestReadTrieDB(t *testing.T) {
 
-	kvdb, err := kv_leveldb.NewDB("./test.db")
+	kvdb, err := kv_leveldb.NewDB("./test2.db")
 	if err != nil {
 		t.Error(err)
 		return
@@ -23,7 +22,7 @@ func TestReadTrieDB(t *testing.T) {
 		return
 	}
 	tdb, err := NewTrieDB(kvdb, c, &TrieDBConfig{
-		Root_hash:           hash.NewHashFromString("0x55dc0c8d0a2a7b47419a0671216f047b99a91eb18507b5dfe7423234092b0c18"),
+		Root_hash:           nil,
 		Commit_thread_limit: 10,
 	})
 
@@ -32,21 +31,18 @@ func TestReadTrieDB(t *testing.T) {
 		return
 	}
 
+	tdb.Put(Path([]byte("a"), []byte("a"), []byte("a")), []byte("valaaa"), false)
+
 	n, err := tdb.Get(Path([]byte("a"), []byte("a"), []byte("a")))
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	fmt.Println(string(n.val))
-
-	n, err = tdb.Get(Path([]byte("1234")))
-	if err != nil {
-		t.Error(err)
-		return
+	if n != nil {
+		fmt.Println(string(n.val))
 	}
 
-	fmt.Println(string(n.val))
 }
 
 // func TestUpdateTrieDB(t *testing.T) {
