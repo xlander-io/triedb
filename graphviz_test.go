@@ -35,7 +35,7 @@ func TestGraphviz(t *testing.T) {
 	fmt.Println(tdb.Del(Path([]byte("1a"))))
 	fmt.Println(tdb.Del(Path([]byte("ab"), []byte("cd"))))
 
-	//tdb.CalHash()
+	tdb.Commit()
 
 	fmt.Println(tdb.GenDotString(true))
 	// dot -Tpdf -O test_graphviz.dot && open test_graphviz.dot.pdf

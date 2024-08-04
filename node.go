@@ -113,21 +113,25 @@ func (n *Node) deserialize() {
 
 	// bitwise node_type : 	|0|0|0|has_folder_child_nodes_hash|has_prefix_child_nodes_hash|has_val_hash|has_hash_index|
 	node_type := uint8(n.node_bytes[0])
+	offset := 1
 
-	if node_type&1 == 1 {
-		n.index_hash = hash.NewHashFromBytes(n.node_bytes[0:32])
+	if node_type&1 != 0 {
+		n.index_hash = hash.NewHashFromBytes(n.node_bytes[offset : offset+32])
+		offset += 32
 	}
 
-	if node_type&2 == 1 {
-		n.val_hash = hash.NewHashFromBytes(n.node_bytes[32:64])
+	if node_type&2 != 0 {
+		n.val_hash = hash.NewHashFromBytes(n.node_bytes[offset : offset+32])
+		offset += 32
 	}
 
-	if node_type&4 == 1 {
-		n.prefix_child_nodes_hash = hash.NewHashFromBytes(n.node_bytes[64:96])
+	if node_type&4 != 0 {
+		n.prefix_child_nodes_hash = hash.NewHashFromBytes(n.node_bytes[offset : offset+32])
+		offset += 32
 	}
 
-	if node_type&8 == 1 {
-		n.folder_child_nodes_hash = hash.NewHashFromBytes(n.node_bytes[96:128])
+	if node_type&8 != 0 {
+		n.folder_child_nodes_hash = hash.NewHashFromBytes(n.node_bytes[offset : offset+32])
 	}
 
 }
