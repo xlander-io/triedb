@@ -1,51 +1,39 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/xlander-io/cache"
+	"github.com/xlander-io/hash"
+	"github.com/xlander-io/kv_leveldb"
+	"github.com/xlander-io/triedb"
+)
 
 func main() {
-	x := make([][]byte, 1)
 
-	y := append(x, [][]byte{[]byte("aaa")}...)
+	kvdb, err := kv_leveldb.NewDB("./test.db")
+	if err != nil {
+		panic(err)
+	}
 
-	x[0] = append(x[0], []byte("xxxx")...)
+	c, err := cache.New(nil)
+	if err != nil {
+		panic(err)
+	}
+	tdb, err := triedb.NewTrieDB(kvdb, c, &triedb.TrieDBConfig{
+		Root_hash:           hash.NewHashFromString("0x55dc0c8d0a2a7b47419a0671216f047b99a91eb18507b5dfe7423234092b0c18"),
+		Commit_thread_limit: 10,
+	})
 
-	fmt.Println(x)
-	fmt.Println(y)
+	if err != nil {
+		panic(err)
+	}
+
+	n, err := tdb.Get(triedb.Path([]byte("a"), []byte("a"), []byte("a")))
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(string(n.Val()))
+
 }
-
-// import (
-// 	"os"
-
-// 	"github.com/xlander-io/cache"
-// 	"github.com/xlander-io/kv_leveldb"
-// 	"github.com/xlander-io/triedb"
-// )
-
-// func main() {
-
-// 	const db_path = "./kv_leveldb_test.db"
-// 	os.RemoveAll(db_path)
-
-// 	{
-// 		kvdb, _ := kv_leveldb.NewDB(db_path)
-// 		//
-// 		c, _ := cache.New(nil)
-// 		tdb, _ := triedb.NewTrieDB(kvdb, c, &triedb.TrieDBConfig{
-// 			Root_hash:           nil,
-// 			Commit_thread_limit: 1,
-// 		})
-
-// 		tdb.Update([]byte("/"), []byte("/"))
-// 		tdb.Update([]byte("/123"), []byte("/123"))
-// 		tdb.Update([]byte("/abcc/"), []byte("/abcc/"))
-// 		tdb.Update([]byte("/abc/"), []byte("/abc/"))
-// 		tdb.Update([]byte("/abc/def"), []byte("/abc/def"))
-// 		tdb.Update([]byte("/abc/fdef"), []byte("/abc/fdef"))
-// 		tdb.Update([]byte("/fff"), []byte("/fff"))
-// 		tdb.Update([]byte("/ggg"), []byte("/ggg"))
-
-// 		tdb.CalHash()
-
-// 	}
-
-// }

@@ -56,6 +56,10 @@ func (n *Node) has_val() bool {
 	return n.val != nil || (!n.val_hash_recovered && n.val_hash != nil)
 }
 
+func (n *Node) Val() []byte {
+	return n.val
+}
+
 func (n *Node) encode_node_type() uint8 {
 	// bitwise node_type : 	|0|0|0|has_folder_child_nodes_hash|has_prefix_child_nodes_hash|has_val_hash|has_hash_index|
 	var node_type uint8 = 0
