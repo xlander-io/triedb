@@ -527,7 +527,6 @@ func (trie_db *TrieDB) put_target_node(target_node *Node, full_path [][]byte, pa
 				dirty:                 true,
 			}
 			//
-			target_node.dirty = true
 			target_node.mark_dirty()
 			//
 			return trie_db.put_target_nodes(target_node.prefix_child_nodes, full_path, path_level, left_prefix[len(target_node.prefix):], val, gen_hash_index)
@@ -535,7 +534,6 @@ func (trie_db *TrieDB) put_target_node(target_node *Node, full_path [][]byte, pa
 
 	} else if (len(left_prefix) < len(target_node.prefix)) && bytes.Equal(left_prefix, target_node.prefix[0:len(left_prefix)]) {
 		// target_node.prefix start with left_prefix
-
 		new_node := &Node{
 			prefix:                            left_prefix[:],
 			parent_nodes:                      target_node.parent_nodes,
@@ -575,7 +573,7 @@ func (trie_db *TrieDB) put_target_node(target_node *Node, full_path [][]byte, pa
 			new_node.val_dirty = true
 
 			//mark dirty
-			new_node.parent_nodes.mark_dirty()
+			new_node.mark_dirty()
 			//
 			return new_node, nil
 
@@ -588,7 +586,7 @@ func (trie_db *TrieDB) put_target_node(target_node *Node, full_path [][]byte, pa
 				dirty:                 true,
 			}
 			//mark dirty
-			new_node.parent_nodes.mark_dirty()
+			new_node.mark_dirty()
 			//
 			return trie_db.put_target_nodes(new_node.folder_child_nodes, full_path, path_level+1, full_path[path_level+1], val, gen_hash_index)
 		}
@@ -598,20 +596,21 @@ func (trie_db *TrieDB) put_target_node(target_node *Node, full_path [][]byte, pa
 
 		////////// find the common bytes prefix
 		min_len := len(left_prefix)
-		node_path_len := len(target_node.prefix)
-		if node_path_len < min_len {
-			min_len = node_path_len
+		target_node_path_len := len(target_node.prefix)
+		if target_node_path_len < min_len {
+			min_len = target_node_path_len
 		}
 
-		common_prefix_bytes := []byte{}
+		common_prefix_bytes_len := 0
 		for i := 0; i < min_len; i++ {
 			if left_prefix[i] == target_node.prefix[i] {
-				common_prefix_bytes = append(common_prefix_bytes, left_prefix[i])
+				common_prefix_bytes_len++
 			} else {
 				break
 			}
 		}
-		common_prefix_bytes_len := len(common_prefix_bytes)
+
+		common_prefix_bytes := left_prefix[0:common_prefix_bytes_len]
 
 		//
 		new_parent_node := &Node{
@@ -683,19 +682,14 @@ func (trie_db *TrieDB) Put(full_path [][]byte, val []byte, gen_hash_index bool) 
 }
 
 // recursively del and simplify
-func (trie_db *TrieDB) recursive_del_simplify(node *Node) error {
+func (trie_db *TrieDB) recursive_simplify(node *Node) error {
 	//
 	if node == nil || node.parent_nodes == nil {
 		return errors.New("del nil node or root node is not allowed")
 	}
 
 	if node.has_folder_child() {
-		//
-		node.val = nil
-		node.val_hash_recovered = true
-		node.val_dirty = true
-		node.index_hash = nil
-		node.mark_dirty()
+		//has folder child nothing to simplify
 		return nil
 
 	} else if node.has_prefix_child() {
@@ -719,12 +713,6 @@ func (trie_db *TrieDB) recursive_del_simplify(node *Node) error {
 
 		} else {
 			//more then one child
-			node.val = nil
-			node.val_hash_recovered = true
-			node.val_dirty = true
-			node.index_hash = nil
-			node.mark_dirty()
-			//
 			return nil
 		}
 
@@ -744,8 +732,8 @@ func (trie_db *TrieDB) recursive_del_simplify(node *Node) error {
 				node.parent_nodes.parent_node.folder_child_nodes = nil
 				node.parent_nodes.parent_node.mark_dirty()
 				//simplify
-				if node.parent_nodes.parent_node.val == nil && (node.parent_nodes.parent_node.val_hash_recovered || node.parent_nodes.parent_node.val_hash == nil) {
-					return trie_db.recursive_del_simplify(node.parent_nodes.parent_node)
+				if !node.parent_nodes.parent_node.has_val() {
+					return trie_db.recursive_simplify(node.parent_nodes.parent_node)
 				} else {
 					return nil
 				}
@@ -763,17 +751,17 @@ func (trie_db *TrieDB) recursive_del_simplify(node *Node) error {
 				//
 				node.parent_nodes.parent_node.prefix_child_nodes = nil
 				node.parent_nodes.parent_node.mark_dirty()
+
 				//simplify
-				if node.parent_nodes.parent_node.val == nil && (node.parent_nodes.parent_node.val_hash_recovered || node.parent_nodes.parent_node.val_hash == nil) {
-					return trie_db.recursive_del_simplify(node.parent_nodes.parent_node)
+				if !node.parent_nodes.parent_node.has_val() {
+					return trie_db.recursive_simplify(node.parent_nodes.parent_node)
 				} else {
 					return nil
 				}
 
 			} else if node.parent_nodes.btree.Len() == 1 &&
 				!node.parent_nodes.parent_node.has_folder_child() &&
-				node.parent_nodes.parent_node.val == nil &&
-				(node.parent_nodes.parent_node.val_hash_recovered || node.parent_nodes.parent_node.val_hash == nil) &&
+				!node.parent_nodes.parent_node.has_val() &&
 				node.parent_nodes.parent_node.parent_nodes != nil {
 
 				//
@@ -807,15 +795,22 @@ func (trie_db *TrieDB) del_target_node(target_node *Node, full_path [][]byte, pa
 		//
 		if is_final_path {
 
-			if target_node.val == nil && (target_node.val_hash_recovered || target_node.val_hash == nil) {
-				//del will not change any trie status
+			if !target_node.has_val() {
+				//not found
 				return false, nil
 			}
 
 			//del
-			del_err := trie_db.recursive_del_simplify(target_node)
-			if del_err != nil {
-				return false, del_err
+			target_node.val = nil
+			target_node.val_hash_recovered = true
+			target_node.val_dirty = true
+			target_node.index_hash = nil
+			target_node.mark_dirty()
+
+			//
+			simplify_err := trie_db.recursive_simplify(target_node)
+			if simplify_err != nil {
+				return false, simplify_err
 			} else {
 				return true, nil
 			}
@@ -869,6 +864,12 @@ func (trie_db *TrieDB) del_target_node(target_node *Node, full_path [][]byte, pa
 	}
 
 }
+
+// return params:
+//  	bool:
+//				true:  node found and node.val exist
+//				false: node not found or node found but node.val not exist
+//		error:	may exist io error
 
 func (trie_db *TrieDB) Del(full_path [][]byte) (bool, error) {
 
