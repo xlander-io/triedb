@@ -43,6 +43,9 @@ func TestReadTrieDB(t *testing.T) {
 		fmt.Println(string(n.val))
 	}
 
+	fmt.Println(tdb.Del(Path([]byte("a"), []byte("a"), []byte("a"))))
+	fmt.Println(tdb.Del(Path([]byte("a"), []byte("a"), []byte("a"))))
+
 }
 
 // func TestUpdateTrieDB(t *testing.T) {

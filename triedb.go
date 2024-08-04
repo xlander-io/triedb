@@ -519,6 +519,7 @@ func (trie_db *TrieDB) put_target_node(target_node *Node, full_path [][]byte, pa
 			}
 			//
 			target_node.val = val
+			target_node.val_hash = nil
 			target_node.val_hash_recovered = true
 			target_node.val_dirty = true
 			//
@@ -556,6 +557,7 @@ func (trie_db *TrieDB) put_target_node(target_node *Node, full_path [][]byte, pa
 			prefix:                            left_prefix[:],
 			parent_nodes:                      target_node.parent_nodes,
 			val:                               nil,
+			val_hash:                          nil,
 			val_hash_recovered:                true,
 			folder_child_nodes_hash_recovered: true,
 			prefix_child_nodes_hash_recovered: true,
@@ -587,6 +589,7 @@ func (trie_db *TrieDB) put_target_node(target_node *Node, full_path [][]byte, pa
 
 			//
 			new_node.val = val
+			new_node.val_hash = nil
 			new_node.val_hash_recovered = true
 			new_node.val_dirty = true
 
@@ -699,11 +702,16 @@ func (trie_db *TrieDB) Put(full_path [][]byte, val []byte, gen_hash_index bool) 
 	return trie_db.put_target_node(trie_db.root_node, full_path, 0, full_path[0], val, gen_hash_index)
 }
 
-// recursively del and simplify
+// recursively simplify
 func (trie_db *TrieDB) recursive_simplify(node *Node) error {
 	//
-	if node == nil || node.parent_nodes == nil {
-		return errors.New("del nil node or root node is not allowed")
+	if node == nil {
+		return errors.New("simplify nil node error")
+	}
+
+	//root node nothing to simplify
+	if node.parent_nodes == nil {
+		return nil
 	}
 
 	if node.has_folder_child() {
@@ -840,6 +848,7 @@ func (trie_db *TrieDB) del_target_node(target_node *Node, full_path [][]byte, pa
 
 			//del
 			target_node.val = nil
+			target_node.val_hash = nil
 			target_node.val_hash_recovered = true
 			target_node.val_dirty = true
 			target_node.index_hash = nil
@@ -1031,12 +1040,6 @@ func (trie_db *TrieDB) Get(full_path [][]byte) (*Node, error) {
 
 // k_v_map to collected all the k_v , string(key) => []byte(value)
 func (trie_db *TrieDB) commit_recursive(node *Node, k_v_map *sync.Map) (*hash.Hash, error) {
-
-	//root node and empty
-	if node.parent_nodes == nil && node.folder_child_nodes == nil {
-		node.node_hash = hash.NIL_HASH
-		return hash.NIL_HASH, nil
-	}
 
 	//
 	child_num := 0
