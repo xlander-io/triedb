@@ -3,7 +3,6 @@ package triedb
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"sync"
 
 	"github.com/xlander-io/cache"
@@ -288,7 +287,7 @@ func (trie_db *TrieDB) recover_root_node(node *Node) error {
 
 	node_bytes, node_err := trie_db.get_from_cache_kvdb(node.node_hash.Bytes())
 	if node_err != nil {
-		return errors.New("recover_node get_from_cache_kvdb  err, node_hash: " + fmt.Sprintf("%x", node.node_hash.Bytes()))
+		return errors.New("recover_node get_from_cache_kvdb  err, node_hash: " + node.node_hash.Hex())
 	}
 
 	if node_bytes == nil {
