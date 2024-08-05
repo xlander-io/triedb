@@ -518,7 +518,7 @@ func TestMainWorkflow(t *testing.T) {
 		{
 			_, err := tdb.Del(Path([]byte("ACa")))
 			if nil != err {
-				t.Fatal(`Delete item "13a" should work as expected!`, err)
+				t.Fatal(`Delete item "ACa" should work as expected!`, err)
 			}
 		}
 
