@@ -2,9 +2,13 @@ package triedb
 
 import (
 	"bytes"
+	"fmt"
+	"io"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
+	"text/template"
 
 	crand "crypto/rand"
 	mrand "math/rand"
@@ -78,7 +82,7 @@ type isEqualTo struct {
 	object interface{}
 }
 
-func (x isNotNil) isOk(o interface{}) bool {
+func (x isNotNil) isOk(o any) bool {
 
 	if O, ok := o.(*hash.Hash); ok {
 		return !hash.IsNilHash(O)
@@ -91,7 +95,7 @@ func (x isNotNil) isOk(o interface{}) bool {
 	}
 }
 
-func (x isEqualTo) isOk(o interface{}) bool {
+func (x isEqualTo) isOk(o any) bool {
 	if O, ok := o.([]byte); ok {
 		if X, ok := x.object.([]byte); ok {
 			return bytes.Equal(X, O)
@@ -226,6 +230,168 @@ func bytes2String(x []byte) string {
 	return b.String()
 }
 
+func (tdb *TrieDB) genCheckStatements(b io.Writer) {
+}
+
+func (n *Node) genCheckStatementsString() string {
+	var buf bytes.Buffer
+	n.genCheckStatements(&buf)
+	return buf.String()
+}
+
+func (n *Node) genCheckStatements(b io.Writer) {
+
+	funcMaps := template.FuncMap{
+		"Name": func(n *Node) string {
+			if nil == n.prefix {
+				return "root"
+			} else {
+				return n.node_path_flat_str()
+			}
+		},
+		"Bytes": func(n *Node, field string) string {
+			if bytes.Equal([]byte("prefix"), string2Bytes(field)) {
+				if nil != n.prefix {
+					return fmt.Sprintf("[]byte(\"%s\")", n.prefix)
+				}
+			} else if bytes.Equal([]byte("val"), string2Bytes(field)) {
+				if nil != n.val {
+					return fmt.Sprintf("[]byte(\"%s\")", n.val)
+				}
+			} else if bytes.Equal([]byte("node_bytes"), string2Bytes(field)) {
+				if nil != n.node_bytes {
+					return fmt.Sprintf("[]byte(\"%s\")", n.node_bytes)
+				}
+			} else {
+				fmt.Printf("ERROR: Bytes unexpected field [%#v]!", field)
+			}
+
+			return "nil"
+		},
+		"Boolean": func(n *Node, field string) string {
+			if bytes.Equal([]byte("dirty"), string2Bytes(field)) {
+				if false != n.dirty {
+					return "true"
+				}
+			} else if bytes.Equal([]byte("val_hash_recovered"), string2Bytes(field)) {
+				if false != n.val_hash_recovered {
+					return "true"
+				}
+			} else if bytes.Equal([]byte("val_dirty"), string2Bytes(field)) {
+				if false != n.val_dirty {
+					return "true"
+				}
+			} else if bytes.Equal([]byte("prefix_child_nodes_hash_recovered"), string2Bytes(field)) {
+				if false != n.prefix_child_nodes_hash_recovered {
+					return "true"
+				}
+			} else if bytes.Equal([]byte("folder_child_nodes_hash_recovered"), string2Bytes(field)) {
+				if false != n.folder_child_nodes_hash_recovered {
+					return "true"
+				}
+			} else if bytes.Equal([]byte("prefix_child_nodes_dirty"), string2Bytes(field)) {
+				if nil != n.prefix_child_nodes {
+					if false != n.prefix_child_nodes.dirty {
+						return "true"
+					}
+				}
+			} else if bytes.Equal([]byte("folder_child_nodes_dirty"), string2Bytes(field)) {
+				if nil != n.folder_child_nodes {
+					if false != n.folder_child_nodes.dirty {
+						return "true"
+					}
+				}
+			} else {
+				fmt.Printf("ERROR: Boolean unexpected field [%#v]!", field)
+			}
+			return string("false")
+		},
+		"Children": func(n *Node) string {
+			if nil == n.prefix_child_nodes && nil == n.folder_child_nodes {
+				return ""
+			}
+			var children []string
+			children = append(children, "{")
+			extract := func(ns *nodes) {
+				iter := ns.btree.Before(uint8(0))
+				for iter.Next() {
+					k := iter.Key.(uint8)
+					n := iter.Value.(*Node)
+
+					V := n.node_path_flat_str()
+					PV := "root"
+					if nil != n.parent_nodes {
+						if nil != n.parent_nodes.parent_node {
+							if x := n.parent_nodes.parent_node.node_path_flat(); len(x) > 0 {
+								PV = string(x)
+							}
+						}
+					}
+
+					children = append(children, fmt.Sprintf("_%s := _%s.At('%s')", V, PV, string([]byte{k})))
+					children = append(children, n.genCheckStatementsString())
+				}
+			}
+			if nil != n.prefix_child_nodes {
+				extract(n.prefix_child_nodes)
+			}
+			if nil != n.folder_child_nodes {
+				extract(n.folder_child_nodes)
+			}
+
+			children = append(children, "}")
+			return strings.Join(children, "\n")
+		},
+	}
+	tmpl := template.New("Node")
+	tmpl.Funcs(funcMaps)
+
+	tmpl = template.Must(tmpl.Parse(`
+_{{Name .}}Tests := Expect{
+	prefix:       {{Bytes . "prefix"}},
+	dirty:        {{Boolean . "dirty"}},
+	parent_nodes: nil,
+
+	node_bytes: {{Bytes . "node_bytes"}},
+	node_hash:  nil,
+
+	val:                {{Bytes . "val"}},
+	val_hash:           nil,
+	val_hash_recovered: {{Boolean . "val_hash_recovered"}},
+	val_dirty:          {{Boolean . "val_dirty"}},
+
+	prefix_child_nodes:                nil,
+	prefix_child_nodes_hash:           nil,
+	prefix_child_nodes_hash_recovered: {{Boolean . "prefix_child_nodes_hash_recovered"}},
+
+	folder_child_nodes:                nil,
+	folder_child_nodes_hash:           nil,
+	folder_child_nodes_hash_recovered: {{Boolean . "folder_child_nodes_hash_recovered"}},
+
+	prefix_child_nodes_len:   0,
+	prefix_child_nodes_dirty: {{Boolean . "prefix_child_nodes_dirty"}},
+
+	folder_child_nodes_len:   0,
+	folder_child_nodes_dirty: {{Boolean . "folder_child_nodes_dirty"}},
+}.makeTests(_{{Name .}})
+
+for _, tt := range _{{Name .}}Tests {
+	if !tt.ok {
+		t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+	}
+}
+
+{{Children .}}
+	
+`))
+
+	err := tmpl.Execute(b, n)
+	if err != nil {
+		fmt.Println(err)
+		//panic(err)
+	}
+}
+
 func TestMainWorkflow(t *testing.T) {
 
 	// dot -Tpdf -O *.dot && open *.dot.pdf
@@ -244,45 +410,11 @@ func TestMainWorkflow(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		{
-			root := tdb.root_node
-
-			rootTests := Expect{
-				prefix:       nil,
-				dirty:        false,
-				parent_nodes: nil,
-
-				node_bytes: nil,
-				node_hash:  nil,
-
-				val:                nil,
-				val_hash:           nil,
-				val_hash_recovered: true,
-				val_dirty:          false,
-
-				prefix_child_nodes:                nil,
-				prefix_child_nodes_hash:           nil,
-				prefix_child_nodes_hash_recovered: true,
-
-				folder_child_nodes:                nil,
-				folder_child_nodes_hash:           nil,
-				folder_child_nodes_hash_recovered: true,
-
-				prefix_child_nodes_len:   0,
-				prefix_child_nodes_dirty: false,
-
-				folder_child_nodes_len:   0,
-				folder_child_nodes_dirty: false,
-			}.makeTests(root)
-
-			for _, tt := range rootTests {
-				if !tt.ok {
-					t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
-				}
-			}
-		}
+		// _root := tdb.root_node
+		//root.genCheckStatements(os.Stdout)
 
 		tdb.Put(Path([]byte("A")), []byte("val_A"), true)
+		// _root.genCheckStatements(os.Stdout)
 
 		tdb.Put(Path([]byte("AB")), []byte("val_AB"), true)
 		tdb.Put(Path([]byte("AC")), []byte("val_AC"), true)
