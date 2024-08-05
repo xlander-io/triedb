@@ -102,6 +102,14 @@ func shortenBytes(text []byte, startLen, endLen int, sep []byte) []byte {
 	return text
 }
 
+// HTML label of graphviz does not distinguish lower and uppper case port name
+// so we should distinguish them by ourself: hash it
+func makePortName(portName string) string {
+	b := bytes.NewBufferString(portName)
+	x := hash.CalHash(b.Bytes())
+	return x.Hex()
+}
+
 func (vg *vizGraph) fromTrieDB(tdb *TrieDB) {
 	vg.Root = &vizNode{}
 	vg.Root.fromTrieNode(tdb.root_node)
@@ -296,7 +304,7 @@ func (vns *vizNodes) makeTable() string {
 	ports := func() string {
 		var b bytes.Buffer
 		for _, vi := range vns.Index {
-			b.WriteString(fmt.Sprintf("<TD PORT=\"%s\">%s</TD>", vi.Key, vi.Node.makeTable()))
+			b.WriteString(fmt.Sprintf("<TD PORT=\"%s\">%s</TD>", makePortName(vi.Key), vi.Node.makeTable()))
 		}
 
 		return fmt.Sprintf("<TR>%s</TR>", b.String())
@@ -320,7 +328,7 @@ func (tdb *TrieDB) WriteDot(b io.Writer, fullMode bool) {
 		"Name":  func(o makeNameFunc) string { return o.makeName() },
 		"Table": func(o makeTableFunc) string { return o.makeTable() },
 		"Edge": func(vnS, vnD *vizNode, port string) string {
-			return fmt.Sprintf(`[tailport="%s" color=gray]`, port)
+			return fmt.Sprintf(`[tailport="%s" color=gray]`, makePortName(port))
 		},
 	}
 	tmpl := template.New("trie")
