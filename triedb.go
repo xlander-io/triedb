@@ -47,7 +47,10 @@ func (item *trie_cache_item) CacheBytes() int {
 }
 
 type TrieDBConfig struct {
-	Root_hash   *hash.Hash
+	Root_hash *hash.Hash
+
+	Read_only bool // Put Del not allowed
+
 	Hash_prefix []byte //config from outside
 
 	node_hash_prefix       []byte // Hash_prefix + NODE_HASH_PREFIX
@@ -57,6 +60,7 @@ type TrieDBConfig struct {
 
 	Update_val_len_limit int // max bytes len
 	Commit_thread_limit  int // max concurrent threads during commit
+
 }
 
 type TrieDB struct {
@@ -102,6 +106,11 @@ func NewTrieDB(kvdb_ kv.KVDB, cache_ *cache.Cache, user_config *TrieDBConfig) (*
 		user_config.node_hash_val_prefix = append(user_config.Hash_prefix, NODE_HASH_VAL_PREFIX...)
 		user_config.node_hash_index_prefix = append(user_config.Hash_prefix, NODE_HASH_INDEX_PREFIX...)
 		user_config.nodes_hash_prefix = append(user_config.Hash_prefix, NODES_HASH_PREFIX...)
+
+		//
+		if user_config.Read_only {
+			config.Read_only = true
+		}
 
 		//
 		if user_config.Root_hash != nil {
@@ -254,11 +263,6 @@ func (trie_db *TrieDB) recover_node_val(node *Node) error {
 		return errors.New("recover_node_val err, node nil")
 	}
 
-	defer func() {
-		//delete to prevent double recover
-		node.val_hash_recovered = true
-	}()
-
 	//already read in the past or new created
 	if node.val_hash_recovered || node.val_hash == nil {
 		return nil
@@ -271,7 +275,7 @@ func (trie_db *TrieDB) recover_node_val(node *Node) error {
 
 	//
 	node.val = node_val_bytes
-
+	node.val_hash_recovered = true
 	//
 	return nil
 }
@@ -314,10 +318,6 @@ func (trie_db *TrieDB) recover_child_nodes(node *Node, folder_child bool, prefix
 
 		if node.folder_child_nodes == nil && !node.folder_child_nodes_hash_recovered && node.folder_child_nodes_hash != nil {
 
-			defer func() {
-				node.folder_child_nodes_hash_recovered = true
-			}()
-
 			nodes_bytes, err := trie_db.get_from_cache_kvdb(node.folder_child_nodes_hash.Bytes())
 			if err != nil {
 				return errors.New("recover_folder_child_nodes get_from_cache_kvdb err : " + err.Error())
@@ -350,16 +350,13 @@ func (trie_db *TrieDB) recover_child_nodes(node *Node, folder_child bool, prefix
 			}
 			//
 			node.folder_child_nodes = &child_nodes_
+			node.folder_child_nodes_hash_recovered = true
 		}
 	}
 
 	if prefix_child {
 
 		if node.prefix_child_nodes == nil && !node.prefix_child_nodes_hash_recovered && node.prefix_child_nodes_hash != nil {
-
-			defer func() {
-				node.prefix_child_nodes_hash_recovered = true
-			}()
 
 			nodes_bytes, err := trie_db.get_from_cache_kvdb(node.prefix_child_nodes_hash.Bytes())
 			if err != nil {
@@ -393,6 +390,7 @@ func (trie_db *TrieDB) recover_child_nodes(node *Node, folder_child bool, prefix
 			}
 			//
 			node.prefix_child_nodes = &child_nodes_
+			node.prefix_child_nodes_hash_recovered = true
 		}
 	}
 
@@ -666,40 +664,83 @@ func (trie_db *TrieDB) put_target_node(target_node *Node, full_path [][]byte, pa
 
 }
 
+type PutError struct {
+	Err   error
+	Fatal bool //trie_db won't be used any more as status chaos may exist
+}
+
+func (trie_db *TrieDB) Put(full_path [][]byte, val []byte, gen_hash_index bool) *PutError {
+	_, err := trie_db.put_(full_path, val, gen_hash_index)
+	return err
+}
+
 // update the target and return the related node
-func (trie_db *TrieDB) Put(full_path [][]byte, val []byte, gen_hash_index bool) (*Node, error) {
+func (trie_db *TrieDB) put_(full_path [][]byte, val []byte, gen_hash_index bool) (*Node, *PutError) {
+
+	if trie_db.config.Read_only {
+		return nil, &PutError{
+			Err:   errors.New("put is not allowed for read only trie"),
+			Fatal: false,
+		}
+	}
 
 	//val check
 	if len(val) == 0 {
-		return nil, errors.New("update val empty")
+		return nil, &PutError{
+			Err:   errors.New("update val empty"),
+			Fatal: false,
+		}
 	}
 	if len(val) > trie_db.config.Update_val_len_limit {
-		return nil, errors.New("trie val size over limit")
+		return nil, &PutError{
+			Err:   errors.New("trie val size over limit"),
+			Fatal: false,
+		}
 	}
 
 	//path limit check
 	if len(full_path) <= 0 {
-		return nil, errors.New("full_path empty")
+		return nil, &PutError{
+			Err:   errors.New("full_path empty"),
+			Fatal: false,
+		}
 	}
 	if len(full_path) > PATH_FOLDER_DEPTH_LIMIT {
-		return nil, errors.New("full_path folder depth over limit")
+		return nil, &PutError{
+			Err:   errors.New("full_path folder depth over limit"),
+			Fatal: false,
+		}
 	}
 
 	full_prefix := []byte{}
 	for _, path := range full_path {
 		if len(path) == 0 {
-			return nil, errors.New("empty path error")
+			return nil, &PutError{
+				Err:   errors.New("empty path error"),
+				Fatal: false,
+			}
 		}
 		full_prefix = append(full_prefix, path...)
 		if len(full_prefix) > PATH_LEN_LIMIT {
-			return nil, errors.New("full_path over limit error")
+			return nil, &PutError{
+				Err:   errors.New("full_path over limit error"),
+				Fatal: false,
+			}
 		}
 	}
 
 	trie_db.lock.Lock()
 	defer trie_db.lock.Unlock()
 
-	return trie_db.put_target_node(trie_db.root_node, full_path, 0, full_path[0], val, gen_hash_index)
+	put_n, put_err := trie_db.put_target_node(trie_db.root_node, full_path, 0, full_path[0], val, gen_hash_index)
+	if put_err != nil {
+		return nil, &PutError{
+			Err:   put_err,
+			Fatal: true,
+		}
+	} else {
+		return put_n, nil
+	}
 }
 
 // recursively simplify
@@ -912,30 +953,56 @@ func (trie_db *TrieDB) del_target_node(target_node *Node, full_path [][]byte, pa
 
 }
 
-// return params:
-//  	bool:
-//				true:  node found and node.val exist
-//				false: node not found or node found but node.val not exist
-//		error:	may exist io error
+type DelError struct {
+	Err   error
+	Fatal bool //trie_db won't be used any more as status chaos may exist
+}
 
-func (trie_db *TrieDB) Del(full_path [][]byte) (bool, error) {
+// return params:
+//
+//	 	bool:
+//					true:  node found and node.val exist
+//					false: node not found or node found but node.val not exist
+//		error:	may exist make sure you check the fatal, if fatal is true the trie can't be used anymore as the status inside may be chaotic
+func (trie_db *TrieDB) Del(full_path [][]byte) (bool, *DelError) {
+
+	if trie_db.config.Read_only {
+		return false, &DelError{
+			Err:   errors.New("del is not allowed for read only trie"),
+			Fatal: false,
+		}
+	}
 
 	//path limit check
 	if len(full_path) <= 0 {
-		return false, errors.New("full_path empty")
+		return false, &DelError{
+			Err:   errors.New("full_path empty"),
+			Fatal: false,
+		}
 	}
 
 	//path empty check
 	for _, path := range full_path {
 		if len(path) == 0 {
-			return false, errors.New("empty path error")
+			return false, &DelError{
+				Err:   errors.New("empty path error"),
+				Fatal: false,
+			}
 		}
 	}
 
 	trie_db.lock.Lock()
 	defer trie_db.lock.Unlock()
 
-	return trie_db.del_target_node(trie_db.root_node, full_path, 0, full_path[0])
+	del_success, del_err := trie_db.del_target_node(trie_db.root_node, full_path, 0, full_path[0])
+	if del_err != nil {
+		return false, &DelError{
+			Err:   del_err,
+			Fatal: true,
+		}
+	} else {
+		return del_success, nil
+	}
 }
 
 ////////
@@ -989,10 +1056,10 @@ func (trie_db *TrieDB) get_target_node(target_node *Node, full_path [][]byte, pa
 				return nil, nil
 			}
 
-			recover_err := trie_db.recover_node_val(target_node)
-			if recover_err != nil {
-				return nil, recover_err
-			}
+			// recover_err := trie_db.recover_node_val(target_node)
+			// if recover_err != nil {
+			// 	return nil, recover_err
+			// }
 
 			return target_node, nil
 
@@ -1019,7 +1086,7 @@ func (trie_db *TrieDB) get_target_node(target_node *Node, full_path [][]byte, pa
 	}
 }
 
-func (trie_db *TrieDB) Get(full_path [][]byte) (*Node, error) {
+func (trie_db *TrieDB) get_(full_path [][]byte) (*Node, error) {
 
 	if len(full_path) == 0 {
 		return trie_db.root_node, nil
@@ -1036,6 +1103,38 @@ func (trie_db *TrieDB) Get(full_path [][]byte) (*Node, error) {
 	defer trie_db.lock.Unlock()
 
 	return trie_db.get_target_node(trie_db.root_node, full_path, 0, full_path[0])
+}
+
+func (trie_db *TrieDB) Get(full_path [][]byte) ([]byte, error) {
+	target_node, err := trie_db.get_(full_path)
+	if err != nil {
+		return nil, err
+	}
+
+	recover_err := trie_db.recover_node_val(target_node)
+	if recover_err != nil {
+		return nil, recover_err
+	}
+
+	if target_node.val == nil {
+		//is just a folder
+		return nil, nil
+	}
+
+	return target_node.val, nil
+}
+
+func (trie_db *TrieDB) FolderExist(full_path [][]byte) (bool, error) {
+	target_node, err := trie_db.get_(full_path)
+	if err != nil {
+		return false, err
+	}
+
+	if target_node.has_folder_child() {
+		return true, nil
+	} else {
+		return false, nil
+	}
 }
 
 // k_v_map to collected all the k_v , string(key) => []byte(value)

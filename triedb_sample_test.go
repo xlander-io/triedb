@@ -33,15 +33,13 @@ func TestReadTrieDB(t *testing.T) {
 
 	tdb.Put(Path([]byte("a"), []byte("a"), []byte("a")), []byte("valaaa"), false)
 
-	n, err := tdb.Get(Path([]byte("a"), []byte("a"), []byte("a")))
+	val, err := tdb.Get(Path([]byte("a"), []byte("a"), []byte("a")))
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	if n != nil {
-		fmt.Println(string(n.val))
-	}
+	fmt.Println(string(val))
 
 	fmt.Println(tdb.Del(Path([]byte("a"), []byte("a"), []byte("a"))))
 	fmt.Println(tdb.Del(Path([]byte("a"), []byte("a"), []byte("a"))))
