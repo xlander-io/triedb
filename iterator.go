@@ -76,7 +76,7 @@ func recursive_hit_next(trie_db *TrieDB, iter_parent_node *Node, n *Node) (*Node
 	}
 
 	if n.prefix_child_nodes != nil {
-		_, first_c_n_i := n.folder_child_nodes.btree.Min()
+		_, first_c_n_i := n.prefix_child_nodes.btree.Min()
 		if first_c_n_i == nil {
 			return nil, errors.New("folder 0 child ")
 		}
@@ -91,9 +91,17 @@ func recursive_hit_next(trie_db *TrieDB, iter_parent_node *Node, n *Node) (*Node
 
 	//load right neighbour
 	btree_iter := n.parent_nodes.btree.Before(uint8(n.prefix[0]))
+	btree_iter.Next()
 	if btree_iter.Next() {
 		//has right  neighbour
-		return recursive_hit_next(trie_db, iter_parent_node, btree_iter.Value.(*Node))
+		right_n := btree_iter.Value.(*Node)
+
+		if right_n.has_val() {
+			return right_n, nil
+		} else {
+			return recursive_hit_next(trie_db, iter_parent_node, btree_iter.Value.(*Node))
+		}
+
 	}
 
 	upper_right_n := recursive_upper_right(iter_parent_node, n)
@@ -101,7 +109,11 @@ func recursive_hit_next(trie_db *TrieDB, iter_parent_node *Node, n *Node) (*Node
 		return nil, nil
 	}
 
-	return recursive_hit_next(trie_db, iter_parent_node, upper_right_n)
+	if upper_right_n.has_val() {
+		return upper_right_n, nil
+	} else {
+		return recursive_hit_next(trie_db, iter_parent_node, upper_right_n)
+	}
 
 }
 
@@ -111,6 +123,7 @@ func recursive_upper_right(iter_parent_node *Node, n *Node) *Node {
 	}
 
 	btree_iter := n.parent_nodes.parent_node.parent_nodes.btree.Before(uint8(n.parent_nodes.parent_node.prefix[0]))
+	btree_iter.Next()
 	if btree_iter.Next() {
 		return btree_iter.Value.(*Node)
 	}
