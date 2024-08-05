@@ -282,13 +282,16 @@ func TestMainWorkflow(t *testing.T) {
 			}
 		}
 
-		tdb.Put(Path([]byte("1")), []byte("val_1"), true)
+		tdb.Put(Path([]byte("A")), []byte("val_A"), true)
 
-		tdb.Put(Path([]byte("12")), []byte("val_12"), true)
-		tdb.Put(Path([]byte("13")), []byte("val_13"), true)
-		tdb.Put(Path([]byte("14")), []byte("val_14"), true)
-		tdb.Put(Path([]byte("123")), []byte("val_123"), true)
-		tdb.Put(Path([]byte("1234")), []byte("val_1234"), true)
+		tdb.Put(Path([]byte("AB")), []byte("val_AB"), true)
+		tdb.Put(Path([]byte("AC")), []byte("val_AC"), true)
+		tdb.Put(Path([]byte("AD")), []byte("val_AD"), true)
+		tdb.Put(Path([]byte("ABC")), []byte("val_ABC"), true)
+		tdb.Put(Path([]byte("ABCD")), []byte("val_ABCD"), true)
+
+		tdb.Put(Path([]byte("A"), []byte("A"), []byte("A")), []byte("val_A_A_A"), true)
+		tdb.Put(Path([]byte("AB"), []byte("CD")), []byte("val_AB_CD"), true)
 
 		_rootHash, err := tdb.testCommit()
 
@@ -310,10 +313,10 @@ func TestMainWorkflow(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		tdb.Put(Path([]byte("2")), []byte("val_2"), true)
-		tdb.Put(Path([]byte("1a")), []byte("val_1a"), true)
-		tdb.Put(Path([]byte("12a")), []byte("val_12a"), true)
-		tdb.Put(Path([]byte("123a")), []byte("val_123a"), true)
+		tdb.Put(Path([]byte("B")), []byte("val_B"), true)
+		tdb.Put(Path([]byte("Aa")), []byte("val_Aa"), true)
+		tdb.Put(Path([]byte("ABa")), []byte("val_ABa"), true)
+		tdb.Put(Path([]byte("ABCa")), []byte("val_ABCa"), true)
 
 		_rootHash, err := tdb.testCommit()
 
@@ -338,21 +341,21 @@ func TestMainWorkflow(t *testing.T) {
 
 		tdb.GenDotFile("./test_mainworkflow_3.dot", false)
 
-		_, err = tdb.Get(Path([]byte("123")))
+		_, err = tdb.Get(Path([]byte("ABC")))
 		if nil != err {
-			t.Fatal(`Get item "123" should receive node_bytes of that kv item!`)
+			t.Fatal(`Get item "ABC" should receive node_bytes of that kv item!`)
 		}
 
 		tdb.GenDotFile("./test_mainworkflow_4.dot", false)
-		_, err = tdb.Del(Path([]byte("12")))
+		_, err = tdb.Del(Path([]byte("AB")))
 		if nil != err {
-			t.Fatal(`Delete item "12" should work as expected!`)
+			t.Fatal(`Delete item "AB" should work as expected!`)
 		}
 
 		tdb.GenDotFile("./test_mainworkflow_5.dot", false)
 
-		tdb.Put(Path([]byte("13a")), []byte("val_13a"), true)
-		tdb.Put(Path([]byte("14a")), []byte("val_14a"), true)
+		tdb.Put(Path([]byte("ACa")), []byte("val_ACa"), true)
+		tdb.Put(Path([]byte("ADa")), []byte("val_ADa"), true)
 
 		_rootHash, err := tdb.testCommit()
 
@@ -374,7 +377,7 @@ func TestMainWorkflow(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		_, err = tdb.Del(Path([]byte("13a")))
+		_, err = tdb.Del(Path([]byte("ACa")))
 		if nil != err {
 			t.Fatal(`Delete item "13a" should work as expected!`, err)
 		}
