@@ -227,6 +227,7 @@ func (n *nodes) serialize() {
 	iter := n.btree.Before(uint8(0))
 	for iter.Next() {
 		node := iter.Value.(*Node)
+		result = append(result, node.node_hash.Bytes()...)
 		prefix_len_bytes := make([]byte, 16)
 		binary.LittleEndian.PutUint16(prefix_len_bytes, uint16(len(node.prefix)))
 		result = append(result, prefix_len_bytes...)
@@ -249,6 +250,9 @@ func (n *nodes) deserialize() {
 
 		for i := 0; i < prefix_index_len; i++ {
 			node_ := Node{}
+			//
+			node_.node_hash = hash.NewHashFromBytes(n.nodes_bytes[deserialize_offset : deserialize_offset+32])
+			deserialize_offset += 32
 			//
 			prefix_len := int(binary.LittleEndian.Uint16(n.nodes_bytes[deserialize_offset : deserialize_offset+16]))
 			deserialize_offset += 16

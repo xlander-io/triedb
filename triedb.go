@@ -1251,6 +1251,9 @@ func (trie_db *TrieDB) commit_recursive(node *Node, k_v_map *sync.Map) (*hash.Ha
 		}
 	}
 
+	if node.node_hash == nil {
+		fmt.Println(node)
+	}
 	k_v_map.Store(string(node.node_hash.Bytes()), node.node_bytes)
 
 	return node.node_hash, nil
