@@ -663,83 +663,49 @@ func (trie_db *TrieDB) put_target_node(target_node *Node, full_path [][]byte, pa
 
 }
 
-type PutError struct {
-	Err   error
-	Fatal bool //trie_db won't be used any more as status chaos may exist
-}
-
-func (trie_db *TrieDB) Put(full_path [][]byte, val []byte, gen_hash_index bool) *PutError {
+func (trie_db *TrieDB) Put(full_path [][]byte, val []byte, gen_hash_index bool) error {
 	_, err := trie_db.put_(full_path, val, gen_hash_index)
 	return err
 }
 
 // update the target and return the related node
-func (trie_db *TrieDB) put_(full_path [][]byte, val []byte, gen_hash_index bool) (*Node, *PutError) {
+func (trie_db *TrieDB) put_(full_path [][]byte, val []byte, gen_hash_index bool) (*Node, error) {
 
 	if trie_db.config.Read_only {
-		return nil, &PutError{
-			Err:   errors.New("put is not allowed for read only trie"),
-			Fatal: false,
-		}
+		return nil, errors.New("put is not allowed for read only trie")
 	}
 
 	//val check
 	if len(val) == 0 {
-		return nil, &PutError{
-			Err:   errors.New("update val empty"),
-			Fatal: false,
-		}
+		return nil, errors.New("update val empty")
 	}
 	if len(val) > trie_db.config.Update_val_len_limit {
-		return nil, &PutError{
-			Err:   errors.New("trie val size over limit"),
-			Fatal: false,
-		}
+		return nil, errors.New("trie val size over limit")
 	}
 
 	//path limit check
 	if len(full_path) <= 0 {
-		return nil, &PutError{
-			Err:   errors.New("full_path empty"),
-			Fatal: false,
-		}
+		return nil, errors.New("full_path empty")
 	}
 	if len(full_path) > PATH_FOLDER_DEPTH_LIMIT {
-		return nil, &PutError{
-			Err:   errors.New("full_path folder depth over limit"),
-			Fatal: false,
-		}
+		return nil, errors.New("full_path folder depth over limit")
 	}
 
 	full_prefix := []byte{}
 	for _, path := range full_path {
 		if len(path) == 0 {
-			return nil, &PutError{
-				Err:   errors.New("empty path error"),
-				Fatal: false,
-			}
+			return nil, errors.New("empty path error")
 		}
 		full_prefix = append(full_prefix, path...)
 		if len(full_prefix) > PATH_LEN_LIMIT {
-			return nil, &PutError{
-				Err:   errors.New("full_path over limit error"),
-				Fatal: false,
-			}
+			return nil, errors.New("full_path over limit error")
 		}
 	}
 
 	trie_db.lock.Lock()
 	defer trie_db.lock.Unlock()
 
-	put_n, put_err := trie_db.put_target_node(trie_db.root_node, full_path, 0, full_path[0], val, gen_hash_index)
-	if put_err != nil {
-		return nil, &PutError{
-			Err:   put_err,
-			Fatal: true,
-		}
-	} else {
-		return put_n, nil
-	}
+	return trie_db.put_target_node(trie_db.root_node, full_path, 0, full_path[0], val, gen_hash_index)
 }
 
 // recursively simplify
