@@ -252,15 +252,15 @@ func (n *Node) genCheckStatements(b io.Writer) {
 		"Bytes": func(n *Node, field string) string {
 			if bytes.Equal([]byte("prefix"), string2Bytes(field)) {
 				if nil != n.prefix {
-					return fmt.Sprintf("isEqualTo{[]byte(\"%s\")}", n.prefix)
+					return fmt.Sprintf("[]byte(\"%s\")", n.prefix)
 				}
 			} else if bytes.Equal([]byte("val"), string2Bytes(field)) {
 				if nil != n.val {
-					return fmt.Sprintf("isEqualTo([]byte(\"%s\"))", n.val)
+					return fmt.Sprintf("[]byte(\"%s\")", n.val)
 				}
 			} else if bytes.Equal([]byte("node_bytes"), string2Bytes(field)) {
 				if nil != n.node_bytes {
-					return fmt.Sprintf("isEqualTo([]byte(\"%s\"))", n.node_bytes)
+					return fmt.Sprintf("[]byte(\"%s\")", n.node_bytes)
 				}
 			} else {
 				fmt.Printf("ERROR: Bytes unexpected field [%#v]!", field)
@@ -316,7 +316,7 @@ func (n *Node) genCheckStatements(b io.Writer) {
 					return fmt.Sprintf("%d", n.folder_child_nodes.btree.Len())
 				}
 			} else {
-				fmt.Printf("ERROR: Bytes unexpected field [%#v]!", field)
+				fmt.Printf("ERROR: Length unexpected field [%#v]!", field)
 			}
 
 			return "0"
@@ -331,19 +331,19 @@ func (n *Node) genCheckStatements(b io.Writer) {
 					return "isNotNil{}"
 				}
 			} else if bytes.Equal([]byte("node_hash"), string2Bytes(field)) {
-				if nil != n.node_hash {
+				if !hash.IsNilHash(n.node_hash) {
 					return "isNotNil{}"
 				}
 			} else if bytes.Equal([]byte("val_hash"), string2Bytes(field)) {
-				if nil != n.val_hash {
+				if !hash.IsNilHash(n.val_hash) {
 					return "isNotNil{}"
 				}
 			} else if bytes.Equal([]byte("prefix_child_nodes_hash"), string2Bytes(field)) {
-				if nil != n.prefix_child_nodes_hash {
+				if !hash.IsNilHash(n.prefix_child_nodes_hash) {
 					return "isNotNil{}"
 				}
 			} else if bytes.Equal([]byte("folder_child_nodes_hash"), string2Bytes(field)) {
-				if nil != n.folder_child_nodes_hash {
+				if !hash.IsNilHash(n.folder_child_nodes_hash) {
 					return "isNotNil{}"
 				}
 			} else {
@@ -356,9 +356,17 @@ func (n *Node) genCheckStatements(b io.Writer) {
 			if bytes.Equal([]byte("parent_nodes"), string2Bytes(field)) {
 				if nil != n.parent_nodes {
 					if len(n.parent_nodes.parent_node.node_path_flat()) > 0 {
-						return fmt.Sprintf("isEqualTo{_%s}", n.parent_nodes.parent_node.node_path_flat_str())
+						if n.parent_nodes.is_folder_child_nodes {
+							return fmt.Sprintf("isEqualTo{_%s.folder_child_nodes}", n.parent_nodes.parent_node.node_path_flat_str())
+						} else {
+							return fmt.Sprintf("isEqualTo{_%s.prefix_child_nodes}", n.parent_nodes.parent_node.node_path_flat_str())
+						}
 					} else {
-						return "isEqualTo{_root}"
+						if n.parent_nodes.is_folder_child_nodes {
+							return "isEqualTo{_root.folder_child_nodes}"
+						} else {
+							return "isEqualTo{_root.prefix_child_nodes}"
+						}
 					}
 				}
 			} else {
@@ -384,12 +392,13 @@ func (n *Node) genCheckStatements(b io.Writer) {
 					if nil != n.parent_nodes {
 						if nil != n.parent_nodes.parent_node {
 							if x := n.parent_nodes.parent_node.node_path_flat(); len(x) > 0 {
-								PV = string(x)
+								PV = n.parent_nodes.parent_node.node_path_flat_str()
 							}
 						}
 					}
 
-					children = append(children, fmt.Sprintf("_%s := _%s.%s.btree.At('%s')", V, PV, field, string([]byte{k})))
+					children = append(children, fmt.Sprintf("_%s_ := _%s.%s.btree.Get(uint8('%s'))", V, PV, field, string([]byte{k})))
+					children = append(children, fmt.Sprintf("_%s := _%s_.(*Node)", V, V))
 					children = append(children, n.genCheckStatementsString())
 				}
 			}
@@ -432,7 +441,7 @@ _{{Name .}}Tests := Expect{
 	prefix_child_nodes_len:   {{Length . "prefix_child_nodes_len"}},
 	prefix_child_nodes_dirty: {{Boolean . "prefix_child_nodes_dirty"}},
 
-	folder_child_nodes_len:   {{Length . "prefix_child_nodes_len"}},
+	folder_child_nodes_len:   {{Length . "folder_child_nodes_len"}},
 	folder_child_nodes_dirty: {{Boolean . "folder_child_nodes_dirty"}},
 }.makeTests(_{{Name .}})
 
