@@ -252,15 +252,15 @@ func (n *Node) genCheckStatements(b io.Writer) {
 		"Bytes": func(n *Node, field string) string {
 			if bytes.Equal([]byte("prefix"), string2Bytes(field)) {
 				if nil != n.prefix {
-					return fmt.Sprintf("[]byte(\"%s\")", n.prefix)
+					return fmt.Sprintf("isEqualTo{[]byte(\"%s\")}", n.prefix)
 				}
 			} else if bytes.Equal([]byte("val"), string2Bytes(field)) {
 				if nil != n.val {
-					return fmt.Sprintf("[]byte(\"%s\")", n.val)
+					return fmt.Sprintf("isEqualTo([]byte(\"%s\"))", n.val)
 				}
 			} else if bytes.Equal([]byte("node_bytes"), string2Bytes(field)) {
 				if nil != n.node_bytes {
-					return fmt.Sprintf("[]byte(\"%s\")", n.node_bytes)
+					return fmt.Sprintf("isEqualTo([]byte(\"%s\"))", n.node_bytes)
 				}
 			} else {
 				fmt.Printf("ERROR: Bytes unexpected field [%#v]!", field)
@@ -306,13 +306,74 @@ func (n *Node) genCheckStatements(b io.Writer) {
 			}
 			return string("false")
 		},
+		"Length": func(n *Node, field string) string {
+			if bytes.Equal([]byte("prefix_child_nodes_len"), string2Bytes(field)) {
+				if nil != n.prefix_child_nodes {
+					return fmt.Sprintf("%d", n.prefix_child_nodes.btree.Len())
+				}
+			} else if bytes.Equal([]byte("folder_child_nodes_len"), string2Bytes(field)) {
+				if nil != n.folder_child_nodes {
+					return fmt.Sprintf("%d", n.folder_child_nodes.btree.Len())
+				}
+			} else {
+				fmt.Printf("ERROR: Bytes unexpected field [%#v]!", field)
+			}
+
+			return "0"
+		},
+		"isNotNil": func(n *Node, field string) string {
+			if bytes.Equal([]byte("prefix_child_nodes"), string2Bytes(field)) {
+				if nil != n.prefix_child_nodes {
+					return "isNotNil{}"
+				}
+			} else if bytes.Equal([]byte("folder_child_nodes"), string2Bytes(field)) {
+				if nil != n.folder_child_nodes {
+					return "isNotNil{}"
+				}
+			} else if bytes.Equal([]byte("node_hash"), string2Bytes(field)) {
+				if nil != n.node_hash {
+					return "isNotNil{}"
+				}
+			} else if bytes.Equal([]byte("val_hash"), string2Bytes(field)) {
+				if nil != n.val_hash {
+					return "isNotNil{}"
+				}
+			} else if bytes.Equal([]byte("prefix_child_nodes_hash"), string2Bytes(field)) {
+				if nil != n.prefix_child_nodes_hash {
+					return "isNotNil{}"
+				}
+			} else if bytes.Equal([]byte("folder_child_nodes_hash"), string2Bytes(field)) {
+				if nil != n.folder_child_nodes_hash {
+					return "isNotNil{}"
+				}
+			} else {
+				fmt.Printf("ERROR: isNotNil unexpected field [%#v]!", field)
+			}
+
+			return "nil"
+		},
+		"isEqualTo": func(n *Node, field string) string {
+			if bytes.Equal([]byte("parent_nodes"), string2Bytes(field)) {
+				if nil != n.parent_nodes {
+					if len(n.parent_nodes.parent_node.node_path_flat()) > 0 {
+						return fmt.Sprintf("isEqualTo{_%s}", n.parent_nodes.parent_node.node_path_flat_str())
+					} else {
+						return "isEqualTo{_root}"
+					}
+				}
+			} else {
+				fmt.Printf("ERROR: isEqualTo unexpected field [%#v]!", field)
+			}
+
+			return "nil"
+		},
 		"Children": func(n *Node) string {
 			if nil == n.prefix_child_nodes && nil == n.folder_child_nodes {
 				return ""
 			}
 			var children []string
 			children = append(children, "{")
-			extract := func(ns *nodes) {
+			extract := func(ns *nodes, field string) {
 				iter := ns.btree.Before(uint8(0))
 				for iter.Next() {
 					k := iter.Key.(uint8)
@@ -328,15 +389,15 @@ func (n *Node) genCheckStatements(b io.Writer) {
 						}
 					}
 
-					children = append(children, fmt.Sprintf("_%s := _%s.At('%s')", V, PV, string([]byte{k})))
+					children = append(children, fmt.Sprintf("_%s := _%s.%s.btree.At('%s')", V, PV, field, string([]byte{k})))
 					children = append(children, n.genCheckStatementsString())
 				}
 			}
 			if nil != n.prefix_child_nodes {
-				extract(n.prefix_child_nodes)
+				extract(n.prefix_child_nodes, "prefix_child_nodes")
 			}
 			if nil != n.folder_child_nodes {
-				extract(n.folder_child_nodes)
+				extract(n.folder_child_nodes, "folder_child_nodes")
 			}
 
 			children = append(children, "}")
@@ -350,28 +411,28 @@ func (n *Node) genCheckStatements(b io.Writer) {
 _{{Name .}}Tests := Expect{
 	prefix:       {{Bytes . "prefix"}},
 	dirty:        {{Boolean . "dirty"}},
-	parent_nodes: nil,
+	parent_nodes: {{isEqualTo . "parent_nodes"}},
 
 	node_bytes: {{Bytes . "node_bytes"}},
-	node_hash:  nil,
+	node_hash:  {{isNotNil . "node_hash"}},
 
 	val:                {{Bytes . "val"}},
-	val_hash:           nil,
+	val_hash:           {{isNotNil . "val_hash"}},
 	val_hash_recovered: {{Boolean . "val_hash_recovered"}},
 	val_dirty:          {{Boolean . "val_dirty"}},
 
-	prefix_child_nodes:                nil,
-	prefix_child_nodes_hash:           nil,
+	prefix_child_nodes:                {{isNotNil . "prefix_child_nodes"}},
+	prefix_child_nodes_hash:           {{isNotNil . "prefix_child_nodes_hash"}},
 	prefix_child_nodes_hash_recovered: {{Boolean . "prefix_child_nodes_hash_recovered"}},
 
-	folder_child_nodes:                nil,
-	folder_child_nodes_hash:           nil,
+	folder_child_nodes:                {{isNotNil . "folder_child_nodes"}},
+	folder_child_nodes_hash:           {{isNotNil . "folder_child_nodes_hash"}},
 	folder_child_nodes_hash_recovered: {{Boolean . "folder_child_nodes_hash_recovered"}},
 
-	prefix_child_nodes_len:   0,
+	prefix_child_nodes_len:   {{Length . "prefix_child_nodes_len"}},
 	prefix_child_nodes_dirty: {{Boolean . "prefix_child_nodes_dirty"}},
 
-	folder_child_nodes_len:   0,
+	folder_child_nodes_len:   {{Length . "prefix_child_nodes_len"}},
 	folder_child_nodes_dirty: {{Boolean . "folder_child_nodes_dirty"}},
 }.makeTests(_{{Name .}})
 
@@ -410,7 +471,7 @@ func TestMainWorkflow(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		// _root := tdb.root_node
+		_root := tdb.root_node
 		//root.genCheckStatements(os.Stdout)
 
 		tdb.Put(Path([]byte("A")), []byte("val_A"), true)
@@ -421,6 +482,8 @@ func TestMainWorkflow(t *testing.T) {
 		tdb.Put(Path([]byte("AD")), []byte("val_AD"), true)
 		tdb.Put(Path([]byte("ABC")), []byte("val_ABC"), true)
 		tdb.Put(Path([]byte("ABCD")), []byte("val_ABCD"), true)
+
+		_root.genCheckStatements(os.Stdout)
 
 		tdb.Put(Path([]byte("A"), []byte("A"), []byte("A")), []byte("val_A_A_A"), true)
 		tdb.Put(Path([]byte("AB"), []byte("CD")), []byte("val_AB_CD"), true)
