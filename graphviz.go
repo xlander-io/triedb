@@ -50,9 +50,11 @@ type vizNode struct {
 	RecoveredChildrenFolder bool
 	RecoveredValue          bool
 
-	Bytes    []byte
-	Children *vizNodes
-	Dirty    bool
+	Bytes []byte
+	Dirty bool
+
+	ChildrenPrefix *vizNodes
+	ChildrenFolder *vizNodes
 }
 
 type vizNodes struct {
@@ -62,6 +64,8 @@ type vizNodes struct {
 	Index     []*vizIndex
 	Dirty     bool
 	Kind      string // prefix or folder
+
+	ParentNode *vizNode
 }
 
 type vizIndex struct {
@@ -142,16 +146,14 @@ func (vn *vizNode) fromTrieNode(n *Node) {
 		vn.HashValue = hex.EncodeToString(n.val_hash.Bytes())
 	}
 
-	if nil != n.prefix_child_nodes || nil != n.folder_child_nodes {
-		vn.Children = &vizNodes{}
-	}
-
 	if nil != n.prefix_child_nodes {
-		vn.Children.fromTrieNodes(n.prefix_child_nodes)
+		vn.ChildrenPrefix = &vizNodes{ParentNode: vn}
+		vn.ChildrenPrefix.fromTrieNodes(n.prefix_child_nodes)
 	}
 
 	if nil != n.folder_child_nodes {
-		vn.Children.fromTrieNodes(n.folder_child_nodes)
+		vn.ChildrenFolder = &vizNodes{ParentNode: vn}
+		vn.ChildrenFolder.fromTrieNodes(n.folder_child_nodes)
 	}
 }
 
@@ -179,10 +181,17 @@ func (vns *vizNodes) fromTrieNodes(ns *nodes) {
 func (vg *vizGraph) recursiveUpdateID(vn *vizNode) {
 	vn.ID = vg.nextID
 	vg.nextID++
-	if nil != vn.Children {
-		vn.Children.ID = vg.nextID
+	if nil != vn.ChildrenPrefix {
+		vn.ChildrenPrefix.ID = vg.nextID
 		vg.nextID++
-		for _, vi := range vn.Children.Index {
+		for _, vi := range vn.ChildrenPrefix.Index {
+			vg.recursiveUpdateID(vi.Node)
+		}
+	}
+	if nil != vn.ChildrenFolder {
+		vn.ChildrenFolder.ID = vg.nextID
+		vg.nextID++
+		for _, vi := range vn.ChildrenFolder.Index {
 			vg.recursiveUpdateID(vi.Node)
 		}
 	}
@@ -192,9 +201,15 @@ func (vg *vizGraph) recursiveApplyFullMode(o applyFullModeFunc) {
 	o.applyFullMode(vg.fullMode)
 
 	if vn, ok := o.(*vizNode); ok {
-		if nil != vn.Children {
-			vn.Children.applyFullMode(vg.fullMode)
-			for _, vi := range vn.Children.Index {
+		if nil != vn.ChildrenPrefix {
+			vn.ChildrenPrefix.applyFullMode(vg.fullMode)
+			for _, vi := range vn.ChildrenPrefix.Index {
+				vg.recursiveApplyFullMode(vi.Node)
+			}
+		}
+		if nil != vn.ChildrenFolder {
+			vn.ChildrenFolder.applyFullMode(vg.fullMode)
+			for _, vi := range vn.ChildrenFolder.Index {
 				vg.recursiveApplyFullMode(vi.Node)
 			}
 		}
@@ -342,9 +357,15 @@ func (tdb *TrieDB) WriteDot(b io.Writer, fullMode bool) {
 
 	{{- define "vertices"}}
 		{{if eq .ID 0}}{{Name .}} [shape=plain label=<{{Table .}}>]{{end}}
-		{{if .Children}}{{Name .Children}} [shape=plain label=<{{Table .Children}}>]{{end}}
-		{{- if .Children}}
-			{{- range $_, $vi := .Children.Index}}
+		{{if .ChildrenPrefix}}{{Name .ChildrenPrefix}} [shape=plain label=<{{Table .ChildrenPrefix}}>]{{end}}
+		{{if .ChildrenFolder}}{{Name .ChildrenFolder}} [shape=plain label=<{{Table .ChildrenFolder}}>]{{end}}
+		{{- if .ChildrenPrefix}}
+			{{- range $_, $vi := .ChildrenPrefix.Index}}
+				{{- template "vertices" $vi.Node}}
+			{{- end}}
+		{{- end}}
+		{{- if .ChildrenFolder}}
+			{{- range $_, $vi := .ChildrenFolder.Index}}
 				{{- template "vertices" $vi.Node}}
 			{{- end}}
 		{{- end}}
@@ -352,13 +373,24 @@ func (tdb *TrieDB) WriteDot(b io.Writer, fullMode bool) {
 
 	{{- define "edges"}}
 		{{- $O := .}}
-		{{- if and .Children (eq .ID 0)}} {{- Name $O}} -> {{Name $O.Children}} [color=gray] {{end}}
-		{{- if .Children}}
-			{{- range $_, $vi := .Children.Index}}
+		{{- if and .ChildrenPrefix (eq .ID 0)}} {{- Name $O}} -> {{Name $O.ChildrenPrefix}} [color=gray hello=world] {{end}}
+		{{- if and .ChildrenFolder (eq .ID 0)}} {{- Name $O}} -> {{Name $O.ChildrenFolder}} [color=gray good=luck] {{end}}
+		{{- template "children" .ChildrenPrefix}}
+		{{- template "children" .ChildrenFolder}}
+	{{- end}}
+
+	{{- define "children"}}
+		{{- $children := .}}
+		{{- if $children}}
+			{{- $parent := $children.ParentNode}}
+			{{- range $_, $vi := $children.Index}}
 				{{- $k := $vi.Key}}
 				{{- $n := $vi.Node}}
-				{{- if $n.Children}}
-					{{Name $O.Children}} -> {{Name $n.Children}} {{Edge $O $n $k}}
+				{{- if $n.ChildrenPrefix}}
+					{{Name $children}} -> {{Name $n.ChildrenPrefix}} {{Edge $parent $n $k}}
+				{{- end}}
+				{{- if $n.ChildrenFolder}}
+					{{Name $children}} -> {{Name $n.ChildrenFolder}} {{Edge $parent $n $k}}
 				{{- end}}
 				{{- template "edges" $n}}
 			{{- end}}
