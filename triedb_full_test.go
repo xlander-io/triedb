@@ -230,9 +230,6 @@ func bytes2String(x []byte) string {
 	return b.String()
 }
 
-func (tdb *TrieDB) genCheckStatements(b io.Writer) {
-}
-
 func (n *Node) genCheckStatementsString() string {
 	var buf bytes.Buffer
 	n.genCheckStatements(&buf)
