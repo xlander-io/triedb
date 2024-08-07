@@ -595,6 +595,12 @@ func TestMainWorkflow(t *testing.T) {
 				t.Fatal(`Delete item "ACa" should work as expected!`, err)
 			}
 		}
+		{
+			_, err := tdb.Get(Path([]byte("ACa")))
+			if nil == err {
+				t.Fatal(`Get item "ACa" should report error!`, err)
+			}
+		}
 
 		{
 			_rootHash, err := tdb.testCommit()
