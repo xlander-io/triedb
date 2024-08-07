@@ -255,10 +255,6 @@ func (n *Node) genCheckStatements(b io.Writer) {
 				if nil != n.val {
 					return fmt.Sprintf("[]byte(\"%s\")", n.val)
 				}
-			} else if bytes.Equal([]byte("node_bytes"), string2Bytes(field)) {
-				if nil != n.node_bytes {
-					return fmt.Sprintf("[]byte(\"%s\")", n.node_bytes)
-				}
 			} else {
 				fmt.Printf("ERROR: Bytes unexpected field [%#v]!", field)
 			}
@@ -343,6 +339,10 @@ func (n *Node) genCheckStatements(b io.Writer) {
 				if !hash.IsNilHash(n.folder_child_nodes_hash) {
 					return "isNotNil{}"
 				}
+			} else if bytes.Equal([]byte("node_bytes"), string2Bytes(field)) {
+				if nil != n.node_bytes {
+					return "isNotNil{}"
+				}
 			} else {
 				fmt.Printf("ERROR: isNotNil unexpected field [%#v]!", field)
 			}
@@ -419,7 +419,7 @@ _{{Name .}}Tests := Expect{
 	dirty:        {{Boolean . "dirty"}},
 	parent_nodes: {{isEqualTo . "parent_nodes"}},
 
-	node_bytes: {{Bytes . "node_bytes"}},
+	node_bytes: {{isNotNil . "node_bytes"}},
 	node_hash:  {{isNotNil . "node_hash"}},
 
 	val:                {{Bytes . "val"}},
@@ -477,20 +477,401 @@ func TestMainWorkflow(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		_root := tdb.root_node
+
 		tdb.GenDotFile("./test_mainworkflow_1_1.dot", false)
-		// _root := tdb.root_node
-		//root.genCheckStatements(os.Stdout)
+		// _root.genCheckStatements(os.Stdout)
+		{
+			_rootTests := Expect{
+				prefix:       nil,
+				dirty:        false,
+				parent_nodes: nil,
+
+				node_bytes: nil,
+				node_hash:  nil,
+
+				val:                nil,
+				val_hash:           nil,
+				val_hash_recovered: true,
+				val_dirty:          false,
+
+				prefix_child_nodes:                nil,
+				prefix_child_nodes_hash:           nil,
+				prefix_child_nodes_hash_recovered: true,
+
+				folder_child_nodes:                nil,
+				folder_child_nodes_hash:           nil,
+				folder_child_nodes_hash_recovered: true,
+
+				prefix_child_nodes_len:   0,
+				prefix_child_nodes_dirty: false,
+
+				folder_child_nodes_len:   0,
+				folder_child_nodes_dirty: false,
+			}.makeTests(_root)
+
+			for _, tt := range _rootTests {
+				if !tt.ok {
+					t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+				}
+			}
+		}
 
 		tdb.Put(Path([]byte("A")), []byte("val_A"), true)
-		// _root.genCheckStatements(os.Stdout)
+
 		tdb.GenDotFile("./test_mainworkflow_1_2.dot", false)
+		// _root.genCheckStatements(os.Stdout)
+		{
+			_rootTests := Expect{
+				prefix:       nil,
+				dirty:        true,
+				parent_nodes: nil,
+
+				node_bytes: nil,
+				node_hash:  nil,
+
+				val:                nil,
+				val_hash:           nil,
+				val_hash_recovered: true,
+				val_dirty:          false,
+
+				prefix_child_nodes:                nil,
+				prefix_child_nodes_hash:           nil,
+				prefix_child_nodes_hash_recovered: true,
+
+				folder_child_nodes:                isNotNil{},
+				folder_child_nodes_hash:           nil,
+				folder_child_nodes_hash_recovered: true,
+
+				prefix_child_nodes_len:   0,
+				prefix_child_nodes_dirty: false,
+
+				folder_child_nodes_len:   1,
+				folder_child_nodes_dirty: true,
+			}.makeTests(_root)
+
+			for _, tt := range _rootTests {
+				if !tt.ok {
+					t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+				}
+			}
+
+			{
+				_1A_ := _root.folder_child_nodes.btree.Get(uint8('A'))
+				_1A := _1A_.(*Node)
+
+				_1ATests := Expect{
+					prefix:       []byte("A"),
+					dirty:        true,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: nil,
+					node_hash:  nil,
+
+					val:                []byte("val_A"),
+					val_hash:           nil,
+					val_hash_recovered: true,
+					val_dirty:          true,
+
+					prefix_child_nodes:                nil,
+					prefix_child_nodes_hash:           nil,
+					prefix_child_nodes_hash_recovered: true,
+
+					folder_child_nodes:                nil,
+					folder_child_nodes_hash:           nil,
+					folder_child_nodes_hash_recovered: true,
+
+					prefix_child_nodes_len:   0,
+					prefix_child_nodes_dirty: false,
+
+					folder_child_nodes_len:   0,
+					folder_child_nodes_dirty: false,
+				}.makeTests(_1A)
+
+				for _, tt := range _1ATests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+			}
+		}
 
 		tdb.Put(Path([]byte("AB")), []byte("val_AB"), true)
 		tdb.Put(Path([]byte("AC")), []byte("val_AC"), true)
 		tdb.Put(Path([]byte("AD")), []byte("val_AD"), true)
 		tdb.Put(Path([]byte("ABC")), []byte("val_ABC"), true)
 		tdb.Put(Path([]byte("ABCD")), []byte("val_ABCD"), true)
+
 		tdb.GenDotFile("./test_mainworkflow_1_3.dot", false)
+		// _root.genCheckStatements(os.Stdout)
+		{
+			_rootTests := Expect{
+				prefix:       nil,
+				dirty:        true,
+				parent_nodes: nil,
+
+				node_bytes: nil,
+				node_hash:  nil,
+
+				val:                nil,
+				val_hash:           nil,
+				val_hash_recovered: true,
+				val_dirty:          false,
+
+				prefix_child_nodes:                nil,
+				prefix_child_nodes_hash:           nil,
+				prefix_child_nodes_hash_recovered: true,
+
+				folder_child_nodes:                isNotNil{},
+				folder_child_nodes_hash:           nil,
+				folder_child_nodes_hash_recovered: true,
+
+				prefix_child_nodes_len:   0,
+				prefix_child_nodes_dirty: false,
+
+				folder_child_nodes_len:   1,
+				folder_child_nodes_dirty: true,
+			}.makeTests(_root)
+
+			for _, tt := range _rootTests {
+				if !tt.ok {
+					t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+				}
+			}
+
+			{
+				_1A_ := _root.folder_child_nodes.btree.Get(uint8('A'))
+				_1A := _1A_.(*Node)
+
+				_1ATests := Expect{
+					prefix:       []byte("A"),
+					dirty:        true,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: nil,
+					node_hash:  nil,
+
+					val:                []byte("val_A"),
+					val_hash:           nil,
+					val_hash_recovered: true,
+					val_dirty:          true,
+
+					prefix_child_nodes:                isNotNil{},
+					prefix_child_nodes_hash:           nil,
+					prefix_child_nodes_hash_recovered: true,
+
+					folder_child_nodes:                nil,
+					folder_child_nodes_hash:           nil,
+					folder_child_nodes_hash_recovered: true,
+
+					prefix_child_nodes_len:   3,
+					prefix_child_nodes_dirty: true,
+
+					folder_child_nodes_len:   0,
+					folder_child_nodes_dirty: false,
+				}.makeTests(_1A)
+
+				for _, tt := range _1ATests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+				{
+					_2AB_ := _1A.prefix_child_nodes.btree.Get(uint8('B'))
+					_2AB := _2AB_.(*Node)
+
+					_2ABTests := Expect{
+						prefix:       []byte("B"),
+						dirty:        true,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: nil,
+						node_hash:  nil,
+
+						val:                []byte("val_AB"),
+						val_hash:           nil,
+						val_hash_recovered: true,
+						val_dirty:          true,
+
+						prefix_child_nodes:                isNotNil{},
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: true,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: true,
+
+						prefix_child_nodes_len:   1,
+						prefix_child_nodes_dirty: true,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AB)
+
+					for _, tt := range _2ABTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					{
+						_3ABC_ := _2AB.prefix_child_nodes.btree.Get(uint8('C'))
+						_3ABC := _3ABC_.(*Node)
+
+						_3ABCTests := Expect{
+							prefix:       []byte("C"),
+							dirty:        true,
+							parent_nodes: isEqualTo{_2AB.prefix_child_nodes},
+
+							node_bytes: nil,
+							node_hash:  nil,
+
+							val:                []byte("val_ABC"),
+							val_hash:           nil,
+							val_hash_recovered: true,
+							val_dirty:          true,
+
+							prefix_child_nodes:                isNotNil{},
+							prefix_child_nodes_hash:           nil,
+							prefix_child_nodes_hash_recovered: true,
+
+							folder_child_nodes:                nil,
+							folder_child_nodes_hash:           nil,
+							folder_child_nodes_hash_recovered: true,
+
+							prefix_child_nodes_len:   1,
+							prefix_child_nodes_dirty: true,
+
+							folder_child_nodes_len:   0,
+							folder_child_nodes_dirty: false,
+						}.makeTests(_3ABC)
+
+						for _, tt := range _3ABCTests {
+							if !tt.ok {
+								t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+							}
+						}
+
+						{
+							_4ABCD_ := _3ABC.prefix_child_nodes.btree.Get(uint8('D'))
+							_4ABCD := _4ABCD_.(*Node)
+
+							_4ABCDTests := Expect{
+								prefix:       []byte("D"),
+								dirty:        true,
+								parent_nodes: isEqualTo{_3ABC.prefix_child_nodes},
+
+								node_bytes: nil,
+								node_hash:  nil,
+
+								val:                []byte("val_ABCD"),
+								val_hash:           nil,
+								val_hash_recovered: true,
+								val_dirty:          true,
+
+								prefix_child_nodes:                nil,
+								prefix_child_nodes_hash:           nil,
+								prefix_child_nodes_hash_recovered: true,
+
+								folder_child_nodes:                nil,
+								folder_child_nodes_hash:           nil,
+								folder_child_nodes_hash_recovered: true,
+
+								prefix_child_nodes_len:   0,
+								prefix_child_nodes_dirty: false,
+
+								folder_child_nodes_len:   0,
+								folder_child_nodes_dirty: false,
+							}.makeTests(_4ABCD)
+
+							for _, tt := range _4ABCDTests {
+								if !tt.ok {
+									t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+								}
+							}
+
+						}
+
+					}
+
+					_2AC_ := _1A.prefix_child_nodes.btree.Get(uint8('C'))
+					_2AC := _2AC_.(*Node)
+
+					_2ACTests := Expect{
+						prefix:       []byte("C"),
+						dirty:        true,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: nil,
+						node_hash:  nil,
+
+						val:                []byte("val_AC"),
+						val_hash:           nil,
+						val_hash_recovered: true,
+						val_dirty:          true,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: true,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: true,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AC)
+
+					for _, tt := range _2ACTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					_2AD_ := _1A.prefix_child_nodes.btree.Get(uint8('D'))
+					_2AD := _2AD_.(*Node)
+
+					_2ADTests := Expect{
+						prefix:       []byte("D"),
+						dirty:        true,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: nil,
+						node_hash:  nil,
+
+						val:                []byte("val_AD"),
+						val_hash:           nil,
+						val_hash_recovered: true,
+						val_dirty:          true,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: true,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: true,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AD)
+
+					for _, tt := range _2ADTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+				}
+			}
+		}
 
 		tdb.Put(Path([]byte("A"), []byte("A"), []byte("A")), []byte("val_A_A_A"), true)
 		tdb.Put(Path([]byte("AB"), []byte("CD")), []byte("val_AB_CD"), true)
@@ -504,6 +885,387 @@ func TestMainWorkflow(t *testing.T) {
 		rootHash = _rootHash
 
 		tdb.GenDotFile("./test_mainworkflow_1_4.dot", false)
+		// _root.genCheckStatements(os.Stdout)
+		{
+			_rootTests := Expect{
+				prefix:       nil,
+				dirty:        true,
+				parent_nodes: nil,
+
+				node_bytes: isNotNil{},
+				node_hash:  isNotNil{},
+
+				val:                nil,
+				val_hash:           nil,
+				val_hash_recovered: true,
+				val_dirty:          false,
+
+				prefix_child_nodes:                nil,
+				prefix_child_nodes_hash:           nil,
+				prefix_child_nodes_hash_recovered: true,
+
+				folder_child_nodes:                isNotNil{},
+				folder_child_nodes_hash:           isNotNil{},
+				folder_child_nodes_hash_recovered: true,
+
+				prefix_child_nodes_len:   0,
+				prefix_child_nodes_dirty: false,
+
+				folder_child_nodes_len:   1,
+				folder_child_nodes_dirty: true,
+			}.makeTests(_root)
+
+			for _, tt := range _rootTests {
+				if !tt.ok {
+					t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+				}
+			}
+
+			{
+				_1A_ := _root.folder_child_nodes.btree.Get(uint8('A'))
+				_1A := _1A_.(*Node)
+
+				_1ATests := Expect{
+					prefix:       []byte("A"),
+					dirty:        true,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: isNotNil{},
+					node_hash:  isNotNil{},
+
+					val:                []byte("val_A"),
+					val_hash:           isNotNil{},
+					val_hash_recovered: true,
+					val_dirty:          true,
+
+					prefix_child_nodes:                isNotNil{},
+					prefix_child_nodes_hash:           isNotNil{},
+					prefix_child_nodes_hash_recovered: true,
+
+					folder_child_nodes:                isNotNil{},
+					folder_child_nodes_hash:           isNotNil{},
+					folder_child_nodes_hash_recovered: true,
+
+					prefix_child_nodes_len:   3,
+					prefix_child_nodes_dirty: true,
+
+					folder_child_nodes_len:   1,
+					folder_child_nodes_dirty: true,
+				}.makeTests(_1A)
+
+				for _, tt := range _1ATests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+				{
+					_2AB_ := _1A.prefix_child_nodes.btree.Get(uint8('B'))
+					_2AB := _2AB_.(*Node)
+
+					_2ABTests := Expect{
+						prefix:       []byte("B"),
+						dirty:        true,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                []byte("val_AB"),
+						val_hash:           isNotNil{},
+						val_hash_recovered: true,
+						val_dirty:          true,
+
+						prefix_child_nodes:                isNotNil{},
+						prefix_child_nodes_hash:           isNotNil{},
+						prefix_child_nodes_hash_recovered: true,
+
+						folder_child_nodes:                isNotNil{},
+						folder_child_nodes_hash:           isNotNil{},
+						folder_child_nodes_hash_recovered: true,
+
+						prefix_child_nodes_len:   1,
+						prefix_child_nodes_dirty: true,
+
+						folder_child_nodes_len:   1,
+						folder_child_nodes_dirty: true,
+					}.makeTests(_2AB)
+
+					for _, tt := range _2ABTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					{
+						_3ABC_ := _2AB.prefix_child_nodes.btree.Get(uint8('C'))
+						_3ABC := _3ABC_.(*Node)
+
+						_3ABCTests := Expect{
+							prefix:       []byte("C"),
+							dirty:        true,
+							parent_nodes: isEqualTo{_2AB.prefix_child_nodes},
+
+							node_bytes: isNotNil{},
+							node_hash:  isNotNil{},
+
+							val:                []byte("val_ABC"),
+							val_hash:           isNotNil{},
+							val_hash_recovered: true,
+							val_dirty:          true,
+
+							prefix_child_nodes:                isNotNil{},
+							prefix_child_nodes_hash:           isNotNil{},
+							prefix_child_nodes_hash_recovered: true,
+
+							folder_child_nodes:                nil,
+							folder_child_nodes_hash:           nil,
+							folder_child_nodes_hash_recovered: true,
+
+							prefix_child_nodes_len:   1,
+							prefix_child_nodes_dirty: true,
+
+							folder_child_nodes_len:   0,
+							folder_child_nodes_dirty: false,
+						}.makeTests(_3ABC)
+
+						for _, tt := range _3ABCTests {
+							if !tt.ok {
+								t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+							}
+						}
+
+						{
+							_4ABCD_ := _3ABC.prefix_child_nodes.btree.Get(uint8('D'))
+							_4ABCD := _4ABCD_.(*Node)
+
+							_4ABCDTests := Expect{
+								prefix:       []byte("D"),
+								dirty:        true,
+								parent_nodes: isEqualTo{_3ABC.prefix_child_nodes},
+
+								node_bytes: isNotNil{},
+								node_hash:  isNotNil{},
+
+								val:                []byte("val_ABCD"),
+								val_hash:           isNotNil{},
+								val_hash_recovered: true,
+								val_dirty:          true,
+
+								prefix_child_nodes:                nil,
+								prefix_child_nodes_hash:           nil,
+								prefix_child_nodes_hash_recovered: true,
+
+								folder_child_nodes:                nil,
+								folder_child_nodes_hash:           nil,
+								folder_child_nodes_hash_recovered: true,
+
+								prefix_child_nodes_len:   0,
+								prefix_child_nodes_dirty: false,
+
+								folder_child_nodes_len:   0,
+								folder_child_nodes_dirty: false,
+							}.makeTests(_4ABCD)
+
+							for _, tt := range _4ABCDTests {
+								if !tt.ok {
+									t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+								}
+							}
+
+						}
+
+						_2AB2CD_ := _2AB.folder_child_nodes.btree.Get(uint8('C'))
+						_2AB2CD := _2AB2CD_.(*Node)
+
+						_2AB2CDTests := Expect{
+							prefix:       []byte("CD"),
+							dirty:        true,
+							parent_nodes: isEqualTo{_2AB.folder_child_nodes},
+
+							node_bytes: isNotNil{},
+							node_hash:  isNotNil{},
+
+							val:                []byte("val_AB_CD"),
+							val_hash:           isNotNil{},
+							val_hash_recovered: true,
+							val_dirty:          true,
+
+							prefix_child_nodes:                nil,
+							prefix_child_nodes_hash:           nil,
+							prefix_child_nodes_hash_recovered: true,
+
+							folder_child_nodes:                nil,
+							folder_child_nodes_hash:           nil,
+							folder_child_nodes_hash_recovered: true,
+
+							prefix_child_nodes_len:   0,
+							prefix_child_nodes_dirty: false,
+
+							folder_child_nodes_len:   0,
+							folder_child_nodes_dirty: false,
+						}.makeTests(_2AB2CD)
+
+						for _, tt := range _2AB2CDTests {
+							if !tt.ok {
+								t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+							}
+						}
+
+					}
+
+					_2AC_ := _1A.prefix_child_nodes.btree.Get(uint8('C'))
+					_2AC := _2AC_.(*Node)
+
+					_2ACTests := Expect{
+						prefix:       []byte("C"),
+						dirty:        true,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                []byte("val_AC"),
+						val_hash:           isNotNil{},
+						val_hash_recovered: true,
+						val_dirty:          true,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: true,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: true,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AC)
+
+					for _, tt := range _2ACTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					_2AD_ := _1A.prefix_child_nodes.btree.Get(uint8('D'))
+					_2AD := _2AD_.(*Node)
+
+					_2ADTests := Expect{
+						prefix:       []byte("D"),
+						dirty:        true,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                []byte("val_AD"),
+						val_hash:           isNotNil{},
+						val_hash_recovered: true,
+						val_dirty:          true,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: true,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: true,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AD)
+
+					for _, tt := range _2ADTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					_1A1A_ := _1A.folder_child_nodes.btree.Get(uint8('A'))
+					_1A1A := _1A1A_.(*Node)
+
+					_1A1ATests := Expect{
+						prefix:       []byte("A"),
+						dirty:        true,
+						parent_nodes: isEqualTo{_1A.folder_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           nil,
+						val_hash_recovered: true,
+						val_dirty:          false,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: true,
+
+						folder_child_nodes:                isNotNil{},
+						folder_child_nodes_hash:           isNotNil{},
+						folder_child_nodes_hash_recovered: true,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   1,
+						folder_child_nodes_dirty: true,
+					}.makeTests(_1A1A)
+
+					for _, tt := range _1A1ATests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					{
+						_1A1A1A_ := _1A1A.folder_child_nodes.btree.Get(uint8('A'))
+						_1A1A1A := _1A1A1A_.(*Node)
+
+						_1A1A1ATests := Expect{
+							prefix:       []byte("A"),
+							dirty:        true,
+							parent_nodes: isEqualTo{_1A1A.folder_child_nodes},
+
+							node_bytes: isNotNil{},
+							node_hash:  isNotNil{},
+
+							val:                []byte("val_A_A_A"),
+							val_hash:           isNotNil{},
+							val_hash_recovered: true,
+							val_dirty:          true,
+
+							prefix_child_nodes:                nil,
+							prefix_child_nodes_hash:           nil,
+							prefix_child_nodes_hash_recovered: true,
+
+							folder_child_nodes:                nil,
+							folder_child_nodes_hash:           nil,
+							folder_child_nodes_hash_recovered: true,
+
+							prefix_child_nodes_len:   0,
+							prefix_child_nodes_dirty: false,
+
+							folder_child_nodes_len:   0,
+							folder_child_nodes_dirty: false,
+						}.makeTests(_1A1A1A)
+
+						for _, tt := range _1A1A1ATests {
+							if !tt.ok {
+								t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+							}
+						}
+					}
+				}
+			}
+		}
 		testCloseTrieDB(tdb)
 	}
 
@@ -515,21 +1277,971 @@ func TestMainWorkflow(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		tdb.GenDotFile("./test_mainworkflow_2_1.dot", false)
-
 		_root := tdb.root_node
+
+		tdb.GenDotFile("./test_mainworkflow_2_1.dot", false)
+		// _root.genCheckStatements(os.Stdout)
+		{
+			_rootTests := Expect{
+				prefix:       nil,
+				dirty:        false,
+				parent_nodes: nil,
+
+				node_bytes: isNotNil{},
+				node_hash:  isNotNil{},
+
+				val:                nil,
+				val_hash:           nil,
+				val_hash_recovered: false,
+				val_dirty:          false,
+
+				prefix_child_nodes:                nil,
+				prefix_child_nodes_hash:           nil,
+				prefix_child_nodes_hash_recovered: false,
+
+				folder_child_nodes:                nil,
+				folder_child_nodes_hash:           isNotNil{},
+				folder_child_nodes_hash_recovered: false,
+
+				prefix_child_nodes_len:   0,
+				prefix_child_nodes_dirty: false,
+
+				folder_child_nodes_len:   0,
+				folder_child_nodes_dirty: false,
+			}.makeTests(_root)
+
+			for _, tt := range _rootTests {
+				if !tt.ok {
+					t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+				}
+			}
+		}
 
 		tdb.Put(Path([]byte("B")), []byte("val_B"), true)
 		tdb.Put(Path([]byte("Aa")), []byte("val_Aa"), true)
 		tdb.Put(Path([]byte("ABa")), []byte("val_ABa"), true)
 		tdb.Put(Path([]byte("ABCa")), []byte("val_ABCa"), true)
 		tdb.GenDotFile("./test_mainworkflow_2_2.dot", false)
+		// _root.genCheckStatements(os.Stdout)
+		{
+			_rootTests := Expect{
+				prefix:       nil,
+				dirty:        true,
+				parent_nodes: nil,
+
+				node_bytes: isNotNil{},
+				node_hash:  isNotNil{},
+
+				val:                nil,
+				val_hash:           nil,
+				val_hash_recovered: false,
+				val_dirty:          false,
+
+				prefix_child_nodes:                nil,
+				prefix_child_nodes_hash:           nil,
+				prefix_child_nodes_hash_recovered: false,
+
+				folder_child_nodes:                isNotNil{},
+				folder_child_nodes_hash:           isNotNil{},
+				folder_child_nodes_hash_recovered: true,
+
+				prefix_child_nodes_len:   0,
+				prefix_child_nodes_dirty: false,
+
+				folder_child_nodes_len:   2,
+				folder_child_nodes_dirty: true,
+			}.makeTests(_root)
+
+			for _, tt := range _rootTests {
+				if !tt.ok {
+					t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+				}
+			}
+
+			{
+				_1A_ := _root.folder_child_nodes.btree.Get(uint8('A'))
+				_1A := _1A_.(*Node)
+
+				_1ATests := Expect{
+					prefix:       []byte("A"),
+					dirty:        true,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: isNotNil{},
+					node_hash:  isNotNil{},
+
+					val:                nil,
+					val_hash:           isNotNil{},
+					val_hash_recovered: false,
+					val_dirty:          false,
+
+					prefix_child_nodes:                isNotNil{},
+					prefix_child_nodes_hash:           isNotNil{},
+					prefix_child_nodes_hash_recovered: true,
+
+					folder_child_nodes:                nil,
+					folder_child_nodes_hash:           isNotNil{},
+					folder_child_nodes_hash_recovered: false,
+
+					prefix_child_nodes_len:   4,
+					prefix_child_nodes_dirty: true,
+
+					folder_child_nodes_len:   0,
+					folder_child_nodes_dirty: false,
+				}.makeTests(_1A)
+
+				for _, tt := range _1ATests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+				{
+					_2AB_ := _1A.prefix_child_nodes.btree.Get(uint8('B'))
+					_2AB := _2AB_.(*Node)
+
+					_2ABTests := Expect{
+						prefix:       []byte("B"),
+						dirty:        true,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           isNotNil{},
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                isNotNil{},
+						prefix_child_nodes_hash:           isNotNil{},
+						prefix_child_nodes_hash_recovered: true,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           isNotNil{},
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   2,
+						prefix_child_nodes_dirty: true,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AB)
+
+					for _, tt := range _2ABTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					{
+						_3ABC_ := _2AB.prefix_child_nodes.btree.Get(uint8('C'))
+						_3ABC := _3ABC_.(*Node)
+
+						_3ABCTests := Expect{
+							prefix:       []byte("C"),
+							dirty:        true,
+							parent_nodes: isEqualTo{_2AB.prefix_child_nodes},
+
+							node_bytes: isNotNil{},
+							node_hash:  isNotNil{},
+
+							val:                nil,
+							val_hash:           isNotNil{},
+							val_hash_recovered: false,
+							val_dirty:          false,
+
+							prefix_child_nodes:                isNotNil{},
+							prefix_child_nodes_hash:           isNotNil{},
+							prefix_child_nodes_hash_recovered: true,
+
+							folder_child_nodes:                nil,
+							folder_child_nodes_hash:           nil,
+							folder_child_nodes_hash_recovered: false,
+
+							prefix_child_nodes_len:   2,
+							prefix_child_nodes_dirty: true,
+
+							folder_child_nodes_len:   0,
+							folder_child_nodes_dirty: false,
+						}.makeTests(_3ABC)
+
+						for _, tt := range _3ABCTests {
+							if !tt.ok {
+								t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+							}
+						}
+
+						{
+							_4ABCD_ := _3ABC.prefix_child_nodes.btree.Get(uint8('D'))
+							_4ABCD := _4ABCD_.(*Node)
+
+							_4ABCDTests := Expect{
+								prefix:       []byte("D"),
+								dirty:        false,
+								parent_nodes: isEqualTo{_3ABC.prefix_child_nodes},
+
+								node_bytes: isNotNil{},
+								node_hash:  isNotNil{},
+
+								val:                nil,
+								val_hash:           isNotNil{},
+								val_hash_recovered: false,
+								val_dirty:          false,
+
+								prefix_child_nodes:                nil,
+								prefix_child_nodes_hash:           nil,
+								prefix_child_nodes_hash_recovered: false,
+
+								folder_child_nodes:                nil,
+								folder_child_nodes_hash:           nil,
+								folder_child_nodes_hash_recovered: false,
+
+								prefix_child_nodes_len:   0,
+								prefix_child_nodes_dirty: false,
+
+								folder_child_nodes_len:   0,
+								folder_child_nodes_dirty: false,
+							}.makeTests(_4ABCD)
+
+							for _, tt := range _4ABCDTests {
+								if !tt.ok {
+									t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+								}
+							}
+
+							_4ABCa_ := _3ABC.prefix_child_nodes.btree.Get(uint8('a'))
+							_4ABCa := _4ABCa_.(*Node)
+
+							_4ABCaTests := Expect{
+								prefix:       []byte("a"),
+								dirty:        true,
+								parent_nodes: isEqualTo{_3ABC.prefix_child_nodes},
+
+								node_bytes: nil,
+								node_hash:  nil,
+
+								val:                []byte("val_ABCa"),
+								val_hash:           nil,
+								val_hash_recovered: true,
+								val_dirty:          true,
+
+								prefix_child_nodes:                nil,
+								prefix_child_nodes_hash:           nil,
+								prefix_child_nodes_hash_recovered: true,
+
+								folder_child_nodes:                nil,
+								folder_child_nodes_hash:           nil,
+								folder_child_nodes_hash_recovered: true,
+
+								prefix_child_nodes_len:   0,
+								prefix_child_nodes_dirty: false,
+
+								folder_child_nodes_len:   0,
+								folder_child_nodes_dirty: false,
+							}.makeTests(_4ABCa)
+
+							for _, tt := range _4ABCaTests {
+								if !tt.ok {
+									t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+								}
+							}
+
+						}
+
+						_3ABa_ := _2AB.prefix_child_nodes.btree.Get(uint8('a'))
+						_3ABa := _3ABa_.(*Node)
+
+						_3ABaTests := Expect{
+							prefix:       []byte("a"),
+							dirty:        true,
+							parent_nodes: isEqualTo{_2AB.prefix_child_nodes},
+
+							node_bytes: nil,
+							node_hash:  nil,
+
+							val:                []byte("val_ABa"),
+							val_hash:           nil,
+							val_hash_recovered: true,
+							val_dirty:          true,
+
+							prefix_child_nodes:                nil,
+							prefix_child_nodes_hash:           nil,
+							prefix_child_nodes_hash_recovered: true,
+
+							folder_child_nodes:                nil,
+							folder_child_nodes_hash:           nil,
+							folder_child_nodes_hash_recovered: true,
+
+							prefix_child_nodes_len:   0,
+							prefix_child_nodes_dirty: false,
+
+							folder_child_nodes_len:   0,
+							folder_child_nodes_dirty: false,
+						}.makeTests(_3ABa)
+
+						for _, tt := range _3ABaTests {
+							if !tt.ok {
+								t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+							}
+						}
+
+					}
+
+					_2AC_ := _1A.prefix_child_nodes.btree.Get(uint8('C'))
+					_2AC := _2AC_.(*Node)
+
+					_2ACTests := Expect{
+						prefix:       []byte("C"),
+						dirty:        false,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           isNotNil{},
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: false,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AC)
+
+					for _, tt := range _2ACTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					_2AD_ := _1A.prefix_child_nodes.btree.Get(uint8('D'))
+					_2AD := _2AD_.(*Node)
+
+					_2ADTests := Expect{
+						prefix:       []byte("D"),
+						dirty:        false,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           isNotNil{},
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: false,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AD)
+
+					for _, tt := range _2ADTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					_2Aa_ := _1A.prefix_child_nodes.btree.Get(uint8('a'))
+					_2Aa := _2Aa_.(*Node)
+
+					_2AaTests := Expect{
+						prefix:       []byte("a"),
+						dirty:        true,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: nil,
+						node_hash:  nil,
+
+						val:                []byte("val_Aa"),
+						val_hash:           nil,
+						val_hash_recovered: true,
+						val_dirty:          true,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: true,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: true,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2Aa)
+
+					for _, tt := range _2AaTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+				}
+
+				_1B_ := _root.folder_child_nodes.btree.Get(uint8('B'))
+				_1B := _1B_.(*Node)
+
+				_1BTests := Expect{
+					prefix:       []byte("B"),
+					dirty:        true,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: nil,
+					node_hash:  nil,
+
+					val:                []byte("val_B"),
+					val_hash:           nil,
+					val_hash_recovered: true,
+					val_dirty:          true,
+
+					prefix_child_nodes:                nil,
+					prefix_child_nodes_hash:           nil,
+					prefix_child_nodes_hash_recovered: true,
+
+					folder_child_nodes:                nil,
+					folder_child_nodes_hash:           nil,
+					folder_child_nodes_hash_recovered: true,
+
+					prefix_child_nodes_len:   0,
+					prefix_child_nodes_dirty: false,
+
+					folder_child_nodes_len:   0,
+					folder_child_nodes_dirty: false,
+				}.makeTests(_1B)
+
+				for _, tt := range _1BTests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+			}
+		}
 
 		tdb.Put(Path([]byte("B"), []byte("B"), []byte("B")), []byte("val_B_B_B"), true)
 		tdb.Put(Path([]byte("B"), []byte("B")), []byte("val_B_B"), true)
 		tdb.GenDotFile("./test_mainworkflow_2_3.dot", false)
+		// _root.genCheckStatements(os.Stdout)
+		{
+			_rootTests := Expect{
+				prefix:       nil,
+				dirty:        true,
+				parent_nodes: nil,
 
-		_root.genCheckStatements(os.Stdout)
+				node_bytes: isNotNil{},
+				node_hash:  isNotNil{},
+
+				val:                nil,
+				val_hash:           nil,
+				val_hash_recovered: false,
+				val_dirty:          false,
+
+				prefix_child_nodes:                nil,
+				prefix_child_nodes_hash:           nil,
+				prefix_child_nodes_hash_recovered: false,
+
+				folder_child_nodes:                isNotNil{},
+				folder_child_nodes_hash:           isNotNil{},
+				folder_child_nodes_hash_recovered: true,
+
+				prefix_child_nodes_len:   0,
+				prefix_child_nodes_dirty: false,
+
+				folder_child_nodes_len:   2,
+				folder_child_nodes_dirty: true,
+			}.makeTests(_root)
+
+			for _, tt := range _rootTests {
+				if !tt.ok {
+					t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+				}
+			}
+
+			{
+				_1A_ := _root.folder_child_nodes.btree.Get(uint8('A'))
+				_1A := _1A_.(*Node)
+
+				_1ATests := Expect{
+					prefix:       []byte("A"),
+					dirty:        true,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: isNotNil{},
+					node_hash:  isNotNil{},
+
+					val:                nil,
+					val_hash:           isNotNil{},
+					val_hash_recovered: false,
+					val_dirty:          false,
+
+					prefix_child_nodes:                isNotNil{},
+					prefix_child_nodes_hash:           isNotNil{},
+					prefix_child_nodes_hash_recovered: true,
+
+					folder_child_nodes:                nil,
+					folder_child_nodes_hash:           isNotNil{},
+					folder_child_nodes_hash_recovered: false,
+
+					prefix_child_nodes_len:   4,
+					prefix_child_nodes_dirty: true,
+
+					folder_child_nodes_len:   0,
+					folder_child_nodes_dirty: false,
+				}.makeTests(_1A)
+
+				for _, tt := range _1ATests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+				{
+					_2AB_ := _1A.prefix_child_nodes.btree.Get(uint8('B'))
+					_2AB := _2AB_.(*Node)
+
+					_2ABTests := Expect{
+						prefix:       []byte("B"),
+						dirty:        true,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           isNotNil{},
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                isNotNil{},
+						prefix_child_nodes_hash:           isNotNil{},
+						prefix_child_nodes_hash_recovered: true,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           isNotNil{},
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   2,
+						prefix_child_nodes_dirty: true,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AB)
+
+					for _, tt := range _2ABTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					{
+						_3ABC_ := _2AB.prefix_child_nodes.btree.Get(uint8('C'))
+						_3ABC := _3ABC_.(*Node)
+
+						_3ABCTests := Expect{
+							prefix:       []byte("C"),
+							dirty:        true,
+							parent_nodes: isEqualTo{_2AB.prefix_child_nodes},
+
+							node_bytes: isNotNil{},
+							node_hash:  isNotNil{},
+
+							val:                nil,
+							val_hash:           isNotNil{},
+							val_hash_recovered: false,
+							val_dirty:          false,
+
+							prefix_child_nodes:                isNotNil{},
+							prefix_child_nodes_hash:           isNotNil{},
+							prefix_child_nodes_hash_recovered: true,
+
+							folder_child_nodes:                nil,
+							folder_child_nodes_hash:           nil,
+							folder_child_nodes_hash_recovered: false,
+
+							prefix_child_nodes_len:   2,
+							prefix_child_nodes_dirty: true,
+
+							folder_child_nodes_len:   0,
+							folder_child_nodes_dirty: false,
+						}.makeTests(_3ABC)
+
+						for _, tt := range _3ABCTests {
+							if !tt.ok {
+								t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+							}
+						}
+
+						{
+							_4ABCD_ := _3ABC.prefix_child_nodes.btree.Get(uint8('D'))
+							_4ABCD := _4ABCD_.(*Node)
+
+							_4ABCDTests := Expect{
+								prefix:       []byte("D"),
+								dirty:        false,
+								parent_nodes: isEqualTo{_3ABC.prefix_child_nodes},
+
+								node_bytes: isNotNil{},
+								node_hash:  isNotNil{},
+
+								val:                nil,
+								val_hash:           isNotNil{},
+								val_hash_recovered: false,
+								val_dirty:          false,
+
+								prefix_child_nodes:                nil,
+								prefix_child_nodes_hash:           nil,
+								prefix_child_nodes_hash_recovered: false,
+
+								folder_child_nodes:                nil,
+								folder_child_nodes_hash:           nil,
+								folder_child_nodes_hash_recovered: false,
+
+								prefix_child_nodes_len:   0,
+								prefix_child_nodes_dirty: false,
+
+								folder_child_nodes_len:   0,
+								folder_child_nodes_dirty: false,
+							}.makeTests(_4ABCD)
+
+							for _, tt := range _4ABCDTests {
+								if !tt.ok {
+									t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+								}
+							}
+
+							_4ABCa_ := _3ABC.prefix_child_nodes.btree.Get(uint8('a'))
+							_4ABCa := _4ABCa_.(*Node)
+
+							_4ABCaTests := Expect{
+								prefix:       []byte("a"),
+								dirty:        true,
+								parent_nodes: isEqualTo{_3ABC.prefix_child_nodes},
+
+								node_bytes: nil,
+								node_hash:  nil,
+
+								val:                []byte("val_ABCa"),
+								val_hash:           nil,
+								val_hash_recovered: true,
+								val_dirty:          true,
+
+								prefix_child_nodes:                nil,
+								prefix_child_nodes_hash:           nil,
+								prefix_child_nodes_hash_recovered: true,
+
+								folder_child_nodes:                nil,
+								folder_child_nodes_hash:           nil,
+								folder_child_nodes_hash_recovered: true,
+
+								prefix_child_nodes_len:   0,
+								prefix_child_nodes_dirty: false,
+
+								folder_child_nodes_len:   0,
+								folder_child_nodes_dirty: false,
+							}.makeTests(_4ABCa)
+
+							for _, tt := range _4ABCaTests {
+								if !tt.ok {
+									t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+								}
+							}
+
+						}
+
+						_3ABa_ := _2AB.prefix_child_nodes.btree.Get(uint8('a'))
+						_3ABa := _3ABa_.(*Node)
+
+						_3ABaTests := Expect{
+							prefix:       []byte("a"),
+							dirty:        true,
+							parent_nodes: isEqualTo{_2AB.prefix_child_nodes},
+
+							node_bytes: nil,
+							node_hash:  nil,
+
+							val:                []byte("val_ABa"),
+							val_hash:           nil,
+							val_hash_recovered: true,
+							val_dirty:          true,
+
+							prefix_child_nodes:                nil,
+							prefix_child_nodes_hash:           nil,
+							prefix_child_nodes_hash_recovered: true,
+
+							folder_child_nodes:                nil,
+							folder_child_nodes_hash:           nil,
+							folder_child_nodes_hash_recovered: true,
+
+							prefix_child_nodes_len:   0,
+							prefix_child_nodes_dirty: false,
+
+							folder_child_nodes_len:   0,
+							folder_child_nodes_dirty: false,
+						}.makeTests(_3ABa)
+
+						for _, tt := range _3ABaTests {
+							if !tt.ok {
+								t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+							}
+						}
+
+					}
+
+					_2AC_ := _1A.prefix_child_nodes.btree.Get(uint8('C'))
+					_2AC := _2AC_.(*Node)
+
+					_2ACTests := Expect{
+						prefix:       []byte("C"),
+						dirty:        false,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           isNotNil{},
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: false,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AC)
+
+					for _, tt := range _2ACTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					_2AD_ := _1A.prefix_child_nodes.btree.Get(uint8('D'))
+					_2AD := _2AD_.(*Node)
+
+					_2ADTests := Expect{
+						prefix:       []byte("D"),
+						dirty:        false,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           isNotNil{},
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: false,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AD)
+
+					for _, tt := range _2ADTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					_2Aa_ := _1A.prefix_child_nodes.btree.Get(uint8('a'))
+					_2Aa := _2Aa_.(*Node)
+
+					_2AaTests := Expect{
+						prefix:       []byte("a"),
+						dirty:        true,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: nil,
+						node_hash:  nil,
+
+						val:                []byte("val_Aa"),
+						val_hash:           nil,
+						val_hash_recovered: true,
+						val_dirty:          true,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: true,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: true,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2Aa)
+
+					for _, tt := range _2AaTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+				}
+
+				_1B_ := _root.folder_child_nodes.btree.Get(uint8('B'))
+				_1B := _1B_.(*Node)
+
+				_1BTests := Expect{
+					prefix:       []byte("B"),
+					dirty:        true,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: nil,
+					node_hash:  nil,
+
+					val:                []byte("val_B"),
+					val_hash:           nil,
+					val_hash_recovered: true,
+					val_dirty:          true,
+
+					prefix_child_nodes:                nil,
+					prefix_child_nodes_hash:           nil,
+					prefix_child_nodes_hash_recovered: true,
+
+					folder_child_nodes:                isNotNil{},
+					folder_child_nodes_hash:           nil,
+					folder_child_nodes_hash_recovered: true,
+
+					prefix_child_nodes_len:   0,
+					prefix_child_nodes_dirty: false,
+
+					folder_child_nodes_len:   1,
+					folder_child_nodes_dirty: true,
+				}.makeTests(_1B)
+
+				for _, tt := range _1BTests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+				{
+					_1B1B_ := _1B.folder_child_nodes.btree.Get(uint8('B'))
+					_1B1B := _1B1B_.(*Node)
+
+					_1B1BTests := Expect{
+						prefix:       []byte("B"),
+						dirty:        true,
+						parent_nodes: isEqualTo{_1B.folder_child_nodes},
+
+						node_bytes: nil,
+						node_hash:  nil,
+
+						val:                []byte("val_B_B"),
+						val_hash:           nil,
+						val_hash_recovered: true,
+						val_dirty:          true,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: true,
+
+						folder_child_nodes:                isNotNil{},
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: true,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   1,
+						folder_child_nodes_dirty: true,
+					}.makeTests(_1B1B)
+
+					for _, tt := range _1B1BTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					{
+						_1B1B1B_ := _1B1B.folder_child_nodes.btree.Get(uint8('B'))
+						_1B1B1B := _1B1B1B_.(*Node)
+
+						_1B1B1BTests := Expect{
+							prefix:       []byte("B"),
+							dirty:        true,
+							parent_nodes: isEqualTo{_1B1B.folder_child_nodes},
+
+							node_bytes: nil,
+							node_hash:  nil,
+
+							val:                []byte("val_B_B_B"),
+							val_hash:           nil,
+							val_hash_recovered: true,
+							val_dirty:          true,
+
+							prefix_child_nodes:                nil,
+							prefix_child_nodes_hash:           nil,
+							prefix_child_nodes_hash_recovered: true,
+
+							folder_child_nodes:                nil,
+							folder_child_nodes_hash:           nil,
+							folder_child_nodes_hash_recovered: true,
+
+							prefix_child_nodes_len:   0,
+							prefix_child_nodes_dirty: false,
+
+							folder_child_nodes_len:   0,
+							folder_child_nodes_dirty: false,
+						}.makeTests(_1B1B1B)
+
+						for _, tt := range _1B1B1BTests {
+							if !tt.ok {
+								t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+							}
+						}
+
+					}
+
+				}
+
+			}
+		}
 
 		_rootHash, err := tdb.testCommit()
 
@@ -540,6 +2252,504 @@ func TestMainWorkflow(t *testing.T) {
 		rootHash = _rootHash
 
 		tdb.GenDotFile("./test_mainworkflow_2_4.dot", false)
+		// _root.genCheckStatements(os.Stdout)
+		{
+			_rootTests := Expect{
+				prefix:       nil,
+				dirty:        true,
+				parent_nodes: nil,
+
+				node_bytes: isNotNil{},
+				node_hash:  isNotNil{},
+
+				val:                nil,
+				val_hash:           nil,
+				val_hash_recovered: false,
+				val_dirty:          false,
+
+				prefix_child_nodes:                nil,
+				prefix_child_nodes_hash:           nil,
+				prefix_child_nodes_hash_recovered: false,
+
+				folder_child_nodes:                isNotNil{},
+				folder_child_nodes_hash:           isNotNil{},
+				folder_child_nodes_hash_recovered: true,
+
+				prefix_child_nodes_len:   0,
+				prefix_child_nodes_dirty: false,
+
+				folder_child_nodes_len:   2,
+				folder_child_nodes_dirty: true,
+			}.makeTests(_root)
+
+			for _, tt := range _rootTests {
+				if !tt.ok {
+					t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+				}
+			}
+
+			{
+				_1A_ := _root.folder_child_nodes.btree.Get(uint8('A'))
+				_1A := _1A_.(*Node)
+
+				_1ATests := Expect{
+					prefix:       []byte("A"),
+					dirty:        true,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: isNotNil{},
+					node_hash:  isNotNil{},
+
+					val:                nil,
+					val_hash:           isNotNil{},
+					val_hash_recovered: false,
+					val_dirty:          false,
+
+					prefix_child_nodes:                isNotNil{},
+					prefix_child_nodes_hash:           isNotNil{},
+					prefix_child_nodes_hash_recovered: true,
+
+					folder_child_nodes:                nil,
+					folder_child_nodes_hash:           isNotNil{},
+					folder_child_nodes_hash_recovered: false,
+
+					prefix_child_nodes_len:   4,
+					prefix_child_nodes_dirty: true,
+
+					folder_child_nodes_len:   0,
+					folder_child_nodes_dirty: false,
+				}.makeTests(_1A)
+
+				for _, tt := range _1ATests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+				{
+					_2AB_ := _1A.prefix_child_nodes.btree.Get(uint8('B'))
+					_2AB := _2AB_.(*Node)
+
+					_2ABTests := Expect{
+						prefix:       []byte("B"),
+						dirty:        true,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           isNotNil{},
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                isNotNil{},
+						prefix_child_nodes_hash:           isNotNil{},
+						prefix_child_nodes_hash_recovered: true,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           isNotNil{},
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   2,
+						prefix_child_nodes_dirty: true,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AB)
+
+					for _, tt := range _2ABTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					{
+						_3ABC_ := _2AB.prefix_child_nodes.btree.Get(uint8('C'))
+						_3ABC := _3ABC_.(*Node)
+
+						_3ABCTests := Expect{
+							prefix:       []byte("C"),
+							dirty:        true,
+							parent_nodes: isEqualTo{_2AB.prefix_child_nodes},
+
+							node_bytes: isNotNil{},
+							node_hash:  isNotNil{},
+
+							val:                nil,
+							val_hash:           isNotNil{},
+							val_hash_recovered: false,
+							val_dirty:          false,
+
+							prefix_child_nodes:                isNotNil{},
+							prefix_child_nodes_hash:           isNotNil{},
+							prefix_child_nodes_hash_recovered: true,
+
+							folder_child_nodes:                nil,
+							folder_child_nodes_hash:           nil,
+							folder_child_nodes_hash_recovered: false,
+
+							prefix_child_nodes_len:   2,
+							prefix_child_nodes_dirty: true,
+
+							folder_child_nodes_len:   0,
+							folder_child_nodes_dirty: false,
+						}.makeTests(_3ABC)
+
+						for _, tt := range _3ABCTests {
+							if !tt.ok {
+								t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+							}
+						}
+
+						{
+							_4ABCD_ := _3ABC.prefix_child_nodes.btree.Get(uint8('D'))
+							_4ABCD := _4ABCD_.(*Node)
+
+							_4ABCDTests := Expect{
+								prefix:       []byte("D"),
+								dirty:        false,
+								parent_nodes: isEqualTo{_3ABC.prefix_child_nodes},
+
+								node_bytes: isNotNil{},
+								node_hash:  isNotNil{},
+
+								val:                nil,
+								val_hash:           isNotNil{},
+								val_hash_recovered: false,
+								val_dirty:          false,
+
+								prefix_child_nodes:                nil,
+								prefix_child_nodes_hash:           nil,
+								prefix_child_nodes_hash_recovered: false,
+
+								folder_child_nodes:                nil,
+								folder_child_nodes_hash:           nil,
+								folder_child_nodes_hash_recovered: false,
+
+								prefix_child_nodes_len:   0,
+								prefix_child_nodes_dirty: false,
+
+								folder_child_nodes_len:   0,
+								folder_child_nodes_dirty: false,
+							}.makeTests(_4ABCD)
+
+							for _, tt := range _4ABCDTests {
+								if !tt.ok {
+									t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+								}
+							}
+
+							_4ABCa_ := _3ABC.prefix_child_nodes.btree.Get(uint8('a'))
+							_4ABCa := _4ABCa_.(*Node)
+
+							_4ABCaTests := Expect{
+								prefix:       []byte("a"),
+								dirty:        true,
+								parent_nodes: isEqualTo{_3ABC.prefix_child_nodes},
+
+								node_bytes: isNotNil{},
+								node_hash:  isNotNil{},
+
+								val:                []byte("val_ABCa"),
+								val_hash:           isNotNil{},
+								val_hash_recovered: true,
+								val_dirty:          true,
+
+								prefix_child_nodes:                nil,
+								prefix_child_nodes_hash:           nil,
+								prefix_child_nodes_hash_recovered: true,
+
+								folder_child_nodes:                nil,
+								folder_child_nodes_hash:           nil,
+								folder_child_nodes_hash_recovered: true,
+
+								prefix_child_nodes_len:   0,
+								prefix_child_nodes_dirty: false,
+
+								folder_child_nodes_len:   0,
+								folder_child_nodes_dirty: false,
+							}.makeTests(_4ABCa)
+
+							for _, tt := range _4ABCaTests {
+								if !tt.ok {
+									t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+								}
+							}
+
+						}
+
+						_3ABa_ := _2AB.prefix_child_nodes.btree.Get(uint8('a'))
+						_3ABa := _3ABa_.(*Node)
+
+						_3ABaTests := Expect{
+							prefix:       []byte("a"),
+							dirty:        true,
+							parent_nodes: isEqualTo{_2AB.prefix_child_nodes},
+
+							node_bytes: isNotNil{},
+							node_hash:  isNotNil{},
+
+							val:                []byte("val_ABa"),
+							val_hash:           isNotNil{},
+							val_hash_recovered: true,
+							val_dirty:          true,
+
+							prefix_child_nodes:                nil,
+							prefix_child_nodes_hash:           nil,
+							prefix_child_nodes_hash_recovered: true,
+
+							folder_child_nodes:                nil,
+							folder_child_nodes_hash:           nil,
+							folder_child_nodes_hash_recovered: true,
+
+							prefix_child_nodes_len:   0,
+							prefix_child_nodes_dirty: false,
+
+							folder_child_nodes_len:   0,
+							folder_child_nodes_dirty: false,
+						}.makeTests(_3ABa)
+
+						for _, tt := range _3ABaTests {
+							if !tt.ok {
+								t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+							}
+						}
+
+					}
+
+					_2AC_ := _1A.prefix_child_nodes.btree.Get(uint8('C'))
+					_2AC := _2AC_.(*Node)
+
+					_2ACTests := Expect{
+						prefix:       []byte("C"),
+						dirty:        false,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           isNotNil{},
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: false,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AC)
+
+					for _, tt := range _2ACTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					_2AD_ := _1A.prefix_child_nodes.btree.Get(uint8('D'))
+					_2AD := _2AD_.(*Node)
+
+					_2ADTests := Expect{
+						prefix:       []byte("D"),
+						dirty:        false,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           isNotNil{},
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: false,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AD)
+
+					for _, tt := range _2ADTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					_2Aa_ := _1A.prefix_child_nodes.btree.Get(uint8('a'))
+					_2Aa := _2Aa_.(*Node)
+
+					_2AaTests := Expect{
+						prefix:       []byte("a"),
+						dirty:        true,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                []byte("val_Aa"),
+						val_hash:           isNotNil{},
+						val_hash_recovered: true,
+						val_dirty:          true,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: true,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: true,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2Aa)
+
+					for _, tt := range _2AaTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+				}
+
+				_1B_ := _root.folder_child_nodes.btree.Get(uint8('B'))
+				_1B := _1B_.(*Node)
+
+				_1BTests := Expect{
+					prefix:       []byte("B"),
+					dirty:        true,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: isNotNil{},
+					node_hash:  isNotNil{},
+
+					val:                []byte("val_B"),
+					val_hash:           isNotNil{},
+					val_hash_recovered: true,
+					val_dirty:          true,
+
+					prefix_child_nodes:                nil,
+					prefix_child_nodes_hash:           nil,
+					prefix_child_nodes_hash_recovered: true,
+
+					folder_child_nodes:                isNotNil{},
+					folder_child_nodes_hash:           isNotNil{},
+					folder_child_nodes_hash_recovered: true,
+
+					prefix_child_nodes_len:   0,
+					prefix_child_nodes_dirty: false,
+
+					folder_child_nodes_len:   1,
+					folder_child_nodes_dirty: true,
+				}.makeTests(_1B)
+
+				for _, tt := range _1BTests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+				{
+					_1B1B_ := _1B.folder_child_nodes.btree.Get(uint8('B'))
+					_1B1B := _1B1B_.(*Node)
+
+					_1B1BTests := Expect{
+						prefix:       []byte("B"),
+						dirty:        true,
+						parent_nodes: isEqualTo{_1B.folder_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                []byte("val_B_B"),
+						val_hash:           isNotNil{},
+						val_hash_recovered: true,
+						val_dirty:          true,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: true,
+
+						folder_child_nodes:                isNotNil{},
+						folder_child_nodes_hash:           isNotNil{},
+						folder_child_nodes_hash_recovered: true,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   1,
+						folder_child_nodes_dirty: true,
+					}.makeTests(_1B1B)
+
+					for _, tt := range _1B1BTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					{
+						_1B1B1B_ := _1B1B.folder_child_nodes.btree.Get(uint8('B'))
+						_1B1B1B := _1B1B1B_.(*Node)
+
+						_1B1B1BTests := Expect{
+							prefix:       []byte("B"),
+							dirty:        true,
+							parent_nodes: isEqualTo{_1B1B.folder_child_nodes},
+
+							node_bytes: isNotNil{},
+							node_hash:  isNotNil{},
+
+							val:                []byte("val_B_B_B"),
+							val_hash:           isNotNil{},
+							val_hash_recovered: true,
+							val_dirty:          true,
+
+							prefix_child_nodes:                nil,
+							prefix_child_nodes_hash:           nil,
+							prefix_child_nodes_hash_recovered: true,
+
+							folder_child_nodes:                nil,
+							folder_child_nodes_hash:           nil,
+							folder_child_nodes_hash_recovered: true,
+
+							prefix_child_nodes_len:   0,
+							prefix_child_nodes_dirty: false,
+
+							folder_child_nodes_len:   0,
+							folder_child_nodes_dirty: false,
+						}.makeTests(_1B1B1B)
+
+						for _, tt := range _1B1B1BTests {
+							if !tt.ok {
+								t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+							}
+						}
+
+					}
+
+				}
+
+			}
+		}
 
 		testCloseTrieDB(tdb)
 	}
@@ -552,7 +2762,45 @@ func TestMainWorkflow(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		_root := tdb.root_node
+
 		tdb.GenDotFile("./test_mainworkflow_3_1.dot", false)
+		// _root.genCheckStatements(os.Stdout)
+		{
+			_rootTests := Expect{
+				prefix:       nil,
+				dirty:        false,
+				parent_nodes: nil,
+
+				node_bytes: isNotNil{},
+				node_hash:  isNotNil{},
+
+				val:                nil,
+				val_hash:           nil,
+				val_hash_recovered: false,
+				val_dirty:          false,
+
+				prefix_child_nodes:                nil,
+				prefix_child_nodes_hash:           nil,
+				prefix_child_nodes_hash_recovered: false,
+
+				folder_child_nodes:                nil,
+				folder_child_nodes_hash:           isNotNil{},
+				folder_child_nodes_hash_recovered: false,
+
+				prefix_child_nodes_len:   0,
+				prefix_child_nodes_dirty: false,
+
+				folder_child_nodes_len:   0,
+				folder_child_nodes_dirty: false,
+			}.makeTests(_root)
+
+			for _, tt := range _rootTests {
+				if !tt.ok {
+					t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+				}
+			}
+		}
 
 		{
 			_, err := tdb.Get(Path([]byte("ABC")))
@@ -562,6 +2810,347 @@ func TestMainWorkflow(t *testing.T) {
 		}
 
 		tdb.GenDotFile("./test_mainworkflow_3_2.dot", false)
+		// _root.genCheckStatements(os.Stdout)
+		{
+			_rootTests := Expect{
+				prefix:       nil,
+				dirty:        false,
+				parent_nodes: nil,
+
+				node_bytes: isNotNil{},
+				node_hash:  isNotNil{},
+
+				val:                nil,
+				val_hash:           nil,
+				val_hash_recovered: false,
+				val_dirty:          false,
+
+				prefix_child_nodes:                nil,
+				prefix_child_nodes_hash:           nil,
+				prefix_child_nodes_hash_recovered: false,
+
+				folder_child_nodes:                isNotNil{},
+				folder_child_nodes_hash:           isNotNil{},
+				folder_child_nodes_hash_recovered: true,
+
+				prefix_child_nodes_len:   0,
+				prefix_child_nodes_dirty: false,
+
+				folder_child_nodes_len:   2,
+				folder_child_nodes_dirty: false,
+			}.makeTests(_root)
+
+			for _, tt := range _rootTests {
+				if !tt.ok {
+					t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+				}
+			}
+
+			{
+				_1A_ := _root.folder_child_nodes.btree.Get(uint8('A'))
+				_1A := _1A_.(*Node)
+
+				_1ATests := Expect{
+					prefix:       []byte("A"),
+					dirty:        false,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: isNotNil{},
+					node_hash:  isNotNil{},
+
+					val:                nil,
+					val_hash:           isNotNil{},
+					val_hash_recovered: false,
+					val_dirty:          false,
+
+					prefix_child_nodes:                isNotNil{},
+					prefix_child_nodes_hash:           isNotNil{},
+					prefix_child_nodes_hash_recovered: true,
+
+					folder_child_nodes:                nil,
+					folder_child_nodes_hash:           isNotNil{},
+					folder_child_nodes_hash_recovered: false,
+
+					prefix_child_nodes_len:   4,
+					prefix_child_nodes_dirty: false,
+
+					folder_child_nodes_len:   0,
+					folder_child_nodes_dirty: false,
+				}.makeTests(_1A)
+
+				for _, tt := range _1ATests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+				{
+					_2AB_ := _1A.prefix_child_nodes.btree.Get(uint8('B'))
+					_2AB := _2AB_.(*Node)
+
+					_2ABTests := Expect{
+						prefix:       []byte("B"),
+						dirty:        false,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           isNotNil{},
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                isNotNil{},
+						prefix_child_nodes_hash:           isNotNil{},
+						prefix_child_nodes_hash_recovered: true,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           isNotNil{},
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   2,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AB)
+
+					for _, tt := range _2ABTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					{
+						_3ABC_ := _2AB.prefix_child_nodes.btree.Get(uint8('C'))
+						_3ABC := _3ABC_.(*Node)
+
+						_3ABCTests := Expect{
+							prefix:       []byte("C"),
+							dirty:        false,
+							parent_nodes: isEqualTo{_2AB.prefix_child_nodes},
+
+							node_bytes: isNotNil{},
+							node_hash:  isNotNil{},
+
+							val:                []byte("val_ABC"),
+							val_hash:           isNotNil{},
+							val_hash_recovered: true,
+							val_dirty:          false,
+
+							prefix_child_nodes:                nil,
+							prefix_child_nodes_hash:           isNotNil{},
+							prefix_child_nodes_hash_recovered: false,
+
+							folder_child_nodes:                nil,
+							folder_child_nodes_hash:           nil,
+							folder_child_nodes_hash_recovered: false,
+
+							prefix_child_nodes_len:   0,
+							prefix_child_nodes_dirty: false,
+
+							folder_child_nodes_len:   0,
+							folder_child_nodes_dirty: false,
+						}.makeTests(_3ABC)
+
+						for _, tt := range _3ABCTests {
+							if !tt.ok {
+								t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+							}
+						}
+
+						_3ABa_ := _2AB.prefix_child_nodes.btree.Get(uint8('a'))
+						_3ABa := _3ABa_.(*Node)
+
+						_3ABaTests := Expect{
+							prefix:       []byte("a"),
+							dirty:        false,
+							parent_nodes: isEqualTo{_2AB.prefix_child_nodes},
+
+							node_bytes: isNotNil{},
+							node_hash:  isNotNil{},
+
+							val:                nil,
+							val_hash:           isNotNil{},
+							val_hash_recovered: false,
+							val_dirty:          false,
+
+							prefix_child_nodes:                nil,
+							prefix_child_nodes_hash:           nil,
+							prefix_child_nodes_hash_recovered: false,
+
+							folder_child_nodes:                nil,
+							folder_child_nodes_hash:           nil,
+							folder_child_nodes_hash_recovered: false,
+
+							prefix_child_nodes_len:   0,
+							prefix_child_nodes_dirty: false,
+
+							folder_child_nodes_len:   0,
+							folder_child_nodes_dirty: false,
+						}.makeTests(_3ABa)
+
+						for _, tt := range _3ABaTests {
+							if !tt.ok {
+								t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+							}
+						}
+
+					}
+
+					_2AC_ := _1A.prefix_child_nodes.btree.Get(uint8('C'))
+					_2AC := _2AC_.(*Node)
+
+					_2ACTests := Expect{
+						prefix:       []byte("C"),
+						dirty:        false,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           isNotNil{},
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: false,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AC)
+
+					for _, tt := range _2ACTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					_2AD_ := _1A.prefix_child_nodes.btree.Get(uint8('D'))
+					_2AD := _2AD_.(*Node)
+
+					_2ADTests := Expect{
+						prefix:       []byte("D"),
+						dirty:        false,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           isNotNil{},
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: false,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AD)
+
+					for _, tt := range _2ADTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					_2Aa_ := _1A.prefix_child_nodes.btree.Get(uint8('a'))
+					_2Aa := _2Aa_.(*Node)
+
+					_2AaTests := Expect{
+						prefix:       []byte("a"),
+						dirty:        false,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           isNotNil{},
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: false,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2Aa)
+
+					for _, tt := range _2AaTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+				}
+
+				_1B_ := _root.folder_child_nodes.btree.Get(uint8('B'))
+				_1B := _1B_.(*Node)
+
+				_1BTests := Expect{
+					prefix:       []byte("B"),
+					dirty:        false,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: isNotNil{},
+					node_hash:  isNotNil{},
+
+					val:                nil,
+					val_hash:           isNotNil{},
+					val_hash_recovered: false,
+					val_dirty:          false,
+
+					prefix_child_nodes:                nil,
+					prefix_child_nodes_hash:           nil,
+					prefix_child_nodes_hash_recovered: false,
+
+					folder_child_nodes:                nil,
+					folder_child_nodes_hash:           isNotNil{},
+					folder_child_nodes_hash_recovered: false,
+
+					prefix_child_nodes_len:   0,
+					prefix_child_nodes_dirty: false,
+
+					folder_child_nodes_len:   0,
+					folder_child_nodes_dirty: false,
+				}.makeTests(_1B)
+
+				for _, tt := range _1BTests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+			}
+		}
 
 		{
 			_, err := tdb.Get(Path([]byte("AB")))
@@ -571,6 +3160,347 @@ func TestMainWorkflow(t *testing.T) {
 		}
 
 		tdb.GenDotFile("./test_mainworkflow_3_3.dot", false)
+		// _root.genCheckStatements(os.Stdout)
+		{
+			_rootTests := Expect{
+				prefix:       nil,
+				dirty:        false,
+				parent_nodes: nil,
+
+				node_bytes: isNotNil{},
+				node_hash:  isNotNil{},
+
+				val:                nil,
+				val_hash:           nil,
+				val_hash_recovered: false,
+				val_dirty:          false,
+
+				prefix_child_nodes:                nil,
+				prefix_child_nodes_hash:           nil,
+				prefix_child_nodes_hash_recovered: false,
+
+				folder_child_nodes:                isNotNil{},
+				folder_child_nodes_hash:           isNotNil{},
+				folder_child_nodes_hash_recovered: true,
+
+				prefix_child_nodes_len:   0,
+				prefix_child_nodes_dirty: false,
+
+				folder_child_nodes_len:   2,
+				folder_child_nodes_dirty: false,
+			}.makeTests(_root)
+
+			for _, tt := range _rootTests {
+				if !tt.ok {
+					t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+				}
+			}
+
+			{
+				_1A_ := _root.folder_child_nodes.btree.Get(uint8('A'))
+				_1A := _1A_.(*Node)
+
+				_1ATests := Expect{
+					prefix:       []byte("A"),
+					dirty:        false,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: isNotNil{},
+					node_hash:  isNotNil{},
+
+					val:                nil,
+					val_hash:           isNotNil{},
+					val_hash_recovered: false,
+					val_dirty:          false,
+
+					prefix_child_nodes:                isNotNil{},
+					prefix_child_nodes_hash:           isNotNil{},
+					prefix_child_nodes_hash_recovered: true,
+
+					folder_child_nodes:                nil,
+					folder_child_nodes_hash:           isNotNil{},
+					folder_child_nodes_hash_recovered: false,
+
+					prefix_child_nodes_len:   4,
+					prefix_child_nodes_dirty: false,
+
+					folder_child_nodes_len:   0,
+					folder_child_nodes_dirty: false,
+				}.makeTests(_1A)
+
+				for _, tt := range _1ATests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+				{
+					_2AB_ := _1A.prefix_child_nodes.btree.Get(uint8('B'))
+					_2AB := _2AB_.(*Node)
+
+					_2ABTests := Expect{
+						prefix:       []byte("B"),
+						dirty:        false,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                []byte("val_AB"),
+						val_hash:           isNotNil{},
+						val_hash_recovered: true,
+						val_dirty:          false,
+
+						prefix_child_nodes:                isNotNil{},
+						prefix_child_nodes_hash:           isNotNil{},
+						prefix_child_nodes_hash_recovered: true,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           isNotNil{},
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   2,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AB)
+
+					for _, tt := range _2ABTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					{
+						_3ABC_ := _2AB.prefix_child_nodes.btree.Get(uint8('C'))
+						_3ABC := _3ABC_.(*Node)
+
+						_3ABCTests := Expect{
+							prefix:       []byte("C"),
+							dirty:        false,
+							parent_nodes: isEqualTo{_2AB.prefix_child_nodes},
+
+							node_bytes: isNotNil{},
+							node_hash:  isNotNil{},
+
+							val:                []byte("val_ABC"),
+							val_hash:           isNotNil{},
+							val_hash_recovered: true,
+							val_dirty:          false,
+
+							prefix_child_nodes:                nil,
+							prefix_child_nodes_hash:           isNotNil{},
+							prefix_child_nodes_hash_recovered: false,
+
+							folder_child_nodes:                nil,
+							folder_child_nodes_hash:           nil,
+							folder_child_nodes_hash_recovered: false,
+
+							prefix_child_nodes_len:   0,
+							prefix_child_nodes_dirty: false,
+
+							folder_child_nodes_len:   0,
+							folder_child_nodes_dirty: false,
+						}.makeTests(_3ABC)
+
+						for _, tt := range _3ABCTests {
+							if !tt.ok {
+								t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+							}
+						}
+
+						_3ABa_ := _2AB.prefix_child_nodes.btree.Get(uint8('a'))
+						_3ABa := _3ABa_.(*Node)
+
+						_3ABaTests := Expect{
+							prefix:       []byte("a"),
+							dirty:        false,
+							parent_nodes: isEqualTo{_2AB.prefix_child_nodes},
+
+							node_bytes: isNotNil{},
+							node_hash:  isNotNil{},
+
+							val:                nil,
+							val_hash:           isNotNil{},
+							val_hash_recovered: false,
+							val_dirty:          false,
+
+							prefix_child_nodes:                nil,
+							prefix_child_nodes_hash:           nil,
+							prefix_child_nodes_hash_recovered: false,
+
+							folder_child_nodes:                nil,
+							folder_child_nodes_hash:           nil,
+							folder_child_nodes_hash_recovered: false,
+
+							prefix_child_nodes_len:   0,
+							prefix_child_nodes_dirty: false,
+
+							folder_child_nodes_len:   0,
+							folder_child_nodes_dirty: false,
+						}.makeTests(_3ABa)
+
+						for _, tt := range _3ABaTests {
+							if !tt.ok {
+								t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+							}
+						}
+
+					}
+
+					_2AC_ := _1A.prefix_child_nodes.btree.Get(uint8('C'))
+					_2AC := _2AC_.(*Node)
+
+					_2ACTests := Expect{
+						prefix:       []byte("C"),
+						dirty:        false,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           isNotNil{},
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: false,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AC)
+
+					for _, tt := range _2ACTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					_2AD_ := _1A.prefix_child_nodes.btree.Get(uint8('D'))
+					_2AD := _2AD_.(*Node)
+
+					_2ADTests := Expect{
+						prefix:       []byte("D"),
+						dirty:        false,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           isNotNil{},
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: false,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AD)
+
+					for _, tt := range _2ADTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					_2Aa_ := _1A.prefix_child_nodes.btree.Get(uint8('a'))
+					_2Aa := _2Aa_.(*Node)
+
+					_2AaTests := Expect{
+						prefix:       []byte("a"),
+						dirty:        false,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           isNotNil{},
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: false,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2Aa)
+
+					for _, tt := range _2AaTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+				}
+
+				_1B_ := _root.folder_child_nodes.btree.Get(uint8('B'))
+				_1B := _1B_.(*Node)
+
+				_1BTests := Expect{
+					prefix:       []byte("B"),
+					dirty:        false,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: isNotNil{},
+					node_hash:  isNotNil{},
+
+					val:                nil,
+					val_hash:           isNotNil{},
+					val_hash_recovered: false,
+					val_dirty:          false,
+
+					prefix_child_nodes:                nil,
+					prefix_child_nodes_hash:           nil,
+					prefix_child_nodes_hash_recovered: false,
+
+					folder_child_nodes:                nil,
+					folder_child_nodes_hash:           isNotNil{},
+					folder_child_nodes_hash_recovered: false,
+
+					prefix_child_nodes_len:   0,
+					prefix_child_nodes_dirty: false,
+
+					folder_child_nodes_len:   0,
+					folder_child_nodes_dirty: false,
+				}.makeTests(_1B)
+
+				for _, tt := range _1BTests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+			}
+		}
 
 		{
 			_, err := tdb.Del(Path([]byte("AB")))
@@ -580,6 +3510,347 @@ func TestMainWorkflow(t *testing.T) {
 		}
 
 		tdb.GenDotFile("./test_mainworkflow_3_4.dot", false)
+		// _root.genCheckStatements(os.Stdout)
+		{
+			_rootTests := Expect{
+				prefix:       nil,
+				dirty:        true,
+				parent_nodes: nil,
+
+				node_bytes: isNotNil{},
+				node_hash:  isNotNil{},
+
+				val:                nil,
+				val_hash:           nil,
+				val_hash_recovered: false,
+				val_dirty:          false,
+
+				prefix_child_nodes:                nil,
+				prefix_child_nodes_hash:           nil,
+				prefix_child_nodes_hash_recovered: false,
+
+				folder_child_nodes:                isNotNil{},
+				folder_child_nodes_hash:           isNotNil{},
+				folder_child_nodes_hash_recovered: true,
+
+				prefix_child_nodes_len:   0,
+				prefix_child_nodes_dirty: false,
+
+				folder_child_nodes_len:   2,
+				folder_child_nodes_dirty: true,
+			}.makeTests(_root)
+
+			for _, tt := range _rootTests {
+				if !tt.ok {
+					t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+				}
+			}
+
+			{
+				_1A_ := _root.folder_child_nodes.btree.Get(uint8('A'))
+				_1A := _1A_.(*Node)
+
+				_1ATests := Expect{
+					prefix:       []byte("A"),
+					dirty:        true,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: isNotNil{},
+					node_hash:  isNotNil{},
+
+					val:                nil,
+					val_hash:           isNotNil{},
+					val_hash_recovered: false,
+					val_dirty:          false,
+
+					prefix_child_nodes:                isNotNil{},
+					prefix_child_nodes_hash:           isNotNil{},
+					prefix_child_nodes_hash_recovered: true,
+
+					folder_child_nodes:                nil,
+					folder_child_nodes_hash:           isNotNil{},
+					folder_child_nodes_hash_recovered: false,
+
+					prefix_child_nodes_len:   4,
+					prefix_child_nodes_dirty: true,
+
+					folder_child_nodes_len:   0,
+					folder_child_nodes_dirty: false,
+				}.makeTests(_1A)
+
+				for _, tt := range _1ATests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+				{
+					_2AB_ := _1A.prefix_child_nodes.btree.Get(uint8('B'))
+					_2AB := _2AB_.(*Node)
+
+					_2ABTests := Expect{
+						prefix:       []byte("B"),
+						dirty:        true,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           nil,
+						val_hash_recovered: true,
+						val_dirty:          true,
+
+						prefix_child_nodes:                isNotNil{},
+						prefix_child_nodes_hash:           isNotNil{},
+						prefix_child_nodes_hash_recovered: true,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           isNotNil{},
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   2,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AB)
+
+					for _, tt := range _2ABTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					{
+						_3ABC_ := _2AB.prefix_child_nodes.btree.Get(uint8('C'))
+						_3ABC := _3ABC_.(*Node)
+
+						_3ABCTests := Expect{
+							prefix:       []byte("C"),
+							dirty:        false,
+							parent_nodes: isEqualTo{_2AB.prefix_child_nodes},
+
+							node_bytes: isNotNil{},
+							node_hash:  isNotNil{},
+
+							val:                []byte("val_ABC"),
+							val_hash:           isNotNil{},
+							val_hash_recovered: true,
+							val_dirty:          false,
+
+							prefix_child_nodes:                nil,
+							prefix_child_nodes_hash:           isNotNil{},
+							prefix_child_nodes_hash_recovered: false,
+
+							folder_child_nodes:                nil,
+							folder_child_nodes_hash:           nil,
+							folder_child_nodes_hash_recovered: false,
+
+							prefix_child_nodes_len:   0,
+							prefix_child_nodes_dirty: false,
+
+							folder_child_nodes_len:   0,
+							folder_child_nodes_dirty: false,
+						}.makeTests(_3ABC)
+
+						for _, tt := range _3ABCTests {
+							if !tt.ok {
+								t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+							}
+						}
+
+						_3ABa_ := _2AB.prefix_child_nodes.btree.Get(uint8('a'))
+						_3ABa := _3ABa_.(*Node)
+
+						_3ABaTests := Expect{
+							prefix:       []byte("a"),
+							dirty:        false,
+							parent_nodes: isEqualTo{_2AB.prefix_child_nodes},
+
+							node_bytes: isNotNil{},
+							node_hash:  isNotNil{},
+
+							val:                nil,
+							val_hash:           isNotNil{},
+							val_hash_recovered: false,
+							val_dirty:          false,
+
+							prefix_child_nodes:                nil,
+							prefix_child_nodes_hash:           nil,
+							prefix_child_nodes_hash_recovered: false,
+
+							folder_child_nodes:                nil,
+							folder_child_nodes_hash:           nil,
+							folder_child_nodes_hash_recovered: false,
+
+							prefix_child_nodes_len:   0,
+							prefix_child_nodes_dirty: false,
+
+							folder_child_nodes_len:   0,
+							folder_child_nodes_dirty: false,
+						}.makeTests(_3ABa)
+
+						for _, tt := range _3ABaTests {
+							if !tt.ok {
+								t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+							}
+						}
+
+					}
+
+					_2AC_ := _1A.prefix_child_nodes.btree.Get(uint8('C'))
+					_2AC := _2AC_.(*Node)
+
+					_2ACTests := Expect{
+						prefix:       []byte("C"),
+						dirty:        false,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           isNotNil{},
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: false,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AC)
+
+					for _, tt := range _2ACTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					_2AD_ := _1A.prefix_child_nodes.btree.Get(uint8('D'))
+					_2AD := _2AD_.(*Node)
+
+					_2ADTests := Expect{
+						prefix:       []byte("D"),
+						dirty:        false,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           isNotNil{},
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: false,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AD)
+
+					for _, tt := range _2ADTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					_2Aa_ := _1A.prefix_child_nodes.btree.Get(uint8('a'))
+					_2Aa := _2Aa_.(*Node)
+
+					_2AaTests := Expect{
+						prefix:       []byte("a"),
+						dirty:        false,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           isNotNil{},
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: false,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2Aa)
+
+					for _, tt := range _2AaTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+				}
+
+				_1B_ := _root.folder_child_nodes.btree.Get(uint8('B'))
+				_1B := _1B_.(*Node)
+
+				_1BTests := Expect{
+					prefix:       []byte("B"),
+					dirty:        false,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: isNotNil{},
+					node_hash:  isNotNil{},
+
+					val:                nil,
+					val_hash:           isNotNil{},
+					val_hash_recovered: false,
+					val_dirty:          false,
+
+					prefix_child_nodes:                nil,
+					prefix_child_nodes_hash:           nil,
+					prefix_child_nodes_hash_recovered: false,
+
+					folder_child_nodes:                nil,
+					folder_child_nodes_hash:           isNotNil{},
+					folder_child_nodes_hash_recovered: false,
+
+					prefix_child_nodes_len:   0,
+					prefix_child_nodes_dirty: false,
+
+					folder_child_nodes_len:   0,
+					folder_child_nodes_dirty: false,
+				}.makeTests(_1B)
+
+				for _, tt := range _1BTests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+			}
+		}
 
 		{
 			tdb.Put(Path([]byte("ACa")), []byte("val_ACa"), true)
@@ -595,6 +3866,427 @@ func TestMainWorkflow(t *testing.T) {
 		}
 
 		tdb.GenDotFile("./test_mainworkflow_3_5.dot", false)
+		// _root.genCheckStatements(os.Stdout)
+		{
+			_rootTests := Expect{
+				prefix:       nil,
+				dirty:        true,
+				parent_nodes: nil,
+
+				node_bytes: isNotNil{},
+				node_hash:  isNotNil{},
+
+				val:                nil,
+				val_hash:           nil,
+				val_hash_recovered: false,
+				val_dirty:          false,
+
+				prefix_child_nodes:                nil,
+				prefix_child_nodes_hash:           nil,
+				prefix_child_nodes_hash_recovered: false,
+
+				folder_child_nodes:                isNotNil{},
+				folder_child_nodes_hash:           isNotNil{},
+				folder_child_nodes_hash_recovered: true,
+
+				prefix_child_nodes_len:   0,
+				prefix_child_nodes_dirty: false,
+
+				folder_child_nodes_len:   2,
+				folder_child_nodes_dirty: true,
+			}.makeTests(_root)
+
+			for _, tt := range _rootTests {
+				if !tt.ok {
+					t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+				}
+			}
+
+			{
+				_1A_ := _root.folder_child_nodes.btree.Get(uint8('A'))
+				_1A := _1A_.(*Node)
+
+				_1ATests := Expect{
+					prefix:       []byte("A"),
+					dirty:        true,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: isNotNil{},
+					node_hash:  isNotNil{},
+
+					val:                nil,
+					val_hash:           isNotNil{},
+					val_hash_recovered: false,
+					val_dirty:          false,
+
+					prefix_child_nodes:                isNotNil{},
+					prefix_child_nodes_hash:           isNotNil{},
+					prefix_child_nodes_hash_recovered: true,
+
+					folder_child_nodes:                nil,
+					folder_child_nodes_hash:           isNotNil{},
+					folder_child_nodes_hash_recovered: false,
+
+					prefix_child_nodes_len:   4,
+					prefix_child_nodes_dirty: true,
+
+					folder_child_nodes_len:   0,
+					folder_child_nodes_dirty: false,
+				}.makeTests(_1A)
+
+				for _, tt := range _1ATests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+				{
+					_2AB_ := _1A.prefix_child_nodes.btree.Get(uint8('B'))
+					_2AB := _2AB_.(*Node)
+
+					_2ABTests := Expect{
+						prefix:       []byte("B"),
+						dirty:        true,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           nil,
+						val_hash_recovered: true,
+						val_dirty:          true,
+
+						prefix_child_nodes:                isNotNil{},
+						prefix_child_nodes_hash:           isNotNil{},
+						prefix_child_nodes_hash_recovered: true,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           isNotNil{},
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   2,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AB)
+
+					for _, tt := range _2ABTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					{
+						_3ABC_ := _2AB.prefix_child_nodes.btree.Get(uint8('C'))
+						_3ABC := _3ABC_.(*Node)
+
+						_3ABCTests := Expect{
+							prefix:       []byte("C"),
+							dirty:        false,
+							parent_nodes: isEqualTo{_2AB.prefix_child_nodes},
+
+							node_bytes: isNotNil{},
+							node_hash:  isNotNil{},
+
+							val:                []byte("val_ABC"),
+							val_hash:           isNotNil{},
+							val_hash_recovered: true,
+							val_dirty:          false,
+
+							prefix_child_nodes:                nil,
+							prefix_child_nodes_hash:           isNotNil{},
+							prefix_child_nodes_hash_recovered: false,
+
+							folder_child_nodes:                nil,
+							folder_child_nodes_hash:           nil,
+							folder_child_nodes_hash_recovered: false,
+
+							prefix_child_nodes_len:   0,
+							prefix_child_nodes_dirty: false,
+
+							folder_child_nodes_len:   0,
+							folder_child_nodes_dirty: false,
+						}.makeTests(_3ABC)
+
+						for _, tt := range _3ABCTests {
+							if !tt.ok {
+								t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+							}
+						}
+
+						_3ABa_ := _2AB.prefix_child_nodes.btree.Get(uint8('a'))
+						_3ABa := _3ABa_.(*Node)
+
+						_3ABaTests := Expect{
+							prefix:       []byte("a"),
+							dirty:        false,
+							parent_nodes: isEqualTo{_2AB.prefix_child_nodes},
+
+							node_bytes: isNotNil{},
+							node_hash:  isNotNil{},
+
+							val:                nil,
+							val_hash:           isNotNil{},
+							val_hash_recovered: false,
+							val_dirty:          false,
+
+							prefix_child_nodes:                nil,
+							prefix_child_nodes_hash:           nil,
+							prefix_child_nodes_hash_recovered: false,
+
+							folder_child_nodes:                nil,
+							folder_child_nodes_hash:           nil,
+							folder_child_nodes_hash_recovered: false,
+
+							prefix_child_nodes_len:   0,
+							prefix_child_nodes_dirty: false,
+
+							folder_child_nodes_len:   0,
+							folder_child_nodes_dirty: false,
+						}.makeTests(_3ABa)
+
+						for _, tt := range _3ABaTests {
+							if !tt.ok {
+								t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+							}
+						}
+
+					}
+
+					_2AC_ := _1A.prefix_child_nodes.btree.Get(uint8('C'))
+					_2AC := _2AC_.(*Node)
+
+					_2ACTests := Expect{
+						prefix:       []byte("C"),
+						dirty:        true,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           isNotNil{},
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                isNotNil{},
+						prefix_child_nodes_hash:           isNotNil{},
+						prefix_child_nodes_hash_recovered: false,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   1,
+						prefix_child_nodes_dirty: true,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AC)
+
+					for _, tt := range _2ACTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					{
+						_3ACa_ := _2AC.prefix_child_nodes.btree.Get(uint8('a'))
+						_3ACa := _3ACa_.(*Node)
+
+						_3ACaTests := Expect{
+							prefix:       []byte("a"),
+							dirty:        true,
+							parent_nodes: isEqualTo{_2AC.prefix_child_nodes},
+
+							node_bytes: isNotNil{},
+							node_hash:  isNotNil{},
+
+							val:                []byte("val_ACa"),
+							val_hash:           isNotNil{},
+							val_hash_recovered: true,
+							val_dirty:          true,
+
+							prefix_child_nodes:                nil,
+							prefix_child_nodes_hash:           nil,
+							prefix_child_nodes_hash_recovered: true,
+
+							folder_child_nodes:                nil,
+							folder_child_nodes_hash:           nil,
+							folder_child_nodes_hash_recovered: true,
+
+							prefix_child_nodes_len:   0,
+							prefix_child_nodes_dirty: false,
+
+							folder_child_nodes_len:   0,
+							folder_child_nodes_dirty: false,
+						}.makeTests(_3ACa)
+
+						for _, tt := range _3ACaTests {
+							if !tt.ok {
+								t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+							}
+						}
+
+					}
+
+					_2AD_ := _1A.prefix_child_nodes.btree.Get(uint8('D'))
+					_2AD := _2AD_.(*Node)
+
+					_2ADTests := Expect{
+						prefix:       []byte("D"),
+						dirty:        true,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           isNotNil{},
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                isNotNil{},
+						prefix_child_nodes_hash:           isNotNil{},
+						prefix_child_nodes_hash_recovered: false,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   1,
+						prefix_child_nodes_dirty: true,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AD)
+
+					for _, tt := range _2ADTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					{
+						_3ADa_ := _2AD.prefix_child_nodes.btree.Get(uint8('a'))
+						_3ADa := _3ADa_.(*Node)
+
+						_3ADaTests := Expect{
+							prefix:       []byte("a"),
+							dirty:        true,
+							parent_nodes: isEqualTo{_2AD.prefix_child_nodes},
+
+							node_bytes: isNotNil{},
+							node_hash:  isNotNil{},
+
+							val:                []byte("val_ADa"),
+							val_hash:           isNotNil{},
+							val_hash_recovered: true,
+							val_dirty:          true,
+
+							prefix_child_nodes:                nil,
+							prefix_child_nodes_hash:           nil,
+							prefix_child_nodes_hash_recovered: true,
+
+							folder_child_nodes:                nil,
+							folder_child_nodes_hash:           nil,
+							folder_child_nodes_hash_recovered: true,
+
+							prefix_child_nodes_len:   0,
+							prefix_child_nodes_dirty: false,
+
+							folder_child_nodes_len:   0,
+							folder_child_nodes_dirty: false,
+						}.makeTests(_3ADa)
+
+						for _, tt := range _3ADaTests {
+							if !tt.ok {
+								t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+							}
+						}
+
+					}
+
+					_2Aa_ := _1A.prefix_child_nodes.btree.Get(uint8('a'))
+					_2Aa := _2Aa_.(*Node)
+
+					_2AaTests := Expect{
+						prefix:       []byte("a"),
+						dirty:        false,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           isNotNil{},
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: false,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2Aa)
+
+					for _, tt := range _2AaTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+				}
+
+				_1B_ := _root.folder_child_nodes.btree.Get(uint8('B'))
+				_1B := _1B_.(*Node)
+
+				_1BTests := Expect{
+					prefix:       []byte("B"),
+					dirty:        false,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: isNotNil{},
+					node_hash:  isNotNil{},
+
+					val:                nil,
+					val_hash:           isNotNil{},
+					val_hash_recovered: false,
+					val_dirty:          false,
+
+					prefix_child_nodes:                nil,
+					prefix_child_nodes_hash:           nil,
+					prefix_child_nodes_hash_recovered: false,
+
+					folder_child_nodes:                nil,
+					folder_child_nodes_hash:           isNotNil{},
+					folder_child_nodes_hash_recovered: false,
+
+					prefix_child_nodes_len:   0,
+					prefix_child_nodes_dirty: false,
+
+					folder_child_nodes_len:   0,
+					folder_child_nodes_dirty: false,
+				}.makeTests(_1B)
+
+				for _, tt := range _1BTests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+			}
+		}
 		testCloseTrieDB(tdb)
 	}
 
@@ -605,7 +4297,46 @@ func TestMainWorkflow(t *testing.T) {
 		if nil != err {
 			t.Fatal(err)
 		}
+
+		_root := tdb.root_node
+
 		tdb.GenDotFile("./test_mainworkflow_4_1.dot", false)
+		// _root.genCheckStatements(os.Stdout)
+		{
+			_rootTests := Expect{
+				prefix:       nil,
+				dirty:        false,
+				parent_nodes: nil,
+
+				node_bytes: isNotNil{},
+				node_hash:  isNotNil{},
+
+				val:                nil,
+				val_hash:           nil,
+				val_hash_recovered: false,
+				val_dirty:          false,
+
+				prefix_child_nodes:                nil,
+				prefix_child_nodes_hash:           nil,
+				prefix_child_nodes_hash_recovered: false,
+
+				folder_child_nodes:                nil,
+				folder_child_nodes_hash:           isNotNil{},
+				folder_child_nodes_hash_recovered: false,
+
+				prefix_child_nodes_len:   0,
+				prefix_child_nodes_dirty: false,
+
+				folder_child_nodes_len:   0,
+				folder_child_nodes_dirty: false,
+			}.makeTests(_root)
+
+			for _, tt := range _rootTests {
+				if !tt.ok {
+					t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+				}
+			}
+		}
 
 		{
 			_, err := tdb.Del(Path([]byte("ACa")))
@@ -614,6 +4345,270 @@ func TestMainWorkflow(t *testing.T) {
 			}
 		}
 		tdb.GenDotFile("./test_mainworkflow_4_2.dot", false)
+		// _root.genCheckStatements(os.Stdout)
+		{
+			_rootTests := Expect{
+				prefix:       nil,
+				dirty:        true,
+				parent_nodes: nil,
+
+				node_bytes: isNotNil{},
+				node_hash:  isNotNil{},
+
+				val:                nil,
+				val_hash:           nil,
+				val_hash_recovered: false,
+				val_dirty:          false,
+
+				prefix_child_nodes:                nil,
+				prefix_child_nodes_hash:           nil,
+				prefix_child_nodes_hash_recovered: false,
+
+				folder_child_nodes:                isNotNil{},
+				folder_child_nodes_hash:           isNotNil{},
+				folder_child_nodes_hash_recovered: true,
+
+				prefix_child_nodes_len:   0,
+				prefix_child_nodes_dirty: false,
+
+				folder_child_nodes_len:   2,
+				folder_child_nodes_dirty: true,
+			}.makeTests(_root)
+
+			for _, tt := range _rootTests {
+				if !tt.ok {
+					t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+				}
+			}
+
+			{
+				_1A_ := _root.folder_child_nodes.btree.Get(uint8('A'))
+				_1A := _1A_.(*Node)
+
+				_1ATests := Expect{
+					prefix:       []byte("A"),
+					dirty:        true,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: isNotNil{},
+					node_hash:  isNotNil{},
+
+					val:                nil,
+					val_hash:           isNotNil{},
+					val_hash_recovered: false,
+					val_dirty:          false,
+
+					prefix_child_nodes:                isNotNil{},
+					prefix_child_nodes_hash:           isNotNil{},
+					prefix_child_nodes_hash_recovered: true,
+
+					folder_child_nodes:                nil,
+					folder_child_nodes_hash:           isNotNil{},
+					folder_child_nodes_hash_recovered: false,
+
+					prefix_child_nodes_len:   4,
+					prefix_child_nodes_dirty: true,
+
+					folder_child_nodes_len:   0,
+					folder_child_nodes_dirty: false,
+				}.makeTests(_1A)
+
+				for _, tt := range _1ATests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+				{
+					_2AB_ := _1A.prefix_child_nodes.btree.Get(uint8('B'))
+					_2AB := _2AB_.(*Node)
+
+					_2ABTests := Expect{
+						prefix:       []byte("B"),
+						dirty:        false,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           nil,
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           isNotNil{},
+						prefix_child_nodes_hash_recovered: false,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           isNotNil{},
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AB)
+
+					for _, tt := range _2ABTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					_2AC_ := _1A.prefix_child_nodes.btree.Get(uint8('C'))
+					_2AC := _2AC_.(*Node)
+
+					_2ACTests := Expect{
+						prefix:       []byte("C"),
+						dirty:        true,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           isNotNil{},
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           isNotNil{},
+						prefix_child_nodes_hash_recovered: true,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AC)
+
+					for _, tt := range _2ACTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					_2AD_ := _1A.prefix_child_nodes.btree.Get(uint8('D'))
+					_2AD := _2AD_.(*Node)
+
+					_2ADTests := Expect{
+						prefix:       []byte("D"),
+						dirty:        false,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           isNotNil{},
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           isNotNil{},
+						prefix_child_nodes_hash_recovered: false,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AD)
+
+					for _, tt := range _2ADTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					_2Aa_ := _1A.prefix_child_nodes.btree.Get(uint8('a'))
+					_2Aa := _2Aa_.(*Node)
+
+					_2AaTests := Expect{
+						prefix:       []byte("a"),
+						dirty:        false,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           isNotNil{},
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: false,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2Aa)
+
+					for _, tt := range _2AaTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+				}
+
+				_1B_ := _root.folder_child_nodes.btree.Get(uint8('B'))
+				_1B := _1B_.(*Node)
+
+				_1BTests := Expect{
+					prefix:       []byte("B"),
+					dirty:        false,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: isNotNil{},
+					node_hash:  isNotNil{},
+
+					val:                nil,
+					val_hash:           isNotNil{},
+					val_hash_recovered: false,
+					val_dirty:          false,
+
+					prefix_child_nodes:                nil,
+					prefix_child_nodes_hash:           nil,
+					prefix_child_nodes_hash_recovered: false,
+
+					folder_child_nodes:                nil,
+					folder_child_nodes_hash:           isNotNil{},
+					folder_child_nodes_hash_recovered: false,
+
+					prefix_child_nodes_len:   0,
+					prefix_child_nodes_dirty: false,
+
+					folder_child_nodes_len:   0,
+					folder_child_nodes_dirty: false,
+				}.makeTests(_1B)
+
+				for _, tt := range _1BTests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+			}
+		}
 
 		{
 			_, err := tdb.Get(Path([]byte("ACa")))
@@ -623,6 +4618,270 @@ func TestMainWorkflow(t *testing.T) {
 		}
 
 		tdb.GenDotFile("./test_mainworkflow_4_3.dot", false)
+		// _root.genCheckStatements(os.Stdout)
+		{
+			_rootTests := Expect{
+				prefix:       nil,
+				dirty:        true,
+				parent_nodes: nil,
+
+				node_bytes: isNotNil{},
+				node_hash:  isNotNil{},
+
+				val:                nil,
+				val_hash:           nil,
+				val_hash_recovered: false,
+				val_dirty:          false,
+
+				prefix_child_nodes:                nil,
+				prefix_child_nodes_hash:           nil,
+				prefix_child_nodes_hash_recovered: false,
+
+				folder_child_nodes:                isNotNil{},
+				folder_child_nodes_hash:           isNotNil{},
+				folder_child_nodes_hash_recovered: true,
+
+				prefix_child_nodes_len:   0,
+				prefix_child_nodes_dirty: false,
+
+				folder_child_nodes_len:   2,
+				folder_child_nodes_dirty: true,
+			}.makeTests(_root)
+
+			for _, tt := range _rootTests {
+				if !tt.ok {
+					t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+				}
+			}
+
+			{
+				_1A_ := _root.folder_child_nodes.btree.Get(uint8('A'))
+				_1A := _1A_.(*Node)
+
+				_1ATests := Expect{
+					prefix:       []byte("A"),
+					dirty:        true,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: isNotNil{},
+					node_hash:  isNotNil{},
+
+					val:                nil,
+					val_hash:           isNotNil{},
+					val_hash_recovered: false,
+					val_dirty:          false,
+
+					prefix_child_nodes:                isNotNil{},
+					prefix_child_nodes_hash:           isNotNil{},
+					prefix_child_nodes_hash_recovered: true,
+
+					folder_child_nodes:                nil,
+					folder_child_nodes_hash:           isNotNil{},
+					folder_child_nodes_hash_recovered: false,
+
+					prefix_child_nodes_len:   4,
+					prefix_child_nodes_dirty: true,
+
+					folder_child_nodes_len:   0,
+					folder_child_nodes_dirty: false,
+				}.makeTests(_1A)
+
+				for _, tt := range _1ATests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+				{
+					_2AB_ := _1A.prefix_child_nodes.btree.Get(uint8('B'))
+					_2AB := _2AB_.(*Node)
+
+					_2ABTests := Expect{
+						prefix:       []byte("B"),
+						dirty:        false,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           nil,
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           isNotNil{},
+						prefix_child_nodes_hash_recovered: false,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           isNotNil{},
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AB)
+
+					for _, tt := range _2ABTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					_2AC_ := _1A.prefix_child_nodes.btree.Get(uint8('C'))
+					_2AC := _2AC_.(*Node)
+
+					_2ACTests := Expect{
+						prefix:       []byte("C"),
+						dirty:        true,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           isNotNil{},
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           isNotNil{},
+						prefix_child_nodes_hash_recovered: true,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AC)
+
+					for _, tt := range _2ACTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					_2AD_ := _1A.prefix_child_nodes.btree.Get(uint8('D'))
+					_2AD := _2AD_.(*Node)
+
+					_2ADTests := Expect{
+						prefix:       []byte("D"),
+						dirty:        false,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           isNotNil{},
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           isNotNil{},
+						prefix_child_nodes_hash_recovered: false,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AD)
+
+					for _, tt := range _2ADTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					_2Aa_ := _1A.prefix_child_nodes.btree.Get(uint8('a'))
+					_2Aa := _2Aa_.(*Node)
+
+					_2AaTests := Expect{
+						prefix:       []byte("a"),
+						dirty:        false,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           isNotNil{},
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: false,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2Aa)
+
+					for _, tt := range _2AaTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+				}
+
+				_1B_ := _root.folder_child_nodes.btree.Get(uint8('B'))
+				_1B := _1B_.(*Node)
+
+				_1BTests := Expect{
+					prefix:       []byte("B"),
+					dirty:        false,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: isNotNil{},
+					node_hash:  isNotNil{},
+
+					val:                nil,
+					val_hash:           isNotNil{},
+					val_hash_recovered: false,
+					val_dirty:          false,
+
+					prefix_child_nodes:                nil,
+					prefix_child_nodes_hash:           nil,
+					prefix_child_nodes_hash_recovered: false,
+
+					folder_child_nodes:                nil,
+					folder_child_nodes_hash:           isNotNil{},
+					folder_child_nodes_hash_recovered: false,
+
+					prefix_child_nodes_len:   0,
+					prefix_child_nodes_dirty: false,
+
+					folder_child_nodes_len:   0,
+					folder_child_nodes_dirty: false,
+				}.makeTests(_1B)
+
+				for _, tt := range _1BTests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+			}
+		}
 
 		{
 			_rootHash, err := tdb.testCommit()
@@ -635,6 +4894,270 @@ func TestMainWorkflow(t *testing.T) {
 		}
 
 		tdb.GenDotFile("./test_mainworkflow_4_4.dot", false)
+		// _root.genCheckStatements(os.Stdout)
+		{
+			_rootTests := Expect{
+				prefix:       nil,
+				dirty:        true,
+				parent_nodes: nil,
+
+				node_bytes: isNotNil{},
+				node_hash:  isNotNil{},
+
+				val:                nil,
+				val_hash:           nil,
+				val_hash_recovered: false,
+				val_dirty:          false,
+
+				prefix_child_nodes:                nil,
+				prefix_child_nodes_hash:           nil,
+				prefix_child_nodes_hash_recovered: false,
+
+				folder_child_nodes:                isNotNil{},
+				folder_child_nodes_hash:           isNotNil{},
+				folder_child_nodes_hash_recovered: true,
+
+				prefix_child_nodes_len:   0,
+				prefix_child_nodes_dirty: false,
+
+				folder_child_nodes_len:   2,
+				folder_child_nodes_dirty: true,
+			}.makeTests(_root)
+
+			for _, tt := range _rootTests {
+				if !tt.ok {
+					t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+				}
+			}
+
+			{
+				_1A_ := _root.folder_child_nodes.btree.Get(uint8('A'))
+				_1A := _1A_.(*Node)
+
+				_1ATests := Expect{
+					prefix:       []byte("A"),
+					dirty:        true,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: isNotNil{},
+					node_hash:  isNotNil{},
+
+					val:                nil,
+					val_hash:           isNotNil{},
+					val_hash_recovered: false,
+					val_dirty:          false,
+
+					prefix_child_nodes:                isNotNil{},
+					prefix_child_nodes_hash:           isNotNil{},
+					prefix_child_nodes_hash_recovered: true,
+
+					folder_child_nodes:                nil,
+					folder_child_nodes_hash:           isNotNil{},
+					folder_child_nodes_hash_recovered: false,
+
+					prefix_child_nodes_len:   4,
+					prefix_child_nodes_dirty: true,
+
+					folder_child_nodes_len:   0,
+					folder_child_nodes_dirty: false,
+				}.makeTests(_1A)
+
+				for _, tt := range _1ATests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+				{
+					_2AB_ := _1A.prefix_child_nodes.btree.Get(uint8('B'))
+					_2AB := _2AB_.(*Node)
+
+					_2ABTests := Expect{
+						prefix:       []byte("B"),
+						dirty:        false,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           nil,
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           isNotNil{},
+						prefix_child_nodes_hash_recovered: false,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           isNotNil{},
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AB)
+
+					for _, tt := range _2ABTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					_2AC_ := _1A.prefix_child_nodes.btree.Get(uint8('C'))
+					_2AC := _2AC_.(*Node)
+
+					_2ACTests := Expect{
+						prefix:       []byte("C"),
+						dirty:        true,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           isNotNil{},
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           isNotNil{},
+						prefix_child_nodes_hash_recovered: true,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AC)
+
+					for _, tt := range _2ACTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					_2AD_ := _1A.prefix_child_nodes.btree.Get(uint8('D'))
+					_2AD := _2AD_.(*Node)
+
+					_2ADTests := Expect{
+						prefix:       []byte("D"),
+						dirty:        false,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           isNotNil{},
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           isNotNil{},
+						prefix_child_nodes_hash_recovered: false,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2AD)
+
+					for _, tt := range _2ADTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					_2Aa_ := _1A.prefix_child_nodes.btree.Get(uint8('a'))
+					_2Aa := _2Aa_.(*Node)
+
+					_2AaTests := Expect{
+						prefix:       []byte("a"),
+						dirty:        false,
+						parent_nodes: isEqualTo{_1A.prefix_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           isNotNil{},
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: false,
+
+						folder_child_nodes:                nil,
+						folder_child_nodes_hash:           nil,
+						folder_child_nodes_hash_recovered: false,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   0,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_2Aa)
+
+					for _, tt := range _2AaTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+				}
+
+				_1B_ := _root.folder_child_nodes.btree.Get(uint8('B'))
+				_1B := _1B_.(*Node)
+
+				_1BTests := Expect{
+					prefix:       []byte("B"),
+					dirty:        false,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: isNotNil{},
+					node_hash:  isNotNil{},
+
+					val:                nil,
+					val_hash:           isNotNil{},
+					val_hash_recovered: false,
+					val_dirty:          false,
+
+					prefix_child_nodes:                nil,
+					prefix_child_nodes_hash:           nil,
+					prefix_child_nodes_hash_recovered: false,
+
+					folder_child_nodes:                nil,
+					folder_child_nodes_hash:           isNotNil{},
+					folder_child_nodes_hash_recovered: false,
+
+					prefix_child_nodes_len:   0,
+					prefix_child_nodes_dirty: false,
+
+					folder_child_nodes_len:   0,
+					folder_child_nodes_dirty: false,
+				}.makeTests(_1B)
+
+				for _, tt := range _1BTests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+			}
+		}
 		testCloseTrieDB(tdb)
 	}
 
@@ -646,7 +5169,45 @@ func TestMainWorkflow(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		_root := tdb.root_node
+
 		tdb.GenDotFile("./test_mainworkflow_5_1.dot", false)
+		// _root.genCheckStatements(os.Stdout)
+		{
+			_rootTests := Expect{
+				prefix:       nil,
+				dirty:        false,
+				parent_nodes: nil,
+
+				node_bytes: isNotNil{},
+				node_hash:  isNotNil{},
+
+				val:                nil,
+				val_hash:           nil,
+				val_hash_recovered: false,
+				val_dirty:          false,
+
+				prefix_child_nodes:                nil,
+				prefix_child_nodes_hash:           nil,
+				prefix_child_nodes_hash_recovered: false,
+
+				folder_child_nodes:                nil,
+				folder_child_nodes_hash:           isNotNil{},
+				folder_child_nodes_hash_recovered: false,
+
+				prefix_child_nodes_len:   0,
+				prefix_child_nodes_dirty: false,
+
+				folder_child_nodes_len:   0,
+				folder_child_nodes_dirty: false,
+			}.makeTests(_root)
+
+			for _, tt := range _rootTests {
+				if !tt.ok {
+					t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+				}
+			}
+		}
 
 		{
 			_, err := tdb.Get(Path([]byte("A"), []byte("A"), []byte("A")))
@@ -657,6 +5218,199 @@ func TestMainWorkflow(t *testing.T) {
 		}
 
 		tdb.GenDotFile("./test_mainworkflow_5_2.dot", false)
+		// _root.genCheckStatements(os.Stdout)
+		{
+			_rootTests := Expect{
+				prefix:       nil,
+				dirty:        false,
+				parent_nodes: nil,
+
+				node_bytes: isNotNil{},
+				node_hash:  isNotNil{},
+
+				val:                nil,
+				val_hash:           nil,
+				val_hash_recovered: false,
+				val_dirty:          false,
+
+				prefix_child_nodes:                nil,
+				prefix_child_nodes_hash:           nil,
+				prefix_child_nodes_hash_recovered: false,
+
+				folder_child_nodes:                isNotNil{},
+				folder_child_nodes_hash:           isNotNil{},
+				folder_child_nodes_hash_recovered: true,
+
+				prefix_child_nodes_len:   0,
+				prefix_child_nodes_dirty: false,
+
+				folder_child_nodes_len:   2,
+				folder_child_nodes_dirty: false,
+			}.makeTests(_root)
+
+			for _, tt := range _rootTests {
+				if !tt.ok {
+					t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+				}
+			}
+
+			{
+				_1A_ := _root.folder_child_nodes.btree.Get(uint8('A'))
+				_1A := _1A_.(*Node)
+
+				_1ATests := Expect{
+					prefix:       []byte("A"),
+					dirty:        false,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: isNotNil{},
+					node_hash:  isNotNil{},
+
+					val:                nil,
+					val_hash:           isNotNil{},
+					val_hash_recovered: false,
+					val_dirty:          false,
+
+					prefix_child_nodes:                nil,
+					prefix_child_nodes_hash:           isNotNil{},
+					prefix_child_nodes_hash_recovered: false,
+
+					folder_child_nodes:                isNotNil{},
+					folder_child_nodes_hash:           isNotNil{},
+					folder_child_nodes_hash_recovered: true,
+
+					prefix_child_nodes_len:   0,
+					prefix_child_nodes_dirty: false,
+
+					folder_child_nodes_len:   1,
+					folder_child_nodes_dirty: false,
+				}.makeTests(_1A)
+
+				for _, tt := range _1ATests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+				{
+					_1A1A_ := _1A.folder_child_nodes.btree.Get(uint8('A'))
+					_1A1A := _1A1A_.(*Node)
+
+					_1A1ATests := Expect{
+						prefix:       []byte("A"),
+						dirty:        false,
+						parent_nodes: isEqualTo{_1A.folder_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           nil,
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: false,
+
+						folder_child_nodes:                isNotNil{},
+						folder_child_nodes_hash:           isNotNil{},
+						folder_child_nodes_hash_recovered: true,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   1,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_1A1A)
+
+					for _, tt := range _1A1ATests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					{
+						_1A1A1A_ := _1A1A.folder_child_nodes.btree.Get(uint8('A'))
+						_1A1A1A := _1A1A1A_.(*Node)
+
+						_1A1A1ATests := Expect{
+							prefix:       []byte("A"),
+							dirty:        false,
+							parent_nodes: isEqualTo{_1A1A.folder_child_nodes},
+
+							node_bytes: isNotNil{},
+							node_hash:  isNotNil{},
+
+							val:                []byte("val_A_A_A"),
+							val_hash:           isNotNil{},
+							val_hash_recovered: true,
+							val_dirty:          false,
+
+							prefix_child_nodes:                nil,
+							prefix_child_nodes_hash:           nil,
+							prefix_child_nodes_hash_recovered: false,
+
+							folder_child_nodes:                nil,
+							folder_child_nodes_hash:           nil,
+							folder_child_nodes_hash_recovered: false,
+
+							prefix_child_nodes_len:   0,
+							prefix_child_nodes_dirty: false,
+
+							folder_child_nodes_len:   0,
+							folder_child_nodes_dirty: false,
+						}.makeTests(_1A1A1A)
+
+						for _, tt := range _1A1A1ATests {
+							if !tt.ok {
+								t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+							}
+						}
+
+					}
+
+				}
+
+				_1B_ := _root.folder_child_nodes.btree.Get(uint8('B'))
+				_1B := _1B_.(*Node)
+
+				_1BTests := Expect{
+					prefix:       []byte("B"),
+					dirty:        false,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: isNotNil{},
+					node_hash:  isNotNil{},
+
+					val:                nil,
+					val_hash:           isNotNil{},
+					val_hash_recovered: false,
+					val_dirty:          false,
+
+					prefix_child_nodes:                nil,
+					prefix_child_nodes_hash:           nil,
+					prefix_child_nodes_hash_recovered: false,
+
+					folder_child_nodes:                nil,
+					folder_child_nodes_hash:           isNotNil{},
+					folder_child_nodes_hash_recovered: false,
+
+					prefix_child_nodes_len:   0,
+					prefix_child_nodes_dirty: false,
+
+					folder_child_nodes_len:   0,
+					folder_child_nodes_dirty: false,
+				}.makeTests(_1B)
+
+				for _, tt := range _1BTests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+			}
+		}
 
 		{
 			_, err := tdb.Del(Path([]byte("A"), []byte("A")))
@@ -667,6 +5421,199 @@ func TestMainWorkflow(t *testing.T) {
 		}
 
 		tdb.GenDotFile("./test_mainworkflow_5_3.dot", false)
+		// _root.genCheckStatements(os.Stdout)
+		{
+			_rootTests := Expect{
+				prefix:       nil,
+				dirty:        false,
+				parent_nodes: nil,
+
+				node_bytes: isNotNil{},
+				node_hash:  isNotNil{},
+
+				val:                nil,
+				val_hash:           nil,
+				val_hash_recovered: false,
+				val_dirty:          false,
+
+				prefix_child_nodes:                nil,
+				prefix_child_nodes_hash:           nil,
+				prefix_child_nodes_hash_recovered: false,
+
+				folder_child_nodes:                isNotNil{},
+				folder_child_nodes_hash:           isNotNil{},
+				folder_child_nodes_hash_recovered: true,
+
+				prefix_child_nodes_len:   0,
+				prefix_child_nodes_dirty: false,
+
+				folder_child_nodes_len:   2,
+				folder_child_nodes_dirty: false,
+			}.makeTests(_root)
+
+			for _, tt := range _rootTests {
+				if !tt.ok {
+					t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+				}
+			}
+
+			{
+				_1A_ := _root.folder_child_nodes.btree.Get(uint8('A'))
+				_1A := _1A_.(*Node)
+
+				_1ATests := Expect{
+					prefix:       []byte("A"),
+					dirty:        false,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: isNotNil{},
+					node_hash:  isNotNil{},
+
+					val:                nil,
+					val_hash:           isNotNil{},
+					val_hash_recovered: false,
+					val_dirty:          false,
+
+					prefix_child_nodes:                nil,
+					prefix_child_nodes_hash:           isNotNil{},
+					prefix_child_nodes_hash_recovered: false,
+
+					folder_child_nodes:                isNotNil{},
+					folder_child_nodes_hash:           isNotNil{},
+					folder_child_nodes_hash_recovered: true,
+
+					prefix_child_nodes_len:   0,
+					prefix_child_nodes_dirty: false,
+
+					folder_child_nodes_len:   1,
+					folder_child_nodes_dirty: false,
+				}.makeTests(_1A)
+
+				for _, tt := range _1ATests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+				{
+					_1A1A_ := _1A.folder_child_nodes.btree.Get(uint8('A'))
+					_1A1A := _1A1A_.(*Node)
+
+					_1A1ATests := Expect{
+						prefix:       []byte("A"),
+						dirty:        false,
+						parent_nodes: isEqualTo{_1A.folder_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           nil,
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: false,
+
+						folder_child_nodes:                isNotNil{},
+						folder_child_nodes_hash:           isNotNil{},
+						folder_child_nodes_hash_recovered: true,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   1,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_1A1A)
+
+					for _, tt := range _1A1ATests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					{
+						_1A1A1A_ := _1A1A.folder_child_nodes.btree.Get(uint8('A'))
+						_1A1A1A := _1A1A1A_.(*Node)
+
+						_1A1A1ATests := Expect{
+							prefix:       []byte("A"),
+							dirty:        false,
+							parent_nodes: isEqualTo{_1A1A.folder_child_nodes},
+
+							node_bytes: isNotNil{},
+							node_hash:  isNotNil{},
+
+							val:                []byte("val_A_A_A"),
+							val_hash:           isNotNil{},
+							val_hash_recovered: true,
+							val_dirty:          false,
+
+							prefix_child_nodes:                nil,
+							prefix_child_nodes_hash:           nil,
+							prefix_child_nodes_hash_recovered: false,
+
+							folder_child_nodes:                nil,
+							folder_child_nodes_hash:           nil,
+							folder_child_nodes_hash_recovered: false,
+
+							prefix_child_nodes_len:   0,
+							prefix_child_nodes_dirty: false,
+
+							folder_child_nodes_len:   0,
+							folder_child_nodes_dirty: false,
+						}.makeTests(_1A1A1A)
+
+						for _, tt := range _1A1A1ATests {
+							if !tt.ok {
+								t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+							}
+						}
+
+					}
+
+				}
+
+				_1B_ := _root.folder_child_nodes.btree.Get(uint8('B'))
+				_1B := _1B_.(*Node)
+
+				_1BTests := Expect{
+					prefix:       []byte("B"),
+					dirty:        false,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: isNotNil{},
+					node_hash:  isNotNil{},
+
+					val:                nil,
+					val_hash:           isNotNil{},
+					val_hash_recovered: false,
+					val_dirty:          false,
+
+					prefix_child_nodes:                nil,
+					prefix_child_nodes_hash:           nil,
+					prefix_child_nodes_hash_recovered: false,
+
+					folder_child_nodes:                nil,
+					folder_child_nodes_hash:           isNotNil{},
+					folder_child_nodes_hash_recovered: false,
+
+					prefix_child_nodes_len:   0,
+					prefix_child_nodes_dirty: false,
+
+					folder_child_nodes_len:   0,
+					folder_child_nodes_dirty: false,
+				}.makeTests(_1B)
+
+				for _, tt := range _1BTests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+			}
+		}
 
 		{
 			_rootHash, err := tdb.testCommit()
@@ -679,6 +5626,199 @@ func TestMainWorkflow(t *testing.T) {
 		}
 
 		tdb.GenDotFile("./test_mainworkflow_5_4.dot", false)
+		// _root.genCheckStatements(os.Stdout)
+		{
+			_rootTests := Expect{
+				prefix:       nil,
+				dirty:        false,
+				parent_nodes: nil,
+
+				node_bytes: isNotNil{},
+				node_hash:  isNotNil{},
+
+				val:                nil,
+				val_hash:           nil,
+				val_hash_recovered: false,
+				val_dirty:          false,
+
+				prefix_child_nodes:                nil,
+				prefix_child_nodes_hash:           nil,
+				prefix_child_nodes_hash_recovered: false,
+
+				folder_child_nodes:                isNotNil{},
+				folder_child_nodes_hash:           isNotNil{},
+				folder_child_nodes_hash_recovered: true,
+
+				prefix_child_nodes_len:   0,
+				prefix_child_nodes_dirty: false,
+
+				folder_child_nodes_len:   2,
+				folder_child_nodes_dirty: false,
+			}.makeTests(_root)
+
+			for _, tt := range _rootTests {
+				if !tt.ok {
+					t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+				}
+			}
+
+			{
+				_1A_ := _root.folder_child_nodes.btree.Get(uint8('A'))
+				_1A := _1A_.(*Node)
+
+				_1ATests := Expect{
+					prefix:       []byte("A"),
+					dirty:        false,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: isNotNil{},
+					node_hash:  isNotNil{},
+
+					val:                nil,
+					val_hash:           isNotNil{},
+					val_hash_recovered: false,
+					val_dirty:          false,
+
+					prefix_child_nodes:                nil,
+					prefix_child_nodes_hash:           isNotNil{},
+					prefix_child_nodes_hash_recovered: false,
+
+					folder_child_nodes:                isNotNil{},
+					folder_child_nodes_hash:           isNotNil{},
+					folder_child_nodes_hash_recovered: true,
+
+					prefix_child_nodes_len:   0,
+					prefix_child_nodes_dirty: false,
+
+					folder_child_nodes_len:   1,
+					folder_child_nodes_dirty: false,
+				}.makeTests(_1A)
+
+				for _, tt := range _1ATests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+				{
+					_1A1A_ := _1A.folder_child_nodes.btree.Get(uint8('A'))
+					_1A1A := _1A1A_.(*Node)
+
+					_1A1ATests := Expect{
+						prefix:       []byte("A"),
+						dirty:        false,
+						parent_nodes: isEqualTo{_1A.folder_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           nil,
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: false,
+
+						folder_child_nodes:                isNotNil{},
+						folder_child_nodes_hash:           isNotNil{},
+						folder_child_nodes_hash_recovered: true,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   1,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_1A1A)
+
+					for _, tt := range _1A1ATests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					{
+						_1A1A1A_ := _1A1A.folder_child_nodes.btree.Get(uint8('A'))
+						_1A1A1A := _1A1A1A_.(*Node)
+
+						_1A1A1ATests := Expect{
+							prefix:       []byte("A"),
+							dirty:        false,
+							parent_nodes: isEqualTo{_1A1A.folder_child_nodes},
+
+							node_bytes: isNotNil{},
+							node_hash:  isNotNil{},
+
+							val:                []byte("val_A_A_A"),
+							val_hash:           isNotNil{},
+							val_hash_recovered: true,
+							val_dirty:          false,
+
+							prefix_child_nodes:                nil,
+							prefix_child_nodes_hash:           nil,
+							prefix_child_nodes_hash_recovered: false,
+
+							folder_child_nodes:                nil,
+							folder_child_nodes_hash:           nil,
+							folder_child_nodes_hash_recovered: false,
+
+							prefix_child_nodes_len:   0,
+							prefix_child_nodes_dirty: false,
+
+							folder_child_nodes_len:   0,
+							folder_child_nodes_dirty: false,
+						}.makeTests(_1A1A1A)
+
+						for _, tt := range _1A1A1ATests {
+							if !tt.ok {
+								t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+							}
+						}
+
+					}
+
+				}
+
+				_1B_ := _root.folder_child_nodes.btree.Get(uint8('B'))
+				_1B := _1B_.(*Node)
+
+				_1BTests := Expect{
+					prefix:       []byte("B"),
+					dirty:        false,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: isNotNil{},
+					node_hash:  isNotNil{},
+
+					val:                nil,
+					val_hash:           isNotNil{},
+					val_hash_recovered: false,
+					val_dirty:          false,
+
+					prefix_child_nodes:                nil,
+					prefix_child_nodes_hash:           nil,
+					prefix_child_nodes_hash_recovered: false,
+
+					folder_child_nodes:                nil,
+					folder_child_nodes_hash:           isNotNil{},
+					folder_child_nodes_hash_recovered: false,
+
+					prefix_child_nodes_len:   0,
+					prefix_child_nodes_dirty: false,
+
+					folder_child_nodes_len:   0,
+					folder_child_nodes_dirty: false,
+				}.makeTests(_1B)
+
+				for _, tt := range _1BTests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+			}
+		}
 		testCloseTrieDB(tdb)
 	}
 
@@ -690,7 +5830,45 @@ func TestMainWorkflow(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		_root := tdb.root_node
+
 		tdb.GenDotFile("./test_mainworkflow_6_1.dot", false)
+		// _root.genCheckStatements(os.Stdout)
+		{
+			_rootTests := Expect{
+				prefix:       nil,
+				dirty:        false,
+				parent_nodes: nil,
+
+				node_bytes: isNotNil{},
+				node_hash:  isNotNil{},
+
+				val:                nil,
+				val_hash:           nil,
+				val_hash_recovered: false,
+				val_dirty:          false,
+
+				prefix_child_nodes:                nil,
+				prefix_child_nodes_hash:           nil,
+				prefix_child_nodes_hash_recovered: false,
+
+				folder_child_nodes:                nil,
+				folder_child_nodes_hash:           isNotNil{},
+				folder_child_nodes_hash_recovered: false,
+
+				prefix_child_nodes_len:   0,
+				prefix_child_nodes_dirty: false,
+
+				folder_child_nodes_len:   0,
+				folder_child_nodes_dirty: false,
+			}.makeTests(_root)
+
+			for _, tt := range _rootTests {
+				if !tt.ok {
+					t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+				}
+			}
+		}
 
 		{
 			_, err := tdb.Get(Path([]byte("B"), []byte("B"), []byte("B")))
@@ -701,6 +5879,199 @@ func TestMainWorkflow(t *testing.T) {
 		}
 
 		tdb.GenDotFile("./test_mainworkflow_6_2.dot", false)
+		// _root.genCheckStatements(os.Stdout)
+		{
+			_rootTests := Expect{
+				prefix:       nil,
+				dirty:        false,
+				parent_nodes: nil,
+
+				node_bytes: isNotNil{},
+				node_hash:  isNotNil{},
+
+				val:                nil,
+				val_hash:           nil,
+				val_hash_recovered: false,
+				val_dirty:          false,
+
+				prefix_child_nodes:                nil,
+				prefix_child_nodes_hash:           nil,
+				prefix_child_nodes_hash_recovered: false,
+
+				folder_child_nodes:                isNotNil{},
+				folder_child_nodes_hash:           isNotNil{},
+				folder_child_nodes_hash_recovered: true,
+
+				prefix_child_nodes_len:   0,
+				prefix_child_nodes_dirty: false,
+
+				folder_child_nodes_len:   2,
+				folder_child_nodes_dirty: false,
+			}.makeTests(_root)
+
+			for _, tt := range _rootTests {
+				if !tt.ok {
+					t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+				}
+			}
+
+			{
+				_1A_ := _root.folder_child_nodes.btree.Get(uint8('A'))
+				_1A := _1A_.(*Node)
+
+				_1ATests := Expect{
+					prefix:       []byte("A"),
+					dirty:        false,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: isNotNil{},
+					node_hash:  isNotNil{},
+
+					val:                nil,
+					val_hash:           isNotNil{},
+					val_hash_recovered: false,
+					val_dirty:          false,
+
+					prefix_child_nodes:                nil,
+					prefix_child_nodes_hash:           isNotNil{},
+					prefix_child_nodes_hash_recovered: false,
+
+					folder_child_nodes:                nil,
+					folder_child_nodes_hash:           isNotNil{},
+					folder_child_nodes_hash_recovered: false,
+
+					prefix_child_nodes_len:   0,
+					prefix_child_nodes_dirty: false,
+
+					folder_child_nodes_len:   0,
+					folder_child_nodes_dirty: false,
+				}.makeTests(_1A)
+
+				for _, tt := range _1ATests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+				_1B_ := _root.folder_child_nodes.btree.Get(uint8('B'))
+				_1B := _1B_.(*Node)
+
+				_1BTests := Expect{
+					prefix:       []byte("B"),
+					dirty:        false,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: isNotNil{},
+					node_hash:  isNotNil{},
+
+					val:                nil,
+					val_hash:           isNotNil{},
+					val_hash_recovered: false,
+					val_dirty:          false,
+
+					prefix_child_nodes:                nil,
+					prefix_child_nodes_hash:           nil,
+					prefix_child_nodes_hash_recovered: false,
+
+					folder_child_nodes:                isNotNil{},
+					folder_child_nodes_hash:           isNotNil{},
+					folder_child_nodes_hash_recovered: true,
+
+					prefix_child_nodes_len:   0,
+					prefix_child_nodes_dirty: false,
+
+					folder_child_nodes_len:   1,
+					folder_child_nodes_dirty: false,
+				}.makeTests(_1B)
+
+				for _, tt := range _1BTests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+				{
+					_1B1B_ := _1B.folder_child_nodes.btree.Get(uint8('B'))
+					_1B1B := _1B1B_.(*Node)
+
+					_1B1BTests := Expect{
+						prefix:       []byte("B"),
+						dirty:        false,
+						parent_nodes: isEqualTo{_1B.folder_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           isNotNil{},
+						val_hash_recovered: false,
+						val_dirty:          false,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: false,
+
+						folder_child_nodes:                isNotNil{},
+						folder_child_nodes_hash:           isNotNil{},
+						folder_child_nodes_hash_recovered: true,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   1,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_1B1B)
+
+					for _, tt := range _1B1BTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					{
+						_1B1B1B_ := _1B1B.folder_child_nodes.btree.Get(uint8('B'))
+						_1B1B1B := _1B1B1B_.(*Node)
+
+						_1B1B1BTests := Expect{
+							prefix:       []byte("B"),
+							dirty:        false,
+							parent_nodes: isEqualTo{_1B1B.folder_child_nodes},
+
+							node_bytes: isNotNil{},
+							node_hash:  isNotNil{},
+
+							val:                []byte("val_B_B_B"),
+							val_hash:           isNotNil{},
+							val_hash_recovered: true,
+							val_dirty:          false,
+
+							prefix_child_nodes:                nil,
+							prefix_child_nodes_hash:           nil,
+							prefix_child_nodes_hash_recovered: false,
+
+							folder_child_nodes:                nil,
+							folder_child_nodes_hash:           nil,
+							folder_child_nodes_hash_recovered: false,
+
+							prefix_child_nodes_len:   0,
+							prefix_child_nodes_dirty: false,
+
+							folder_child_nodes_len:   0,
+							folder_child_nodes_dirty: false,
+						}.makeTests(_1B1B1B)
+
+						for _, tt := range _1B1B1BTests {
+							if !tt.ok {
+								t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+							}
+						}
+
+					}
+
+				}
+
+			}
+		}
 
 		{
 			_, err := tdb.Del(Path([]byte("B"), []byte("B")))
@@ -711,6 +6082,199 @@ func TestMainWorkflow(t *testing.T) {
 		}
 
 		tdb.GenDotFile("./test_mainworkflow_6_3.dot", false)
+		// _root.genCheckStatements(os.Stdout)
+		{
+			_rootTests := Expect{
+				prefix:       nil,
+				dirty:        true,
+				parent_nodes: nil,
+
+				node_bytes: isNotNil{},
+				node_hash:  isNotNil{},
+
+				val:                nil,
+				val_hash:           nil,
+				val_hash_recovered: false,
+				val_dirty:          false,
+
+				prefix_child_nodes:                nil,
+				prefix_child_nodes_hash:           nil,
+				prefix_child_nodes_hash_recovered: false,
+
+				folder_child_nodes:                isNotNil{},
+				folder_child_nodes_hash:           isNotNil{},
+				folder_child_nodes_hash_recovered: true,
+
+				prefix_child_nodes_len:   0,
+				prefix_child_nodes_dirty: false,
+
+				folder_child_nodes_len:   2,
+				folder_child_nodes_dirty: true,
+			}.makeTests(_root)
+
+			for _, tt := range _rootTests {
+				if !tt.ok {
+					t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+				}
+			}
+
+			{
+				_1A_ := _root.folder_child_nodes.btree.Get(uint8('A'))
+				_1A := _1A_.(*Node)
+
+				_1ATests := Expect{
+					prefix:       []byte("A"),
+					dirty:        false,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: isNotNil{},
+					node_hash:  isNotNil{},
+
+					val:                nil,
+					val_hash:           isNotNil{},
+					val_hash_recovered: false,
+					val_dirty:          false,
+
+					prefix_child_nodes:                nil,
+					prefix_child_nodes_hash:           isNotNil{},
+					prefix_child_nodes_hash_recovered: false,
+
+					folder_child_nodes:                nil,
+					folder_child_nodes_hash:           isNotNil{},
+					folder_child_nodes_hash_recovered: false,
+
+					prefix_child_nodes_len:   0,
+					prefix_child_nodes_dirty: false,
+
+					folder_child_nodes_len:   0,
+					folder_child_nodes_dirty: false,
+				}.makeTests(_1A)
+
+				for _, tt := range _1ATests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+				_1B_ := _root.folder_child_nodes.btree.Get(uint8('B'))
+				_1B := _1B_.(*Node)
+
+				_1BTests := Expect{
+					prefix:       []byte("B"),
+					dirty:        true,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: isNotNil{},
+					node_hash:  isNotNil{},
+
+					val:                nil,
+					val_hash:           isNotNil{},
+					val_hash_recovered: false,
+					val_dirty:          false,
+
+					prefix_child_nodes:                nil,
+					prefix_child_nodes_hash:           nil,
+					prefix_child_nodes_hash_recovered: false,
+
+					folder_child_nodes:                isNotNil{},
+					folder_child_nodes_hash:           isNotNil{},
+					folder_child_nodes_hash_recovered: true,
+
+					prefix_child_nodes_len:   0,
+					prefix_child_nodes_dirty: false,
+
+					folder_child_nodes_len:   1,
+					folder_child_nodes_dirty: true,
+				}.makeTests(_1B)
+
+				for _, tt := range _1BTests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+				{
+					_1B1B_ := _1B.folder_child_nodes.btree.Get(uint8('B'))
+					_1B1B := _1B1B_.(*Node)
+
+					_1B1BTests := Expect{
+						prefix:       []byte("B"),
+						dirty:        true,
+						parent_nodes: isEqualTo{_1B.folder_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           nil,
+						val_hash_recovered: true,
+						val_dirty:          true,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: false,
+
+						folder_child_nodes:                isNotNil{},
+						folder_child_nodes_hash:           isNotNil{},
+						folder_child_nodes_hash_recovered: true,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   1,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_1B1B)
+
+					for _, tt := range _1B1BTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					{
+						_1B1B1B_ := _1B1B.folder_child_nodes.btree.Get(uint8('B'))
+						_1B1B1B := _1B1B1B_.(*Node)
+
+						_1B1B1BTests := Expect{
+							prefix:       []byte("B"),
+							dirty:        false,
+							parent_nodes: isEqualTo{_1B1B.folder_child_nodes},
+
+							node_bytes: isNotNil{},
+							node_hash:  isNotNil{},
+
+							val:                []byte("val_B_B_B"),
+							val_hash:           isNotNil{},
+							val_hash_recovered: true,
+							val_dirty:          false,
+
+							prefix_child_nodes:                nil,
+							prefix_child_nodes_hash:           nil,
+							prefix_child_nodes_hash_recovered: false,
+
+							folder_child_nodes:                nil,
+							folder_child_nodes_hash:           nil,
+							folder_child_nodes_hash_recovered: false,
+
+							prefix_child_nodes_len:   0,
+							prefix_child_nodes_dirty: false,
+
+							folder_child_nodes_len:   0,
+							folder_child_nodes_dirty: false,
+						}.makeTests(_1B1B1B)
+
+						for _, tt := range _1B1B1BTests {
+							if !tt.ok {
+								t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+							}
+						}
+
+					}
+
+				}
+
+			}
+		}
 
 		{
 			_rootHash, err := tdb.testCommit()
@@ -723,6 +6287,199 @@ func TestMainWorkflow(t *testing.T) {
 		}
 
 		tdb.GenDotFile("./test_mainworkflow_6_4.dot", false)
+		// _root.genCheckStatements(os.Stdout)
+		{
+			_rootTests := Expect{
+				prefix:       nil,
+				dirty:        true,
+				parent_nodes: nil,
+
+				node_bytes: isNotNil{},
+				node_hash:  isNotNil{},
+
+				val:                nil,
+				val_hash:           nil,
+				val_hash_recovered: false,
+				val_dirty:          false,
+
+				prefix_child_nodes:                nil,
+				prefix_child_nodes_hash:           nil,
+				prefix_child_nodes_hash_recovered: false,
+
+				folder_child_nodes:                isNotNil{},
+				folder_child_nodes_hash:           isNotNil{},
+				folder_child_nodes_hash_recovered: true,
+
+				prefix_child_nodes_len:   0,
+				prefix_child_nodes_dirty: false,
+
+				folder_child_nodes_len:   2,
+				folder_child_nodes_dirty: true,
+			}.makeTests(_root)
+
+			for _, tt := range _rootTests {
+				if !tt.ok {
+					t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+				}
+			}
+
+			{
+				_1A_ := _root.folder_child_nodes.btree.Get(uint8('A'))
+				_1A := _1A_.(*Node)
+
+				_1ATests := Expect{
+					prefix:       []byte("A"),
+					dirty:        false,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: isNotNil{},
+					node_hash:  isNotNil{},
+
+					val:                nil,
+					val_hash:           isNotNil{},
+					val_hash_recovered: false,
+					val_dirty:          false,
+
+					prefix_child_nodes:                nil,
+					prefix_child_nodes_hash:           isNotNil{},
+					prefix_child_nodes_hash_recovered: false,
+
+					folder_child_nodes:                nil,
+					folder_child_nodes_hash:           isNotNil{},
+					folder_child_nodes_hash_recovered: false,
+
+					prefix_child_nodes_len:   0,
+					prefix_child_nodes_dirty: false,
+
+					folder_child_nodes_len:   0,
+					folder_child_nodes_dirty: false,
+				}.makeTests(_1A)
+
+				for _, tt := range _1ATests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+				_1B_ := _root.folder_child_nodes.btree.Get(uint8('B'))
+				_1B := _1B_.(*Node)
+
+				_1BTests := Expect{
+					prefix:       []byte("B"),
+					dirty:        true,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: isNotNil{},
+					node_hash:  isNotNil{},
+
+					val:                nil,
+					val_hash:           isNotNil{},
+					val_hash_recovered: false,
+					val_dirty:          false,
+
+					prefix_child_nodes:                nil,
+					prefix_child_nodes_hash:           nil,
+					prefix_child_nodes_hash_recovered: false,
+
+					folder_child_nodes:                isNotNil{},
+					folder_child_nodes_hash:           isNotNil{},
+					folder_child_nodes_hash_recovered: true,
+
+					prefix_child_nodes_len:   0,
+					prefix_child_nodes_dirty: false,
+
+					folder_child_nodes_len:   1,
+					folder_child_nodes_dirty: true,
+				}.makeTests(_1B)
+
+				for _, tt := range _1BTests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+				{
+					_1B1B_ := _1B.folder_child_nodes.btree.Get(uint8('B'))
+					_1B1B := _1B1B_.(*Node)
+
+					_1B1BTests := Expect{
+						prefix:       []byte("B"),
+						dirty:        true,
+						parent_nodes: isEqualTo{_1B.folder_child_nodes},
+
+						node_bytes: isNotNil{},
+						node_hash:  isNotNil{},
+
+						val:                nil,
+						val_hash:           nil,
+						val_hash_recovered: true,
+						val_dirty:          true,
+
+						prefix_child_nodes:                nil,
+						prefix_child_nodes_hash:           nil,
+						prefix_child_nodes_hash_recovered: false,
+
+						folder_child_nodes:                isNotNil{},
+						folder_child_nodes_hash:           isNotNil{},
+						folder_child_nodes_hash_recovered: true,
+
+						prefix_child_nodes_len:   0,
+						prefix_child_nodes_dirty: false,
+
+						folder_child_nodes_len:   1,
+						folder_child_nodes_dirty: false,
+					}.makeTests(_1B1B)
+
+					for _, tt := range _1B1BTests {
+						if !tt.ok {
+							t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+						}
+					}
+
+					{
+						_1B1B1B_ := _1B1B.folder_child_nodes.btree.Get(uint8('B'))
+						_1B1B1B := _1B1B1B_.(*Node)
+
+						_1B1B1BTests := Expect{
+							prefix:       []byte("B"),
+							dirty:        false,
+							parent_nodes: isEqualTo{_1B1B.folder_child_nodes},
+
+							node_bytes: isNotNil{},
+							node_hash:  isNotNil{},
+
+							val:                []byte("val_B_B_B"),
+							val_hash:           isNotNil{},
+							val_hash_recovered: true,
+							val_dirty:          false,
+
+							prefix_child_nodes:                nil,
+							prefix_child_nodes_hash:           nil,
+							prefix_child_nodes_hash_recovered: false,
+
+							folder_child_nodes:                nil,
+							folder_child_nodes_hash:           nil,
+							folder_child_nodes_hash_recovered: false,
+
+							prefix_child_nodes_len:   0,
+							prefix_child_nodes_dirty: false,
+
+							folder_child_nodes_len:   0,
+							folder_child_nodes_dirty: false,
+						}.makeTests(_1B1B1B)
+
+						for _, tt := range _1B1B1BTests {
+							if !tt.ok {
+								t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+							}
+						}
+
+					}
+
+				}
+
+			}
+		}
 		testCloseTrieDB(tdb)
 	}
 
@@ -734,11 +6491,163 @@ func TestMainWorkflow(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		_root := tdb.root_node
+		// _root.genCheckStatements(os.Stdout)
+		{
+			_rootTests := Expect{
+				prefix:       nil,
+				dirty:        false,
+				parent_nodes: nil,
+
+				node_bytes: isNotNil{},
+				node_hash:  isNotNil{},
+
+				val:                nil,
+				val_hash:           nil,
+				val_hash_recovered: false,
+				val_dirty:          false,
+
+				prefix_child_nodes:                nil,
+				prefix_child_nodes_hash:           nil,
+				prefix_child_nodes_hash_recovered: false,
+
+				folder_child_nodes:                nil,
+				folder_child_nodes_hash:           isNotNil{},
+				folder_child_nodes_hash_recovered: false,
+
+				prefix_child_nodes_len:   0,
+				prefix_child_nodes_dirty: false,
+
+				folder_child_nodes_len:   0,
+				folder_child_nodes_dirty: false,
+			}.makeTests(_root)
+
+			for _, tt := range _rootTests {
+				if !tt.ok {
+					t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+				}
+			}
+		}
+
 		{
 			_, err := tdb.Del(Path([]byte("hello")))
 
 			if nil != err {
 				t.Fatal("Delete path [hello] should NOT trigger error!")
+			}
+		}
+
+		// _root.genCheckStatements(os.Stdout)
+		{
+			_rootTests := Expect{
+				prefix:       nil,
+				dirty:        false,
+				parent_nodes: nil,
+
+				node_bytes: isNotNil{},
+				node_hash:  isNotNil{},
+
+				val:                nil,
+				val_hash:           nil,
+				val_hash_recovered: false,
+				val_dirty:          false,
+
+				prefix_child_nodes:                nil,
+				prefix_child_nodes_hash:           nil,
+				prefix_child_nodes_hash_recovered: false,
+
+				folder_child_nodes:                isNotNil{},
+				folder_child_nodes_hash:           isNotNil{},
+				folder_child_nodes_hash_recovered: true,
+
+				prefix_child_nodes_len:   0,
+				prefix_child_nodes_dirty: false,
+
+				folder_child_nodes_len:   2,
+				folder_child_nodes_dirty: false,
+			}.makeTests(_root)
+
+			for _, tt := range _rootTests {
+				if !tt.ok {
+					t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+				}
+			}
+
+			{
+				_1A_ := _root.folder_child_nodes.btree.Get(uint8('A'))
+				_1A := _1A_.(*Node)
+
+				_1ATests := Expect{
+					prefix:       []byte("A"),
+					dirty:        false,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: isNotNil{},
+					node_hash:  isNotNil{},
+
+					val:                nil,
+					val_hash:           isNotNil{},
+					val_hash_recovered: false,
+					val_dirty:          false,
+
+					prefix_child_nodes:                nil,
+					prefix_child_nodes_hash:           isNotNil{},
+					prefix_child_nodes_hash_recovered: false,
+
+					folder_child_nodes:                nil,
+					folder_child_nodes_hash:           isNotNil{},
+					folder_child_nodes_hash_recovered: false,
+
+					prefix_child_nodes_len:   0,
+					prefix_child_nodes_dirty: false,
+
+					folder_child_nodes_len:   0,
+					folder_child_nodes_dirty: false,
+				}.makeTests(_1A)
+
+				for _, tt := range _1ATests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+				_1B_ := _root.folder_child_nodes.btree.Get(uint8('B'))
+				_1B := _1B_.(*Node)
+
+				_1BTests := Expect{
+					prefix:       []byte("B"),
+					dirty:        false,
+					parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+					node_bytes: isNotNil{},
+					node_hash:  isNotNil{},
+
+					val:                nil,
+					val_hash:           isNotNil{},
+					val_hash_recovered: false,
+					val_dirty:          false,
+
+					prefix_child_nodes:                nil,
+					prefix_child_nodes_hash:           nil,
+					prefix_child_nodes_hash_recovered: false,
+
+					folder_child_nodes:                nil,
+					folder_child_nodes_hash:           isNotNil{},
+					folder_child_nodes_hash_recovered: false,
+
+					prefix_child_nodes_len:   0,
+					prefix_child_nodes_dirty: false,
+
+					folder_child_nodes_len:   0,
+					folder_child_nodes_dirty: false,
+				}.makeTests(_1B)
+
+				for _, tt := range _1BTests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
 			}
 		}
 
