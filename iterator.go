@@ -8,6 +8,7 @@ import (
 type Iterator struct {
 	trie_db      *TrieDB
 	parent_node  *Node
+	prev_node    *Node
 	current_node *Node
 	next_node    *Node
 }
@@ -49,15 +50,18 @@ func (trie_db *TrieDB) NewIterator(folder_full_path [][]byte) (*Iterator, error)
 		}, nil
 	}
 
-	next_hit_node, err := iter_recursive_hit_next(trie_db, n, cursor_n)
+	iter := &Iterator{
+		trie_db:     trie_db,
+		parent_node: n,
+	}
+
+	next_hit_node, err := iter.recursive_hit_next(cursor_n)
 	if err != nil {
 		return nil, err
 	}
-	return &Iterator{
-		trie_db:      trie_db,
-		parent_node:  n,
-		current_node: next_hit_node,
-	}, nil
+
+	iter.current_node = next_hit_node
+	return iter, nil
 
 }
 
@@ -70,10 +74,111 @@ func iter_check_node_hit(n *Node) bool {
 	}
 }
 
-func iter_recursive_hit_next(trie_db *TrieDB, iter_parent_node *Node, n *Node) (*Node, error) {
+func (iter *Iterator) recursive_hit_previous(n *Node) (*Node, error) {
+
+	//left node
+	btree_iter := n.parent_nodes.btree.After(uint8(n.prefix[0]))
+	btree_iter.Next()
+	if !btree_iter.Next() {
+
+		//reach end
+		if n.parent_nodes.parent_node == iter.parent_node {
+			return nil, nil
+		}
+
+		if iter_check_node_hit(n.parent_nodes.parent_node) {
+			return n.parent_nodes.parent_node, nil
+		} else {
+			return iter.recursive_hit_previous(n.parent_nodes.parent_node)
+		}
+	}
+
+	//
+	left_n_i := btree_iter.Value
+	left_n := left_n_i.(*Node)
+
+	if left_n.has_folder_child() || left_n.has_val() {
+		return left_n, nil
+	}
+
+	//no folder child and no val , must have prefix child
+	return iter.recursive_down_right_most(left_n)
+
+}
+
+func (iter *Iterator) recursive_down_right_most(n *Node) (*Node, error) {
+	if !n.has_prefix_child() {
+		return nil, nil
+	}
+
+	recover_err := iter.trie_db.recover_child_nodes(n, false, true)
+	if recover_err != nil {
+		return nil, recover_err
+	}
+
+	_, right_most_n_i := n.prefix_child_nodes.btree.Max()
+	right_most_n := right_most_n_i.(*Node)
+
+	if !right_most_n.has_prefix_child() {
+		return right_most_n, nil
+	} else {
+		return iter.recursive_down_right_most(right_most_n)
+	}
+}
+
+func (iter *Iterator) get_prev_node() (*Node, error) {
+	prev_hit_node, err := iter.recursive_hit_previous(iter.current_node)
+	if err != nil {
+		return nil, err
+	}
+	return prev_hit_node, nil
+}
+
+func (iter *Iterator) HasPrevious() (bool, error) {
+	if iter.prev_node != nil {
+		return true, nil
+	}
+
+	prev_n, err := iter.get_prev_node()
+	if err != nil {
+		return false, err
+	}
+
+	iter.prev_node = prev_n
+	return true, nil
+}
+
+func (iter *Iterator) Previous() (bool, error) {
+
+	//
+	if iter.prev_node != nil {
+		iter.next_node = iter.current_node
+		iter.current_node = iter.prev_node
+		iter.prev_node = nil
+		return true, nil
+	}
+
+	//
+	prev_n, err := iter.get_prev_node()
+	if err != nil {
+		return false, err
+	}
+
+	if prev_n != nil {
+		iter.next_node = iter.current_node
+		iter.current_node = iter.prev_node
+		iter.prev_node = prev_n
+		return true, nil
+	}
+
+	return false, nil
+
+}
+
+func (iter *Iterator) recursive_hit_next(n *Node) (*Node, error) {
 
 	//load prefix child
-	recover_err := trie_db.recover_child_nodes(n, false, true)
+	recover_err := iter.trie_db.recover_child_nodes(n, false, true)
 	if recover_err != nil {
 		return nil, recover_err
 	}
@@ -88,7 +193,7 @@ func iter_recursive_hit_next(trie_db *TrieDB, iter_parent_node *Node, n *Node) (
 		if iter_check_node_hit(first_c_n) {
 			return first_c_n, nil
 		} else {
-			return iter_recursive_hit_next(trie_db, iter_parent_node, first_c_n)
+			return iter.recursive_hit_next(first_c_n)
 		}
 	}
 
@@ -102,12 +207,12 @@ func iter_recursive_hit_next(trie_db *TrieDB, iter_parent_node *Node, n *Node) (
 		if right_n.has_val() {
 			return right_n, nil
 		} else {
-			return iter_recursive_hit_next(trie_db, iter_parent_node, btree_iter.Value.(*Node))
+			return iter.recursive_hit_next(btree_iter.Value.(*Node))
 		}
 
 	}
 
-	upper_right_n := recursive_upper_right(iter_parent_node, n)
+	upper_right_n := iter.recursive_upper_right(n)
 	if upper_right_n == nil {
 		return nil, nil
 	}
@@ -115,13 +220,13 @@ func iter_recursive_hit_next(trie_db *TrieDB, iter_parent_node *Node, n *Node) (
 	if iter_check_node_hit(upper_right_n) {
 		return upper_right_n, nil
 	} else {
-		return iter_recursive_hit_next(trie_db, iter_parent_node, upper_right_n)
+		return iter.recursive_hit_next(upper_right_n)
 	}
 
 }
 
-func recursive_upper_right(iter_parent_node *Node, n *Node) *Node {
-	if n.parent_nodes.parent_node == iter_parent_node {
+func (iter *Iterator) recursive_upper_right(n *Node) *Node {
+	if n.parent_nodes.parent_node == iter.parent_node {
 		return nil
 	}
 
@@ -131,11 +236,11 @@ func recursive_upper_right(iter_parent_node *Node, n *Node) *Node {
 		return btree_iter.Value.(*Node)
 	}
 
-	return recursive_upper_right(iter_parent_node, n.parent_nodes.parent_node)
+	return iter.recursive_upper_right(n.parent_nodes.parent_node)
 }
 
 func (iter *Iterator) get_next_node() (*Node, error) {
-	next_hit_node, err := iter_recursive_hit_next(iter.trie_db, iter.parent_node, iter.current_node)
+	next_hit_node, err := iter.recursive_hit_next(iter.current_node)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +264,9 @@ func (iter *Iterator) HasNext() (bool, error) {
 func (iter *Iterator) Next() (bool, error) {
 
 	if iter.next_node != nil {
+		iter.prev_node = iter.current_node
 		iter.current_node = iter.next_node
+		iter.next_node = nil
 		return true, nil
 	}
 
@@ -170,6 +277,7 @@ func (iter *Iterator) Next() (bool, error) {
 	}
 
 	if next_n != nil {
+		iter.prev_node = iter.current_node
 		iter.current_node = next_n
 		iter.next_node = nil
 		return true, nil
