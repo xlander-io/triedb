@@ -30,10 +30,12 @@ func main() {
 		panic(err)
 	}
 
-	iter, iter_err := tdb.NewIterator(triedb.Path())
+	iter, iter_err := tdb.NewIterator(triedb.Path([]byte("a")))
 	if iter_err != nil {
 		panic(iter_err)
 	}
+
+	fmt.Println(iter.SetCursorWithFullPath([][]byte{[]byte("a"), []byte("a")}))
 
 	for {
 
@@ -41,7 +43,7 @@ func main() {
 		if val_err != nil {
 			panic(val_err)
 		} else {
-			fmt.Println("val:", string(val), " full_path:", iter.FullPathFlatStr())
+			fmt.Println("val:", string(val), "flat path:", iter.FullPathFlatStr(), " is folder:", iter.IsFolder())
 		}
 
 		has_next, next_err := iter.Next()
