@@ -30,7 +30,7 @@ func TestGraphviz(t *testing.T) {
 	tdb.Put(Path([]byte("a"), []byte("a"), []byte("a")), []byte("valaaa"), true)
 	tdb.Put(Path([]byte("ab"), []byte("cd")), []byte("valabcd"), true)
 
-	// tdb.Put(Path([]byte("a"), []byte("a"), []byte("a")), []byte("valaaa"), false)
+	fmt.Println(tdb.Del(Path([]byte("a"), []byte("a"), []byte("a"))))
 
 	// fmt.Println(tdb.Del(Path([]byte("a"), []byte("a"), []byte("a"))))
 	// fmt.Println(tdb.Del(Path([]byte("a"), []byte("a"), []byte("a"))))

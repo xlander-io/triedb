@@ -708,23 +708,38 @@ func (trie_db *TrieDB) put_(full_path [][]byte, val []byte, gen_hash_index bool)
 	return trie_db.put_target_node(trie_db.root_node, full_path, 0, full_path[0], val, gen_hash_index)
 }
 
-// recursively simplify
-func (trie_db *TrieDB) recursive_simplify(node *Node) error {
-	//
-	if node == nil {
-		return errors.New("simplify nil node error")
+type simplify_check struct {
+	node_has_folder_child bool
+	node_has_prefix_child bool
+}
+
+func recursive_simplify_check_has_prefix_child(node *Node, sc *simplify_check) bool {
+	if sc != nil {
+		return sc.node_has_prefix_child
 	}
+	return node.has_prefix_child()
+}
+
+func recursive_simplify_check_has_folder_child(node *Node, sc *simplify_check) bool {
+	if sc != nil {
+		return sc.node_has_folder_child
+	}
+	return node.has_folder_child()
+}
+
+// recursively simplify
+func (trie_db *TrieDB) recursive_simplify(node *Node, is_check bool, sc *simplify_check) error {
 
 	//root node nothing to simplify
 	if node.parent_nodes == nil {
 		return nil
 	}
 
-	if node.has_folder_child() {
+	if recursive_simplify_check_has_folder_child(node, sc) {
 		//has folder child nothing to simplify
 		return nil
 
-	} else if node.has_prefix_child() {
+	} else if recursive_simplify_check_has_prefix_child(node, sc) {
 
 		recover_child_nodes_err := trie_db.recover_child_nodes(node, false, true)
 		if recover_child_nodes_err != nil {
@@ -732,7 +747,7 @@ func (trie_db *TrieDB) recursive_simplify(node *Node) error {
 		}
 
 		//simplify
-		if node.prefix_child_nodes.btree.Len() == 1 {
+		if node.prefix_child_nodes.btree.Len() == 1 && !is_check {
 			_, p_c_single_node_i := node.prefix_child_nodes.btree.Min()
 			p_c_single_node := p_c_single_node_i.(*Node)
 			p_c_single_node.prefix = append(node.prefix, p_c_single_node.prefix...)
@@ -752,64 +767,116 @@ func (trie_db *TrieDB) recursive_simplify(node *Node) error {
 
 		//no any prefix|folder child
 
-		//del first
-		node.parent_nodes.btree.Delete(uint8(node.prefix[0]))
-
 		if node.parent_nodes.is_folder_child_nodes {
 
 			//condition folder child
 
-			//simplify
-			if node.parent_nodes.btree.Len() == 0 {
-				node.parent_nodes.parent_node.folder_child_nodes = nil
-				node.parent_nodes.parent_node.mark_dirty()
+			if !is_check {
+
+				node.parent_nodes.btree.Delete(uint8(node.prefix[0]))
+
 				//simplify
-				if !node.parent_nodes.parent_node.has_val() {
-					return trie_db.recursive_simplify(node.parent_nodes.parent_node)
+				if node.parent_nodes.btree.Len() == 0 {
+					node.parent_nodes.parent_node.folder_child_nodes = nil
+					node.parent_nodes.parent_node.mark_dirty()
+					//simplify
+					if !node.parent_nodes.parent_node.has_val() {
+						return trie_db.recursive_simplify(node.parent_nodes.parent_node, false, nil)
+					} else {
+						return nil
+					}
+				} else {
+					node.parent_nodes.mark_dirty()
+					return nil
+				}
+
+			} else {
+
+				if node.parent_nodes.btree.Len() == 1 {
+
+					if !node.parent_nodes.parent_node.has_val() {
+
+						return trie_db.recursive_simplify(node.parent_nodes.parent_node, true, &simplify_check{
+							node_has_folder_child: false,
+							node_has_prefix_child: node.parent_nodes.parent_node.has_prefix_child(),
+						})
+
+					} else {
+						return nil
+					}
+
 				} else {
 					return nil
 				}
-			} else {
-				node.parent_nodes.mark_dirty()
-				return nil
 			}
 
 		} else {
 
 			//condition prefix child
 
-			//simplify
-			if node.parent_nodes.btree.Len() == 0 {
-				//
-				node.parent_nodes.parent_node.prefix_child_nodes = nil
-				node.parent_nodes.parent_node.mark_dirty()
+			if !is_check {
+
+				node.parent_nodes.btree.Delete(uint8(node.prefix[0]))
 
 				//simplify
-				if !node.parent_nodes.parent_node.has_val() {
-					return trie_db.recursive_simplify(node.parent_nodes.parent_node)
+				if node.parent_nodes.btree.Len() == 0 {
+					//
+					node.parent_nodes.parent_node.prefix_child_nodes = nil
+					node.parent_nodes.parent_node.mark_dirty()
+
+					//simplify
+					if !node.parent_nodes.parent_node.has_val() {
+						return trie_db.recursive_simplify(node.parent_nodes.parent_node, false, nil)
+					} else {
+						return nil
+					}
+
+				} else if node.parent_nodes.btree.Len() == 1 &&
+					!node.parent_nodes.parent_node.has_folder_child() &&
+					!node.parent_nodes.parent_node.has_val() &&
+					node.parent_nodes.parent_node.parent_nodes != nil {
+
+					//
+					_, left_single_node_i := node.parent_nodes.btree.Min()
+					left_single_node := left_single_node_i.(*Node)
+					left_single_node.prefix = append(node.parent_nodes.parent_node.prefix, left_single_node.prefix...)
+
+					node.parent_nodes.parent_node.parent_nodes.btree.Set(uint8(left_single_node.prefix[0]), left_single_node)
+					left_single_node.parent_nodes = node.parent_nodes.parent_node.parent_nodes
+					//
+					left_single_node.parent_nodes.mark_dirty()
+					return nil
+
 				} else {
+					node.parent_nodes.mark_dirty()
 					return nil
 				}
 
-			} else if node.parent_nodes.btree.Len() == 1 &&
-				!node.parent_nodes.parent_node.has_folder_child() &&
-				!node.parent_nodes.parent_node.has_val() &&
-				node.parent_nodes.parent_node.parent_nodes != nil {
-
-				//
-				_, left_single_node_i := node.parent_nodes.btree.Min()
-				left_single_node := left_single_node_i.(*Node)
-				left_single_node.prefix = append(node.parent_nodes.parent_node.prefix, left_single_node.prefix...)
-
-				node.parent_nodes.parent_node.parent_nodes.btree.Set(uint8(left_single_node.prefix[0]), left_single_node)
-				left_single_node.parent_nodes = node.parent_nodes.parent_node.parent_nodes
-				//
-				left_single_node.parent_nodes.mark_dirty()
-				return nil
-
 			} else {
-				node.parent_nodes.mark_dirty()
-				return nil
+
+				if node.parent_nodes.btree.Len() == 1 {
+
+					if !node.parent_nodes.parent_node.has_val() {
+						return trie_db.recursive_simplify(node.parent_nodes.parent_node, true, &simplify_check{
+							node_has_folder_child: node.parent_nodes.parent_node.has_folder_child(),
+							node_has_prefix_child: false,
+						})
+					} else {
+						return nil
+					}
+
+				} else if node.parent_nodes.btree.Len() == 2 &&
+					!node.parent_nodes.parent_node.has_folder_child() &&
+					!node.parent_nodes.parent_node.has_val() &&
+					node.parent_nodes.parent_node.parent_nodes != nil {
+
+					return nil
+
+				} else {
+
+					return nil
+				}
+
 			}
 
 		}
@@ -852,6 +919,12 @@ func (trie_db *TrieDB) del_target_node(target_node *Node, full_path [][]byte, pa
 				return false, nil
 			}
 
+			//do pre check to prevent err and status chaos
+			simplify_err := trie_db.recursive_simplify(target_node, true, nil)
+			if simplify_err != nil {
+				return false, simplify_err
+			}
+
 			//del
 			target_node.val = nil
 			target_node.val_hash = nil
@@ -860,13 +933,9 @@ func (trie_db *TrieDB) del_target_node(target_node *Node, full_path [][]byte, pa
 			target_node.index_hash = nil
 			target_node.mark_dirty()
 
-			//
-			simplify_err := trie_db.recursive_simplify(target_node)
-			if simplify_err != nil {
-				return false, simplify_err
-			} else {
-				return true, nil
-			}
+			//there won't be err as pre check has been executed
+			trie_db.recursive_simplify(target_node, false, nil)
+			return true, nil
 
 		} else {
 			recover_err := trie_db.recover_child_nodes(target_node, true, false)
@@ -918,56 +987,35 @@ func (trie_db *TrieDB) del_target_node(target_node *Node, full_path [][]byte, pa
 
 }
 
-type DelError struct {
-	Err   error
-	Fatal bool //trie_db won't be used any more as status chaos may exist
-}
-
 // return params:
 //
 //	 	bool:
 //					true:  node found and node.val exist
 //					false: node not found or node found but node.val not exist
 //		error:	may exist make sure you check the fatal, if fatal is true the trie can't be used anymore as the status inside may be chaotic
-func (trie_db *TrieDB) Del(full_path [][]byte) (bool, *DelError) {
+func (trie_db *TrieDB) Del(full_path [][]byte) (bool, error) {
 
 	if trie_db.config.Read_only {
-		return false, &DelError{
-			Err:   errors.New("del is not allowed for read only trie"),
-			Fatal: false,
-		}
+		return false, errors.New("del is not allowed for read only trie")
 	}
 
 	//path limit check
 	if len(full_path) <= 0 {
-		return false, &DelError{
-			Err:   errors.New("full_path empty"),
-			Fatal: false,
-		}
+		return false, errors.New("full_path empty")
 	}
 
 	//path empty check
 	for _, path := range full_path {
 		if len(path) == 0 {
-			return false, &DelError{
-				Err:   errors.New("empty path error"),
-				Fatal: false,
-			}
+			return false, errors.New("empty path error")
 		}
 	}
 
 	trie_db.lock.Lock()
 	defer trie_db.lock.Unlock()
 
-	del_success, del_err := trie_db.del_target_node(trie_db.root_node, full_path, 0, full_path[0])
-	if del_err != nil {
-		return false, &DelError{
-			Err:   del_err,
-			Fatal: true,
-		}
-	} else {
-		return del_success, nil
-	}
+	return trie_db.del_target_node(trie_db.root_node, full_path, 0, full_path[0])
+
 }
 
 ////////
