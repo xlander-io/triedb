@@ -605,6 +605,46 @@ func TestMainWorkflow(t *testing.T) {
 		testCloseTrieDB(tdb)
 	}
 
+	// test Delete intermediate node which has child but no value
+	{
+		tdb, err := testPrepareTrieDB(db_path, rootHash)
+
+		if nil != err {
+			t.Fatal(err)
+		}
+
+		{
+			_, err := tdb.Get(Path([]byte("A"), []byte("A"), []byte("A")))
+
+			if nil != err {
+				t.Fatal("Get path [A,A] should NOT trigger error!")
+			}
+		}
+
+		tdb.GenDotFile("./test_mainworkflow_8_1.dot", false)
+
+		{
+			_, err := tdb.Del(Path([]byte("A"), []byte("A")))
+
+			if nil != err {
+				t.Fatal("Delete path [A,A] should NOT trigger error!")
+			}
+		}
+
+		{
+			_rootHash, err := tdb.testCommit()
+
+			if nil != err {
+				t.Fatal(err)
+			}
+
+			rootHash = _rootHash
+		}
+
+		tdb.GenDotFile("./test_mainworkflow_8_2.dot", false)
+		testCloseTrieDB(tdb)
+	}
+
 	// test Delete data which not exist in a nonempty triedb
 	{
 		tdb, err := testPrepareTrieDB(db_path, rootHash)
