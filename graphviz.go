@@ -122,7 +122,11 @@ func (vg *vizGraph) fromTrieDB(tdb *TrieDB) {
 func (vn *vizNode) fromTrieNode(n *Node) {
 	vn.Prefix = string(bytes.Clone(n.prefix))
 	vn.PathFlat = n.node_path_flat_str()
-	vn.Value = string(bytes.Clone(n.val))
+	if nil == n.val {
+		vn.Value = "&lt;no-value&gt;"
+	} else {
+		vn.Value = string(bytes.Clone(n.val))
+	}
 	vn.Bytes = bytes.Clone(n.node_bytes)
 
 	vn.RecoveredChildrenPrefix = n.prefix_child_nodes_hash_recovered
