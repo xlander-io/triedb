@@ -355,6 +355,7 @@ func (tdb *TrieDB) WriteDot(b io.Writer, fullMode bool) {
 
 	tmpl = template.Must(tmpl.Parse(`
 	digraph G {
+		edge [dir=both arrowtail=dot]
 		{{template "vertices" .Root}}
 		{{template "edges" .Root}}
 	}
@@ -377,8 +378,8 @@ func (tdb *TrieDB) WriteDot(b io.Writer, fullMode bool) {
 
 	{{- define "edges"}}
 		{{- $O := .}}
-		{{- if and .ChildrenPrefix (eq .ID 0)}} {{- Name $O}} -> {{Name $O.ChildrenPrefix}} [color=gray hello=world] {{end}}
-		{{- if and .ChildrenFolder (eq .ID 0)}} {{- Name $O}} -> {{Name $O.ChildrenFolder}} [color=gray good=luck] {{end}}
+		{{- if and .ChildrenPrefix (eq .ID 0)}} {{- Name $O}} -> {{Name $O.ChildrenPrefix}} [color=gray] {{end}}
+		{{- if and .ChildrenFolder (eq .ID 0)}} {{- Name $O}} -> {{Name $O.ChildrenFolder}} [color=gray] {{end}}
 		{{- template "children" .ChildrenPrefix}}
 		{{- template "children" .ChildrenFolder}}
 	{{- end}}
