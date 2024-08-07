@@ -477,7 +477,7 @@ func TestMainWorkflow(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		_root := tdb.root_node
+		// _root := tdb.root_node
 		//root.genCheckStatements(os.Stdout)
 
 		tdb.Put(Path([]byte("A")), []byte("val_A"), true)
@@ -488,8 +488,6 @@ func TestMainWorkflow(t *testing.T) {
 		tdb.Put(Path([]byte("AD")), []byte("val_AD"), true)
 		tdb.Put(Path([]byte("ABC")), []byte("val_ABC"), true)
 		tdb.Put(Path([]byte("ABCD")), []byte("val_ABCD"), true)
-
-		_root.genCheckStatements(os.Stdout)
 
 		tdb.Put(Path([]byte("A"), []byte("A"), []byte("A")), []byte("val_A_A_A"), true)
 		tdb.Put(Path([]byte("AB"), []byte("CD")), []byte("val_AB_CD"), true)
@@ -514,10 +512,17 @@ func TestMainWorkflow(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		_root := tdb.root_node
+
 		tdb.Put(Path([]byte("B")), []byte("val_B"), true)
 		tdb.Put(Path([]byte("Aa")), []byte("val_Aa"), true)
 		tdb.Put(Path([]byte("ABa")), []byte("val_ABa"), true)
 		tdb.Put(Path([]byte("ABCa")), []byte("val_ABCa"), true)
+
+		tdb.Put(Path([]byte("B"), []byte("B"), []byte("B")), []byte("val_B_B_B"), true)
+		tdb.Put(Path([]byte("B"), []byte("B")), []byte("val_B_B"), true)
+
+		_root.genCheckStatements(os.Stdout)
 
 		_rootHash, err := tdb.testCommit()
 
@@ -605,7 +610,7 @@ func TestMainWorkflow(t *testing.T) {
 		testCloseTrieDB(tdb)
 	}
 
-	// test Delete intermediate node which has child but no value
+	// test Delete intermediate node which has child but HAS NO value
 	{
 		tdb, err := testPrepareTrieDB(db_path, rootHash)
 
@@ -617,7 +622,7 @@ func TestMainWorkflow(t *testing.T) {
 			_, err := tdb.Get(Path([]byte("A"), []byte("A"), []byte("A")))
 
 			if nil != err {
-				t.Fatal("Get path [A,A] should NOT trigger error!")
+				t.Fatal("Get path [A,A,A] should NOT trigger error!")
 			}
 		}
 
@@ -642,6 +647,46 @@ func TestMainWorkflow(t *testing.T) {
 		}
 
 		tdb.GenDotFile("./test_mainworkflow_8_2.dot", false)
+		testCloseTrieDB(tdb)
+	}
+
+	// test Delete intermediate node which has child and HAS value
+	{
+		tdb, err := testPrepareTrieDB(db_path, rootHash)
+
+		if nil != err {
+			t.Fatal(err)
+		}
+
+		{
+			_, err := tdb.Get(Path([]byte("B"), []byte("B"), []byte("B")))
+
+			if nil != err {
+				t.Fatal("Get path [B,B,B] should NOT trigger error!")
+			}
+		}
+
+		tdb.GenDotFile("./test_mainworkflow_9_1.dot", false)
+
+		{
+			_, err := tdb.Del(Path([]byte("B"), []byte("B")))
+
+			if nil != err {
+				t.Fatal("Delete path [B,B] should NOT trigger error!")
+			}
+		}
+
+		{
+			_rootHash, err := tdb.testCommit()
+
+			if nil != err {
+				t.Fatal(err)
+			}
+
+			rootHash = _rootHash
+		}
+
+		tdb.GenDotFile("./test_mainworkflow_9_2.dot", false)
 		testCloseTrieDB(tdb)
 	}
 
