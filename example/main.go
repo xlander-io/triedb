@@ -21,7 +21,7 @@ func main() {
 		panic(err)
 	}
 	tdb, err := triedb.NewTrieDB(kvdb, c, &triedb.TrieDBConfig{
-		Root_hash:           hash.NewHashFromString("0x15a85c01dd6a14b645daa953e0452ac2089071ba5d87a5b299d91cced8dc7be9"),
+		Root_hash:           hash.NewHashFromString("0xba9b8eb5478fed6a3fa9c5d637b851290c4b35d446da617e40f95b887c051f0c"),
 		Commit_thread_limit: 10,
 		Read_only:           true,
 	})
@@ -41,7 +41,7 @@ func main() {
 		if val_err != nil {
 			panic(val_err)
 		} else {
-			fmt.Println("val:", string(val))
+			fmt.Println("val:", string(val), " full_path:", iter.FullPathFlatStr())
 		}
 
 		has_next, next_err := iter.Next()

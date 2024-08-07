@@ -109,7 +109,7 @@ func recursive_hit_next(trie_db *TrieDB, iter_parent_node *Node, n *Node) (*Node
 		return nil, nil
 	}
 
-	if upper_right_n.has_val() {
+	if check_node_hit(upper_right_n) {
 		return upper_right_n, nil
 	} else {
 		return recursive_hit_next(trie_db, iter_parent_node, upper_right_n)
@@ -187,6 +187,10 @@ func (iter *Iterator) Val() ([]byte, error) {
 
 func (iter *Iterator) FullPath() [][]byte {
 	return iter.current_node.node_path()
+}
+
+func (iter *Iterator) FullPathFlatStr() string {
+	return iter.current_node.node_path_flat_str()
 }
 
 func (iter *Iterator) HasVal() bool {

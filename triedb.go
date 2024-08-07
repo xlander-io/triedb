@@ -920,6 +920,7 @@ func (trie_db *TrieDB) del_target_node(target_node *Node, full_path [][]byte, pa
 			}
 
 			//do pre check to prevent err and status chaos
+			//pre check will not change anything but may exist read db io error
 			simplify_err := trie_db.recursive_simplify(target_node, true, nil)
 			if simplify_err != nil {
 				return false, simplify_err
@@ -934,6 +935,7 @@ func (trie_db *TrieDB) del_target_node(target_node *Node, full_path [][]byte, pa
 			target_node.mark_dirty()
 
 			//there won't be err as pre check has been executed
+			//the io err won't exist as all io already excuted in pre check process
 			trie_db.recursive_simplify(target_node, false, nil)
 			return true, nil
 

@@ -70,6 +70,7 @@ func TestUpdateTrieDB(t *testing.T) {
 		return
 	}
 
+	tdb.Put(Path([]byte("1"), []byte("23")), []byte("val123"), true)
 	tdb.Put(Path([]byte("12")), []byte("val12"), true)
 	tdb.Put(Path([]byte("1a")), []byte("val1a"), true)
 	tdb.Put(Path([]byte("1b")), []byte("val1b"), true)
@@ -83,6 +84,10 @@ func TestUpdateTrieDB(t *testing.T) {
 	tdb.Put(Path([]byte("ab"), []byte("cd")), []byte("valabcd"), true)
 
 	root_hash, updated, deleted, _ := tdb.Commit()
+
+	tdb.GenDotString(true)
+	// dot -Tpdf -O test_graphviz.dot && open test_graphviz.dot.pdf
+	tdb.GenDotFile("./test_graphviz.dot", false)
 
 	fmt.Println("commit root hash:", root_hash.Hex())
 	fmt.Println("commit updated len:", len(updated))
