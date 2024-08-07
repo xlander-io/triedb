@@ -6667,42 +6667,10 @@ func TestDeleteOnEmptyTrieDB(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	_root := tdb.root_node
+	// _root.genCheckStatements(os.Stdout)
 	{
-		_, err := tdb.Del(Path([]byte("hello")))
-
-		if nil != err {
-			t.Fatal("Delete path [hello] should NOT trigger error!")
-		}
-	}
-
-	{
-		_rootHash, err := tdb.testCommit()
-
-		if nil != err {
-			t.Fatal(err)
-		}
-
-		if !hash.IsNilHash(_rootHash) {
-			t.Errorf("Delete on an empty triedb, then calc hash, root hash should be: %#v, but: %#v", nil, _rootHash)
-		}
-	}
-
-	testCloseTrieDB(tdb)
-}
-
-func TestLongPath(t *testing.T) {
-	const db_path = "./triedb_longpath_test.db"
-	defer os.RemoveAll(db_path)
-
-	tdb, err := testPrepareTrieDB(db_path, nil)
-
-	if nil != err {
-		t.Fatal(err)
-	}
-
-	{
-		root := tdb.root_node
-		rootTests := Expect{
+		_rootTests := Expect{
 			prefix:       nil,
 			dirty:        false,
 			parent_nodes: nil,
@@ -6728,9 +6696,153 @@ func TestLongPath(t *testing.T) {
 
 			folder_child_nodes_len:   0,
 			folder_child_nodes_dirty: false,
-		}.makeTests(root)
+		}.makeTests(_root)
 
-		for _, tt := range rootTests {
+		for _, tt := range _rootTests {
+			if !tt.ok {
+				t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+			}
+		}
+	}
+
+	{
+		_, err := tdb.Del(Path([]byte("hello")))
+
+		if nil != err {
+			t.Fatal("Delete path [hello] should NOT trigger error!")
+		}
+	}
+	// _root.genCheckStatements(os.Stdout)
+	{
+		_rootTests := Expect{
+			prefix:       nil,
+			dirty:        false,
+			parent_nodes: nil,
+
+			node_bytes: nil,
+			node_hash:  nil,
+
+			val:                nil,
+			val_hash:           nil,
+			val_hash_recovered: true,
+			val_dirty:          false,
+
+			prefix_child_nodes:                nil,
+			prefix_child_nodes_hash:           nil,
+			prefix_child_nodes_hash_recovered: true,
+
+			folder_child_nodes:                nil,
+			folder_child_nodes_hash:           nil,
+			folder_child_nodes_hash_recovered: true,
+
+			prefix_child_nodes_len:   0,
+			prefix_child_nodes_dirty: false,
+
+			folder_child_nodes_len:   0,
+			folder_child_nodes_dirty: false,
+		}.makeTests(_root)
+
+		for _, tt := range _rootTests {
+			if !tt.ok {
+				t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+			}
+		}
+	}
+
+	{
+		_rootHash, err := tdb.testCommit()
+
+		if nil != err {
+			t.Fatal(err)
+		}
+
+		if !hash.IsNilHash(_rootHash) {
+			t.Errorf("Delete on an empty triedb, then calc hash, root hash should be: %#v, but: %#v", nil, _rootHash)
+		}
+	}
+
+	// _root.genCheckStatements(os.Stdout)
+	{
+		_rootTests := Expect{
+			prefix:       nil,
+			dirty:        false,
+			parent_nodes: nil,
+
+			node_bytes: nil,
+			node_hash:  nil,
+
+			val:                nil,
+			val_hash:           nil,
+			val_hash_recovered: true,
+			val_dirty:          false,
+
+			prefix_child_nodes:                nil,
+			prefix_child_nodes_hash:           nil,
+			prefix_child_nodes_hash_recovered: true,
+
+			folder_child_nodes:                nil,
+			folder_child_nodes_hash:           nil,
+			folder_child_nodes_hash_recovered: true,
+
+			prefix_child_nodes_len:   0,
+			prefix_child_nodes_dirty: false,
+
+			folder_child_nodes_len:   0,
+			folder_child_nodes_dirty: false,
+		}.makeTests(_root)
+
+		for _, tt := range _rootTests {
+			if !tt.ok {
+				t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+			}
+		}
+	}
+
+	testCloseTrieDB(tdb)
+}
+
+func TestLongPath(t *testing.T) {
+	const db_path = "./triedb_longpath_test.db"
+	defer os.RemoveAll(db_path)
+
+	tdb, err := testPrepareTrieDB(db_path, nil)
+
+	if nil != err {
+		t.Fatal(err)
+	}
+	_root := tdb.root_node
+
+	// _root.genCheckStatements(os.Stdout)
+	{
+		_rootTests := Expect{
+			prefix:       nil,
+			dirty:        false,
+			parent_nodes: nil,
+
+			node_bytes: nil,
+			node_hash:  nil,
+
+			val:                nil,
+			val_hash:           nil,
+			val_hash_recovered: true,
+			val_dirty:          false,
+
+			prefix_child_nodes:                nil,
+			prefix_child_nodes_hash:           nil,
+			prefix_child_nodes_hash_recovered: true,
+
+			folder_child_nodes:                nil,
+			folder_child_nodes_hash:           nil,
+			folder_child_nodes_hash_recovered: true,
+
+			prefix_child_nodes_len:   0,
+			prefix_child_nodes_dirty: false,
+
+			folder_child_nodes_len:   0,
+			folder_child_nodes_dirty: false,
+		}.makeTests(_root)
+
+		for _, tt := range _rootTests {
 			if !tt.ok {
 				t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
 			}
@@ -6745,6 +6857,82 @@ func TestLongPath(t *testing.T) {
 	}
 
 	tdb.GenDotFile("./test_longpath_1.dot", false)
+	// _root.genCheckStatements(os.Stdout)
+	{
+		_rootTests := Expect{
+			prefix:       nil,
+			dirty:        true,
+			parent_nodes: nil,
+
+			node_bytes: nil,
+			node_hash:  nil,
+
+			val:                nil,
+			val_hash:           nil,
+			val_hash_recovered: true,
+			val_dirty:          false,
+
+			prefix_child_nodes:                nil,
+			prefix_child_nodes_hash:           nil,
+			prefix_child_nodes_hash_recovered: true,
+
+			folder_child_nodes:                isNotNil{},
+			folder_child_nodes_hash:           nil,
+			folder_child_nodes_hash_recovered: true,
+
+			prefix_child_nodes_len:   0,
+			prefix_child_nodes_dirty: false,
+
+			folder_child_nodes_len:   1,
+			folder_child_nodes_dirty: true,
+		}.makeTests(_root)
+
+		for _, tt := range _rootTests {
+			if !tt.ok {
+				t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+			}
+		}
+
+		{
+			_5hello_ := _root.folder_child_nodes.btree.Get(uint8('h'))
+			_5hello := _5hello_.(*Node)
+
+			_5helloTests := Expect{
+				prefix:       []byte("hello"),
+				dirty:        true,
+				parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+				node_bytes: nil,
+				node_hash:  nil,
+
+				val:                []byte("val_hello"),
+				val_hash:           nil,
+				val_hash_recovered: true,
+				val_dirty:          true,
+
+				prefix_child_nodes:                nil,
+				prefix_child_nodes_hash:           nil,
+				prefix_child_nodes_hash_recovered: true,
+
+				folder_child_nodes:                nil,
+				folder_child_nodes_hash:           nil,
+				folder_child_nodes_hash_recovered: true,
+
+				prefix_child_nodes_len:   0,
+				prefix_child_nodes_dirty: false,
+
+				folder_child_nodes_len:   0,
+				folder_child_nodes_dirty: false,
+			}.makeTests(_5hello)
+
+			for _, tt := range _5helloTests {
+				if !tt.ok {
+					t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+				}
+			}
+
+		}
+	}
 
 	{
 		err := tdb.Put(Path([]byte("hellO")), []byte("val_hellO"), true)
@@ -6754,6 +6942,159 @@ func TestLongPath(t *testing.T) {
 	}
 
 	tdb.GenDotFile("./test_longpath_2.dot", false)
+	// _root.genCheckStatements(os.Stdout)
+	{
+		_rootTests := Expect{
+			prefix:       nil,
+			dirty:        true,
+			parent_nodes: nil,
+
+			node_bytes: nil,
+			node_hash:  nil,
+
+			val:                nil,
+			val_hash:           nil,
+			val_hash_recovered: true,
+			val_dirty:          false,
+
+			prefix_child_nodes:                nil,
+			prefix_child_nodes_hash:           nil,
+			prefix_child_nodes_hash_recovered: true,
+
+			folder_child_nodes:                isNotNil{},
+			folder_child_nodes_hash:           nil,
+			folder_child_nodes_hash_recovered: true,
+
+			prefix_child_nodes_len:   0,
+			prefix_child_nodes_dirty: false,
+
+			folder_child_nodes_len:   1,
+			folder_child_nodes_dirty: true,
+		}.makeTests(_root)
+
+		for _, tt := range _rootTests {
+			if !tt.ok {
+				t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+			}
+		}
+
+		{
+			_4hell_ := _root.folder_child_nodes.btree.Get(uint8('h'))
+			_4hell := _4hell_.(*Node)
+
+			_4hellTests := Expect{
+				prefix:       []byte("hell"),
+				dirty:        true,
+				parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+				node_bytes: nil,
+				node_hash:  nil,
+
+				val:                nil,
+				val_hash:           nil,
+				val_hash_recovered: true,
+				val_dirty:          false,
+
+				prefix_child_nodes:                isNotNil{},
+				prefix_child_nodes_hash:           nil,
+				prefix_child_nodes_hash_recovered: true,
+
+				folder_child_nodes:                nil,
+				folder_child_nodes_hash:           nil,
+				folder_child_nodes_hash_recovered: true,
+
+				prefix_child_nodes_len:   2,
+				prefix_child_nodes_dirty: true,
+
+				folder_child_nodes_len:   0,
+				folder_child_nodes_dirty: false,
+			}.makeTests(_4hell)
+
+			for _, tt := range _4hellTests {
+				if !tt.ok {
+					t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+				}
+			}
+
+			{
+				_5hellO_ := _4hell.prefix_child_nodes.btree.Get(uint8('O'))
+				_5hellO := _5hellO_.(*Node)
+
+				_5hellOTests := Expect{
+					prefix:       []byte("O"),
+					dirty:        true,
+					parent_nodes: isEqualTo{_4hell.prefix_child_nodes},
+
+					node_bytes: nil,
+					node_hash:  nil,
+
+					val:                []byte("val_hellO"),
+					val_hash:           nil,
+					val_hash_recovered: true,
+					val_dirty:          true,
+
+					prefix_child_nodes:                nil,
+					prefix_child_nodes_hash:           nil,
+					prefix_child_nodes_hash_recovered: true,
+
+					folder_child_nodes:                nil,
+					folder_child_nodes_hash:           nil,
+					folder_child_nodes_hash_recovered: true,
+
+					prefix_child_nodes_len:   0,
+					prefix_child_nodes_dirty: false,
+
+					folder_child_nodes_len:   0,
+					folder_child_nodes_dirty: false,
+				}.makeTests(_5hellO)
+
+				for _, tt := range _5hellOTests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+				_5hello_ := _4hell.prefix_child_nodes.btree.Get(uint8('o'))
+				_5hello := _5hello_.(*Node)
+
+				_5helloTests := Expect{
+					prefix:       []byte("o"),
+					dirty:        true,
+					parent_nodes: isEqualTo{_4hell.prefix_child_nodes},
+
+					node_bytes: nil,
+					node_hash:  nil,
+
+					val:                []byte("val_hello"),
+					val_hash:           nil,
+					val_hash_recovered: true,
+					val_dirty:          true,
+
+					prefix_child_nodes:                nil,
+					prefix_child_nodes_hash:           nil,
+					prefix_child_nodes_hash_recovered: true,
+
+					folder_child_nodes:                nil,
+					folder_child_nodes_hash:           nil,
+					folder_child_nodes_hash_recovered: true,
+
+					prefix_child_nodes_len:   0,
+					prefix_child_nodes_dirty: false,
+
+					folder_child_nodes_len:   0,
+					folder_child_nodes_dirty: false,
+				}.makeTests(_5hello)
+
+				for _, tt := range _5helloTests {
+					if !tt.ok {
+						t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+					}
+				}
+
+			}
+
+		}
+	}
 
 	{
 		_, err := tdb.Del(Path([]byte("hello")))
@@ -6764,6 +7105,82 @@ func TestLongPath(t *testing.T) {
 
 	tdb.testCommit()
 	tdb.GenDotFile("./test_longpath_3.dot", false)
+	// _root.genCheckStatements(os.Stdout)
+	{
+		_rootTests := Expect{
+			prefix:       nil,
+			dirty:        true,
+			parent_nodes: nil,
+
+			node_bytes: isNotNil{},
+			node_hash:  isNotNil{},
+
+			val:                nil,
+			val_hash:           nil,
+			val_hash_recovered: true,
+			val_dirty:          false,
+
+			prefix_child_nodes:                nil,
+			prefix_child_nodes_hash:           nil,
+			prefix_child_nodes_hash_recovered: true,
+
+			folder_child_nodes:                isNotNil{},
+			folder_child_nodes_hash:           isNotNil{},
+			folder_child_nodes_hash_recovered: true,
+
+			prefix_child_nodes_len:   0,
+			prefix_child_nodes_dirty: false,
+
+			folder_child_nodes_len:   1,
+			folder_child_nodes_dirty: true,
+		}.makeTests(_root)
+
+		for _, tt := range _rootTests {
+			if !tt.ok {
+				t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+			}
+		}
+
+		{
+			_5hellO_ := _root.folder_child_nodes.btree.Get(uint8('h'))
+			_5hellO := _5hellO_.(*Node)
+
+			_5hellOTests := Expect{
+				prefix:       []byte("hellO"),
+				dirty:        true,
+				parent_nodes: isEqualTo{_root.folder_child_nodes},
+
+				node_bytes: isNotNil{},
+				node_hash:  isNotNil{},
+
+				val:                []byte("val_hellO"),
+				val_hash:           isNotNil{},
+				val_hash_recovered: true,
+				val_dirty:          true,
+
+				prefix_child_nodes:                nil,
+				prefix_child_nodes_hash:           nil,
+				prefix_child_nodes_hash_recovered: true,
+
+				folder_child_nodes:                nil,
+				folder_child_nodes_hash:           nil,
+				folder_child_nodes_hash_recovered: true,
+
+				prefix_child_nodes_len:   0,
+				prefix_child_nodes_dirty: false,
+
+				folder_child_nodes_len:   0,
+				folder_child_nodes_dirty: false,
+			}.makeTests(_5hellO)
+
+			for _, tt := range _5hellOTests {
+				if !tt.ok {
+					t.Errorf("root %s expect: %#v, but: %#v", tt.label, tt.expected, tt.actual)
+				}
+			}
+
+		}
+	}
 	testCloseTrieDB(tdb)
 }
 
