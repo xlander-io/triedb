@@ -477,17 +477,20 @@ func TestMainWorkflow(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		tdb.GenDotFile("./test_mainworkflow_1_1.dot", false)
 		// _root := tdb.root_node
 		//root.genCheckStatements(os.Stdout)
 
 		tdb.Put(Path([]byte("A")), []byte("val_A"), true)
 		// _root.genCheckStatements(os.Stdout)
+		tdb.GenDotFile("./test_mainworkflow_1_2.dot", false)
 
 		tdb.Put(Path([]byte("AB")), []byte("val_AB"), true)
 		tdb.Put(Path([]byte("AC")), []byte("val_AC"), true)
 		tdb.Put(Path([]byte("AD")), []byte("val_AD"), true)
 		tdb.Put(Path([]byte("ABC")), []byte("val_ABC"), true)
 		tdb.Put(Path([]byte("ABCD")), []byte("val_ABCD"), true)
+		tdb.GenDotFile("./test_mainworkflow_1_3.dot", false)
 
 		tdb.Put(Path([]byte("A"), []byte("A"), []byte("A")), []byte("val_A_A_A"), true)
 		tdb.Put(Path([]byte("AB"), []byte("CD")), []byte("val_AB_CD"), true)
@@ -500,7 +503,7 @@ func TestMainWorkflow(t *testing.T) {
 
 		rootHash = _rootHash
 
-		tdb.GenDotFile("./test_mainworkflow_1.dot", false)
+		tdb.GenDotFile("./test_mainworkflow_1_4.dot", false)
 		testCloseTrieDB(tdb)
 	}
 
@@ -512,15 +515,19 @@ func TestMainWorkflow(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		tdb.GenDotFile("./test_mainworkflow_2_1.dot", false)
+
 		_root := tdb.root_node
 
 		tdb.Put(Path([]byte("B")), []byte("val_B"), true)
 		tdb.Put(Path([]byte("Aa")), []byte("val_Aa"), true)
 		tdb.Put(Path([]byte("ABa")), []byte("val_ABa"), true)
 		tdb.Put(Path([]byte("ABCa")), []byte("val_ABCa"), true)
+		tdb.GenDotFile("./test_mainworkflow_2_2.dot", false)
 
 		tdb.Put(Path([]byte("B"), []byte("B"), []byte("B")), []byte("val_B_B_B"), true)
 		tdb.Put(Path([]byte("B"), []byte("B")), []byte("val_B_B"), true)
+		tdb.GenDotFile("./test_mainworkflow_2_3.dot", false)
 
 		_root.genCheckStatements(os.Stdout)
 
@@ -532,7 +539,7 @@ func TestMainWorkflow(t *testing.T) {
 
 		rootHash = _rootHash
 
-		tdb.GenDotFile("./test_mainworkflow_2.dot", false)
+		tdb.GenDotFile("./test_mainworkflow_2_4.dot", false)
 
 		testCloseTrieDB(tdb)
 	}
@@ -545,7 +552,7 @@ func TestMainWorkflow(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		tdb.GenDotFile("./test_mainworkflow_3.dot", false)
+		tdb.GenDotFile("./test_mainworkflow_3_1.dot", false)
 
 		{
 			_, err := tdb.Get(Path([]byte("ABC")))
@@ -554,7 +561,7 @@ func TestMainWorkflow(t *testing.T) {
 			}
 		}
 
-		tdb.GenDotFile("./test_mainworkflow_4.dot", false)
+		tdb.GenDotFile("./test_mainworkflow_3_2.dot", false)
 		{
 			_, err := tdb.Del(Path([]byte("AB")))
 			if nil != err {
@@ -562,7 +569,7 @@ func TestMainWorkflow(t *testing.T) {
 			}
 		}
 
-		tdb.GenDotFile("./test_mainworkflow_5.dot", false)
+		tdb.GenDotFile("./test_mainworkflow_3_3.dot", false)
 
 		{
 			tdb.Put(Path([]byte("ACa")), []byte("val_ACa"), true)
@@ -577,7 +584,7 @@ func TestMainWorkflow(t *testing.T) {
 			rootHash = _rootHash
 		}
 
-		tdb.GenDotFile("./test_mainworkflow_6.dot", false)
+		tdb.GenDotFile("./test_mainworkflow_3_4.dot", false)
 		testCloseTrieDB(tdb)
 	}
 
@@ -595,6 +602,8 @@ func TestMainWorkflow(t *testing.T) {
 				t.Fatal(`Delete item "ACa" should work as expected!`, err)
 			}
 		}
+		tdb.GenDotFile("./test_mainworkflow_4_1.dot", false)
+
 		{
 			_, err := tdb.Get(Path([]byte("ACa")))
 			if nil == err {
@@ -612,7 +621,7 @@ func TestMainWorkflow(t *testing.T) {
 			rootHash = _rootHash
 		}
 
-		tdb.GenDotFile("./test_mainworkflow_7.dot", false)
+		tdb.GenDotFile("./test_mainworkflow_4_2.dot", false)
 		testCloseTrieDB(tdb)
 	}
 
@@ -632,7 +641,7 @@ func TestMainWorkflow(t *testing.T) {
 			}
 		}
 
-		tdb.GenDotFile("./test_mainworkflow_8_1.dot", false)
+		tdb.GenDotFile("./test_mainworkflow_5_1.dot", false)
 
 		{
 			_, err := tdb.Del(Path([]byte("A"), []byte("A")))
@@ -652,7 +661,7 @@ func TestMainWorkflow(t *testing.T) {
 			rootHash = _rootHash
 		}
 
-		tdb.GenDotFile("./test_mainworkflow_8_2.dot", false)
+		tdb.GenDotFile("./test_mainworkflow_5_2.dot", false)
 		testCloseTrieDB(tdb)
 	}
 
@@ -672,7 +681,7 @@ func TestMainWorkflow(t *testing.T) {
 			}
 		}
 
-		tdb.GenDotFile("./test_mainworkflow_9_1.dot", false)
+		tdb.GenDotFile("./test_mainworkflow_6_1.dot", false)
 
 		{
 			_, err := tdb.Del(Path([]byte("B"), []byte("B")))
@@ -692,7 +701,7 @@ func TestMainWorkflow(t *testing.T) {
 			rootHash = _rootHash
 		}
 
-		tdb.GenDotFile("./test_mainworkflow_9_2.dot", false)
+		tdb.GenDotFile("./test_mainworkflow_6_2.dot", false)
 		testCloseTrieDB(tdb)
 	}
 
