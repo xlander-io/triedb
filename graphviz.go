@@ -123,7 +123,7 @@ func (vn *vizNode) fromTrieNode(n *Node) {
 	vn.Prefix = string(bytes.Clone(n.prefix))
 	vn.PathFlat = n.node_path_flat_str()
 	if nil == n.val {
-		vn.Value = "&lt;no-value&gt;"
+		vn.Value = "&lt;nil&gt;"
 	} else {
 		vn.Value = string(bytes.Clone(n.val))
 	}
