@@ -369,6 +369,7 @@ func (iter *Iterator) SetCursor(child_prefix []byte) (bool, error) {
 	}
 
 	if n != nil {
+		iter.prev_node = nil
 		iter.current_node = n
 		iter.next_node = nil
 		return true, nil

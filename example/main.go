@@ -55,6 +55,10 @@ func main() {
 		}
 	}
 
+	fmt.Println("////////////////")
+
+	iter.SetCursor([]byte("123a"))
+
 	for {
 
 		val, val_err := iter.Val()
