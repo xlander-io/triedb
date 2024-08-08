@@ -86,9 +86,9 @@ func TestUpdateTrieDB(t *testing.T) {
 
 	root_hash, updated, deleted, _ := tdb.Commit()
 
-	tdb.GenDotString(true)
-	// dot -Tpdf -O test_graphviz.dot && open test_graphviz.dot.pdf
-	tdb.GenDotFile("./test_graphviz.dot", false)
+	// tdb.GenDotString(true)
+	// // dot -Tpdf -O test_graphviz.dot && open test_graphviz.dot.pdf
+	// tdb.GenDotFile("./test_graphviz.dot", false)
 
 	fmt.Println("commit root hash:", root_hash.Hex())
 	fmt.Println("commit updated len:", len(updated))

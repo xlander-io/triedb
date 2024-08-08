@@ -30,51 +30,59 @@ func main() {
 		panic(err)
 	}
 
-	iter, iter_err := tdb.NewIterator(triedb.Path())
-	if iter_err != nil {
-		panic(iter_err)
-	}
+	_, hash, _ := tdb.Get(triedb.Path([]byte("ab"), []byte("cd")))
+
+	fmt.Println("hash:", hash.Hex())
+
+	val, _, _ := tdb.GetByHashIndex(hash.Bytes())
+
+	fmt.Println("val:", string(val))
+
+	// iter, iter_err := tdb.NewIterator(triedb.Path())
+	// if iter_err != nil {
+	// 	panic(iter_err)
+	// }
 
 	//fmt.Println(iter.SetCursorWithFullPath([][]byte{[]byte("a"), []byte("a")}))
 
-	for {
+	// for {
 
-		val, val_err := iter.Val()
-		if val_err != nil {
-			panic(val_err)
-		} else {
-			fmt.Println("val:", string(val), "flat path:", iter.FullPathFlatStr(), " is folder:", iter.IsFolder())
-		}
+	// 	val, val_err := iter.Val()
+	// 	if val_err != nil {
+	// 		panic(val_err)
+	// 	} else {
+	// 		fmt.Println("val:", string(val), "flat path:", iter.FullPathFlatStr(), " is folder:", iter.IsFolder())
+	// 	}
 
-		has_next, next_err := iter.Next()
-		if next_err != nil {
-			panic(next_err)
-		}
-		if !has_next {
-			break
-		}
-	}
+	// 	has_next, next_err := iter.Next()
+	// 	if next_err != nil {
+	// 		panic(next_err)
+	// 	}
+	// 	if !has_next {
+	// 		break
+	// 	}
+	// }
 
-	fmt.Println("////////////////")
+	// fmt.Println("////////////////")
 
-	iter.SetCursor([]byte("123a"))
+	// iter.SetCursor([]byte("123a"))
 
-	for {
+	// for {
 
-		val, val_err := iter.Val()
-		if val_err != nil {
-			panic(val_err)
-		} else {
-			fmt.Println("val:", string(val), "flat path:", iter.FullPathFlatStr(), " is folder:", iter.IsFolder())
-		}
+	// 	val, val_err := iter.Val()
+	// 	if val_err != nil {
+	// 		panic(val_err)
+	// 	} else {
+	// 		fmt.Println("val:", string(val), "flat path:", iter.FullPathFlatStr(), " is folder:", iter.IsFolder())
+	// 	}
 
-		has_prev, prev_err := iter.Previous()
-		if prev_err != nil {
-			panic(prev_err)
-		}
-		if !has_prev {
-			break
-		}
-	}
+	// 	has_prev, prev_err := iter.Previous()
+	// 	if prev_err != nil {
+	// 		panic(prev_err)
+	// 	}
+	// 	if !has_prev {
+	// 		break
+	// 	}
+	// }
 
 }

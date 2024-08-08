@@ -1157,23 +1157,35 @@ func (trie_db *TrieDB) get_(full_path [][]byte) (*Node, error) {
 	return trie_db.get_target_node(trie_db.root_node, full_path, 0, full_path[0])
 }
 
-func (trie_db *TrieDB) Get(full_path [][]byte) ([]byte, error) {
+func (trie_db *TrieDB) GetByHashIndex(hash_index []byte) ([]byte, *hash.Hash, error) {
+	full_path_encoded, err := trie_db.get_from_cache_kvdb(hash_index)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	full_path := decode_full_path(full_path_encoded)
+
+	return trie_db.Get(full_path)
+}
+
+// return val , hash_index,error
+func (trie_db *TrieDB) Get(full_path [][]byte) ([]byte, *hash.Hash, error) {
 	target_node, err := trie_db.get_(full_path)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	recover_err := trie_db.recover_node_val(target_node)
 	if recover_err != nil {
-		return nil, recover_err
+		return nil, nil, recover_err
 	}
 
 	if target_node.val == nil {
 		//is just a folder
-		return nil, nil
+		return nil, nil, nil
 	}
 
-	return target_node.val, nil
+	return target_node.val, target_node.index_hash, nil
 }
 
 func (trie_db *TrieDB) FolderExist(full_path [][]byte) (bool, error) {
