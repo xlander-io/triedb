@@ -80,8 +80,8 @@ func (iter *Iterator) recursive_hit_previous(n *Node) (*Node, error) {
 	btree_iter := n.parent_nodes.btree.After(uint8(n.prefix[0]))
 	btree_iter.Next()
 	if !btree_iter.Next() {
-
 		//reach end
+
 		if n.parent_nodes.parent_node == iter.parent_node {
 			return nil, nil
 		}
@@ -97,12 +97,13 @@ func (iter *Iterator) recursive_hit_previous(n *Node) (*Node, error) {
 	left_n_i := btree_iter.Value
 	left_n := left_n_i.(*Node)
 
-	if left_n.has_folder_child() || left_n.has_val() {
-		return left_n, nil
+	if left_n.has_prefix_child() {
+		// no folder child and no val , must have prefix child
+		return iter.recursive_down_right_most(left_n)
 	}
 
-	//no folder child and no val , must have prefix child
-	return iter.recursive_down_right_most(left_n)
+	// no prefix child => has folder child || has val must be true
+	return left_n, nil
 
 }
 
@@ -166,8 +167,8 @@ func (iter *Iterator) Previous() (bool, error) {
 
 	if prev_n != nil {
 		iter.next_node = iter.current_node
-		iter.current_node = iter.prev_node
-		iter.prev_node = prev_n
+		iter.current_node = prev_n
+		iter.prev_node = nil
 		return true, nil
 	}
 
