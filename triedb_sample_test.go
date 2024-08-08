@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/xlander-io/cache"
+	"github.com/xlander-io/hash"
 	"github.com/xlander-io/kv"
 	"github.com/xlander-io/kv_leveldb"
 )
@@ -96,10 +97,12 @@ func TestUpdateTrieDB(t *testing.T) {
 	b := kv.NewBatch()
 
 	for key, val := range updated {
+		fmt.Println("to update:", hash.NewHashFromBytes([]byte(key)).Hex())
 		b.Put([]byte(key), val)
 	}
 
-	for key, _ := range deleted {
+	for key, val := range deleted {
+		fmt.Println("to del:", key, val.Hex())
 		b.Delete([]byte(key))
 	}
 

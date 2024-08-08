@@ -2,6 +2,7 @@ package triedb
 
 import (
 	"bytes"
+	"encoding/binary"
 	"errors"
 	"sync"
 
@@ -36,6 +37,42 @@ var NODES_HASH_PREFIX []byte = []byte("nodes_hash_prefix")
 func Path(full_path ...[]byte) [][]byte {
 	return full_path
 }
+
+func encode_full_path(full_path [][]byte) []byte {
+	node_path_flat := []byte{}
+	for _, path := range full_path {
+		path_len_bytes := make([]byte, 16)
+		binary.LittleEndian.PutUint16(path_len_bytes, uint16(len(path)))
+		node_path_flat = append(node_path_flat, path_len_bytes...)
+		node_path_flat = append(node_path_flat, path...)
+	}
+	return node_path_flat
+}
+
+func decode_full_path(full_path_encoded []byte) [][]byte {
+
+	if len(full_path_encoded) == 0 {
+		return [][]byte{}
+	}
+	//
+	result := make([][]byte, 0)
+	//
+	offset := 0
+	//
+	for {
+		if len(full_path_encoded) >= offset+16 {
+			path_len := int(binary.LittleEndian.Uint16(full_path_encoded[offset : offset+16]))
+			result = append(result, full_path_encoded[offset+16:offset+16+path_len])
+			offset = offset + 16 + path_len
+		} else {
+			break
+		}
+	}
+
+	return result
+}
+
+//////////
 
 type trie_cache_item struct {
 	val []byte
@@ -1245,7 +1282,7 @@ func (trie_db *TrieDB) commit_recursive(node *Node, k_v_map *sync.Map) (*hash.Ha
 	}
 
 	if node.index_hash != nil {
-		k_v_map.Store(string(node.index_hash.Bytes()), node.node_path_flat())
+		k_v_map.Store(string(node.index_hash.Bytes()), encode_full_path(node.node_path()))
 	}
 
 	if node.prefix_child_nodes_hash != nil {
