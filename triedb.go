@@ -815,6 +815,7 @@ func (trie_db *TrieDB) recursive_simplify(node *Node, is_check bool, sc *simplif
 				//simplify
 				if node.parent_nodes.btree.Len() == 0 {
 					node.parent_nodes.parent_node.folder_child_nodes = nil
+					node.parent_nodes.parent_node.folder_child_nodes_hash = nil
 					node.parent_nodes.parent_node.mark_dirty()
 					//simplify
 					if !node.parent_nodes.parent_node.has_val() {
@@ -859,6 +860,7 @@ func (trie_db *TrieDB) recursive_simplify(node *Node, is_check bool, sc *simplif
 				if node.parent_nodes.btree.Len() == 0 {
 					//
 					node.parent_nodes.parent_node.prefix_child_nodes = nil
+					node.parent_nodes.parent_node.prefix_child_nodes_hash = nil
 					node.parent_nodes.parent_node.mark_dirty()
 
 					//simplify

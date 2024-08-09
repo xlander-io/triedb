@@ -2,16 +2,102 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/xlander-io/cache"
 	"github.com/xlander-io/hash"
+	"github.com/xlander-io/kv"
 	"github.com/xlander-io/kv_leveldb"
 	"github.com/xlander-io/triedb"
 )
 
-func main() {
+type update_item struct {
+	path           [][]byte
+	val            []byte
+	gen_hash_index bool
+}
 
-	kvdb, err := kv_leveldb.NewDB("/Users/leo/Desktop/repo/triedb/test.db")
+func main() {
+	//////////////
+	update_items := []update_item{}
+
+	update_items = append(update_items, update_item{
+		path:           [][]byte{[]byte("1"), []byte("23")},
+		val:            []byte("val123"),
+		gen_hash_index: true,
+	})
+
+	update_items = append(update_items, update_item{
+		path:           [][]byte{[]byte("12")},
+		val:            []byte("val12"),
+		gen_hash_index: true,
+	})
+
+	update_items = append(update_items, update_item{
+		path:           [][]byte{[]byte("1a")},
+		val:            []byte("val1a"),
+		gen_hash_index: true,
+	})
+
+	update_items = append(update_items, update_item{
+		path:           [][]byte{[]byte("1b")},
+		val:            []byte("val1b"),
+		gen_hash_index: true,
+	})
+
+	update_items = append(update_items, update_item{
+		path:           [][]byte{[]byte("1ab")},
+		val:            []byte("val1ab"),
+		gen_hash_index: true,
+	})
+
+	update_items = append(update_items, update_item{
+		path:           [][]byte{[]byte("123")},
+		val:            []byte("val123"),
+		gen_hash_index: true,
+	})
+
+	update_items = append(update_items, update_item{
+		path:           [][]byte{[]byte("12a")},
+		val:            []byte("val12a"),
+		gen_hash_index: true,
+	})
+
+	update_items = append(update_items, update_item{
+		path:           [][]byte{[]byte("12b")},
+		val:            []byte("val12b"),
+		gen_hash_index: true,
+	})
+
+	update_items = append(update_items, update_item{
+		path:           [][]byte{[]byte("1234")},
+		val:            []byte("val1234"),
+		gen_hash_index: true,
+	})
+
+	update_items = append(update_items, update_item{
+		path:           [][]byte{[]byte("123a")},
+		val:            []byte("val123a"),
+		gen_hash_index: true,
+	})
+
+	update_items = append(update_items, update_item{
+		path:           [][]byte{[]byte("a"), []byte("a"), []byte("a")},
+		val:            []byte("valaaa"),
+		gen_hash_index: true,
+	})
+
+	update_items = append(update_items, update_item{
+		path:           [][]byte{[]byte("ab"), []byte("cd")},
+		val:            []byte("valabcd"),
+		gen_hash_index: true,
+	})
+
+	////////////
+
+	os.Remove("./test.db")
+
+	kvdb, err := kv_leveldb.NewDB("./test.db")
 	if err != nil {
 		panic(err)
 	}
@@ -21,29 +107,71 @@ func main() {
 		panic(err)
 	}
 	tdb, err := triedb.NewTrieDB(kvdb, c, &triedb.TrieDBConfig{
-		Root_hash:           hash.NewHashFromString("0xba9b8eb5478fed6a3fa9c5d637b851290c4b35d446da617e40f95b887c051f0c"),
+		Root_hash:           nil,
 		Commit_thread_limit: 10,
-		Read_only:           true,
 	})
 
 	if err != nil {
 		panic(err)
 	}
 
-	_, hash, _ := tdb.Get(triedb.Path([]byte("ab"), []byte("cd")))
+	for _, item := range update_items {
+		tdb.Put(item.path, item.val, item.gen_hash_index)
+	}
 
-	fmt.Println("hash:", hash.Hex())
+	root_hash, updated, deleted, _ := tdb.Commit()
 
-	val, _, _ := tdb.GetByHashIndex(hash.Bytes())
+	tdb.GenDotString(true)
+	tdb.GenDotFile("./test_graphviz.dot", false)
 
-	fmt.Println("val:", string(val))
+	fmt.Println("commit root hash:", root_hash.Hex())
+	fmt.Println("commit updated len:", len(updated))
+	fmt.Println("commit deleted len:", len(deleted))
 
-	// iter, iter_err := tdb.NewIterator(triedb.Path())
+	b := kv.NewBatch()
+
+	for key, val := range updated {
+		fmt.Println("to update:", hash.NewHashFromBytes([]byte(key)).Hex())
+		b.Put([]byte(key), val)
+	}
+
+	for key, val := range deleted {
+		fmt.Println("to del:", key, val.Hex())
+		b.Delete([]byte(key))
+	}
+
+	err = kvdb.WriteBatch(b, true)
+	if err != nil {
+		fmt.Println("del batch err", err)
+	}
+
+	kvdb.Close()
+
+	///////////////////////////////////////////////////////////
+
+	kvdb2, err := kv_leveldb.NewDB("./test.db")
+	if err != nil {
+		panic("new kvdb err:" + err.Error())
+	}
+
+	c2, err := cache.New(nil)
+	if err != nil {
+		panic(err)
+	}
+
+	tdb2, err := triedb.NewTrieDB(kvdb2, c2, &triedb.TrieDBConfig{
+		Root_hash:           root_hash,
+		Commit_thread_limit: 10,
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	// iter, iter_err := tdb2.NewIterator(triedb.Path())
 	// if iter_err != nil {
 	// 	panic(iter_err)
 	// }
-
-	//fmt.Println(iter.SetCursorWithFullPath([][]byte{[]byte("a"), []byte("a")}))
 
 	// for {
 
@@ -62,11 +190,7 @@ func main() {
 	// 		break
 	// 	}
 	// }
-
-	// fmt.Println("////////////////")
-
-	// iter.SetCursor([]byte("123a"))
-
+	// //////////
 	// for {
 
 	// 	val, val_err := iter.Val()
@@ -84,5 +208,30 @@ func main() {
 	// 		break
 	// 	}
 	// }
+
+	///////////////////
+
+	fmt.Println("///////////////////////")
+
+	for _, item := range update_items {
+		tdb2.Del(item.path)
+	}
+
+	root_hash2, updated2, deleted2, _ := tdb2.Commit()
+
+	fmt.Println("commit root hash:", root_hash2.Hex())
+	fmt.Println("commit updated len:", len(updated2))
+	fmt.Println("commit deleted len:", len(deleted2))
+
+	// for key, val := range updated2 {
+	// 	fmt.Println("to update:", hash.NewHashFromBytes([]byte(key)).Hex())
+	// 	b.Put([]byte(key), val)
+	// }
+
+	for key, _ := range updated {
+		if deleted2[key] == nil {
+			fmt.Println("debug missing key:", hash.NewHashFromBytes([]byte(key)).Hex())
+		}
+	}
 
 }
