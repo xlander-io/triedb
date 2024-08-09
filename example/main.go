@@ -121,9 +121,6 @@ func main() {
 
 	root_hash, updated, deleted, _ := tdb.Commit()
 
-	tdb.GenDotString(true)
-	tdb.GenDotFile("./test_graphviz.dot", false)
-
 	fmt.Println("commit root hash:", root_hash.Hex())
 	fmt.Println("commit updated len:", len(updated))
 	fmt.Println("commit deleted len:", len(deleted))
@@ -213,25 +210,67 @@ func main() {
 
 	fmt.Println("///////////////////////")
 
-	for _, item := range update_items {
+	del_items := update_items[1:]
+	for _, item := range del_items {
 		tdb2.Del(item.path)
 	}
 
+	fmt.Println(tdb2.Put(triedb.Path([]byte("abc")), []byte("valabc"), true))
+
 	root_hash2, updated2, deleted2, _ := tdb2.Commit()
+
+	tdb2.GenDotString(true)
+	tdb2.GenDotFile("./test_graphviz.dot", false)
 
 	fmt.Println("commit root hash:", root_hash2.Hex())
 	fmt.Println("commit updated len:", len(updated2))
 	fmt.Println("commit deleted len:", len(deleted2))
 
-	// for key, val := range updated2 {
-	// 	fmt.Println("to update:", hash.NewHashFromBytes([]byte(key)).Hex())
-	// 	b.Put([]byte(key), val)
-	// }
+	fmt.Println("update2 len:", len(updated2))
 
-	for key, _ := range updated {
-		if deleted2[key] == nil {
-			fmt.Println("debug missing key:", hash.NewHashFromBytes([]byte(key)).Hex())
-		}
+	b2 := kv.NewBatch()
+
+	for key, val := range updated2 {
+		fmt.Println("to update:", hash.NewHashFromBytes([]byte(key)).Hex())
+		b2.Put([]byte(key), val)
 	}
+
+	for key, val := range deleted2 {
+		fmt.Println("to del:", val.Hex())
+		b2.Delete([]byte(key))
+	}
+
+	err = kvdb2.WriteBatch(b2, true)
+	if err != nil {
+		fmt.Println("del2 batch err", err)
+	}
+
+	kvdb2.Close()
+	/////
+
+	kvdb3, err := kv_leveldb.NewDB("./test.db")
+	if err != nil {
+		panic("new kvdb err:" + err.Error())
+	}
+
+	c3, err := cache.New(nil)
+	if err != nil {
+		panic(err)
+	}
+
+	tdb3, err := triedb.NewTrieDB(kvdb3, c3, &triedb.TrieDBConfig{
+		Root_hash:           root_hash2,
+		Commit_thread_limit: 10,
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	result, _, _ := tdb3.Get(triedb.Path([]byte("abc")))
+	fmt.Println(string(result))
+
+	result2, _, _ := tdb3.Get(triedb.Path([]byte("1"), []byte("23")))
+	fmt.Println(string(result2))
 
 }

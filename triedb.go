@@ -14,10 +14,11 @@ import (
 // Trie implementation
 // 1.The val_hash of the root node is always nil.
 // 2.Except the root node, a node's parent_node is never nil.
-// 3.Root node never has folder_child
-// 3.The cache is always synchronized with the disk KV database.
-// 4.'attached_hash' stores all key-value hashes related to the trie and will be checked for key hashes to be removed during a commit.
-// 5.Get, Update, Del and Commit operations use the same lock to prevent data inconsistency.
+// 3.Root node never has prefix_child
+// 4.The cache is always synchronized with the disk KV database.
+// 5.'attached_hash' stores all key-value hashes related to the trie and will be checked for key hashes to be removed during a commit.
+// 6.Get, Update, Del and Commit operations use the same lock to prevent data inconsistency.
+// 7.iterator can be only used under readonly mode
 
 // 65535= 2^16 -1 , len can be put inside a uint16 , never change this
 // setting a long path will decrease the speed of kvdb
@@ -28,11 +29,6 @@ var NODE_HASH_PREFIX []byte = []byte("node_hash_prefix")
 var NODE_HASH_VAL_PREFIX []byte = []byte("node_hash_val_prefix")
 var NODE_HASH_INDEX_PREFIX []byte = []byte("node_hash_index_prefix")
 var NODES_HASH_PREFIX []byte = []byte("nodes_hash_prefix")
-
-// // max bytes limit of full path
-// func GetPathLenLimit() int {
-// 	return PATH_LEN_LIMIT
-// }
 
 func Path(full_path ...[]byte) [][]byte {
 	return full_path
