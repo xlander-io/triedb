@@ -23,4 +23,31 @@ tdb.Del(triedb.Path([]byte("aaa")))
 
 ```
 
-### 
+### iterator
+
+```
+
+iter, iter_err := tdb2.NewIterator(triedb.Path())
+if iter_err != nil {
+    panic(iter_err)
+}
+
+for {
+
+    val, val_err := iter.Val()
+    if val_err != nil {
+        panic(val_err)
+    } else {
+        fmt.Println("val:", string(val), "flat path:", iter.FullPathFlatStr(), " is folder:", iter.IsFolder())
+    }
+
+    has_next, next_err := iter.Next()
+    if next_err != nil {
+        panic(next_err)
+    }
+    if !has_next {
+        break
+    }
+}
+
+```

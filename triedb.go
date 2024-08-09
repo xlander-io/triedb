@@ -19,6 +19,7 @@ import (
 // 5.'attached_hash' stores all key-value hashes related to the trie and will be checked for key hashes to be removed during a commit.
 // 6.Get, Update, Del and Commit operations use the same lock to prevent data inconsistency.
 // 7.iterator can be only used under readonly mode
+// 8.path depth level increase read and write disk times, try to keep low path depth level in upper layer applications
 
 // 65535= 2^16 -1 , len can be put inside a uint16 , never change this
 // setting a long path will decrease the speed of kvdb
@@ -1166,7 +1167,7 @@ func (trie_db *TrieDB) GetByHashIndex(hash_index []byte) ([]byte, *hash.Hash, er
 	return trie_db.Get(full_path)
 }
 
-// return val , hash_index,error
+// return val, hash_index, error
 func (trie_db *TrieDB) Get(full_path [][]byte) ([]byte, *hash.Hash, error) {
 	target_node, err := trie_db.get_(full_path)
 	if err != nil {
