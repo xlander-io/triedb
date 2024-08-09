@@ -2800,7 +2800,7 @@ func TestMainWorkflow(t *testing.T) {
 		}
 
 		{
-			_, err := tdb.Get(Path([]byte("ABC")))
+			_, _, err := tdb.Get(Path([]byte("ABC")))
 			if nil != err {
 				t.Fatal(`Get item "ABC" should receive node_bytes of that kv item!`)
 			}
@@ -3150,7 +3150,7 @@ func TestMainWorkflow(t *testing.T) {
 		}
 
 		{
-			_, err := tdb.Get(Path([]byte("AB")))
+			_, _, err := tdb.Get(Path([]byte("AB")))
 			if nil != err {
 				t.Fatal(`Delete item "AB" should work as expected!`)
 			}
@@ -4608,7 +4608,7 @@ func TestMainWorkflow(t *testing.T) {
 		}
 
 		{
-			_, err := tdb.Get(Path([]byte("ACa")))
+			_, _, err := tdb.Get(Path([]byte("ACa")))
 			if nil == err {
 				t.Fatal(`Get item "ACa" should report error!`, err)
 			}
@@ -5207,7 +5207,7 @@ func TestMainWorkflow(t *testing.T) {
 		}
 
 		{
-			_, err := tdb.Get(Path([]byte("A"), []byte("A"), []byte("A")))
+			_, _, err := tdb.Get(Path([]byte("A"), []byte("A"), []byte("A")))
 
 			if nil != err {
 				t.Fatal("Get path [A,A,A] should NOT trigger error!")
@@ -5868,7 +5868,7 @@ func TestMainWorkflow(t *testing.T) {
 		}
 
 		{
-			_, err := tdb.Get(Path([]byte("B"), []byte("B"), []byte("B")))
+			_, _, err := tdb.Get(Path([]byte("B"), []byte("B"), []byte("B")))
 
 			if nil != err {
 				t.Fatal("Get path [B,B,B] should NOT trigger error!")

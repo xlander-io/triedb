@@ -48,7 +48,7 @@ func prepareSampleDatabase(t withFatal, tdb *TrieDB) [][]byte {
 			existingKeys[bytes2String(tokenKey)] = struct{}{}
 		} else if percent < 90 { // 35% Get
 			for k := range existingKeys {
-				v, err := tdb.Get(Path(string2Bytes(k)))
+				v, _, err := tdb.Get(Path(string2Bytes(k)))
 				if nil != err {
 					t.Fatal("unexpected Get error: ", err)
 				}
@@ -157,7 +157,7 @@ func BenchmarkMoreOperations(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			if len(existingKeys) > 0 {
 				tokenKey := randomGetKeys[i]
-				val, err := tdb.Get(Path(tokenKey))
+				val, _, err := tdb.Get(Path(tokenKey))
 				if nil != err {
 					b.Fatal(err)
 				}
