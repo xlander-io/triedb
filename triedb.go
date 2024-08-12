@@ -794,6 +794,8 @@ func (trie_db *TrieDB) recursive_simplify(node *Node, is_check bool, sc *simplif
 				//simplify
 				if node.parent_nodes.btree.Len() == 0 {
 					node.parent_nodes.parent_node.folder_child_nodes = nil
+					node.parent_nodes.parent_node.folder_child_nodes_hash = nil
+					node.parent_nodes.parent_node.folder_child_nodes_hash_recoverable = false
 					node.parent_nodes.parent_node.mark_dirty()
 					//simplify
 					if !node.parent_nodes.parent_node.has_val() {
@@ -838,6 +840,9 @@ func (trie_db *TrieDB) recursive_simplify(node *Node, is_check bool, sc *simplif
 				if node.parent_nodes.btree.Len() == 0 {
 					//
 					node.parent_nodes.parent_node.prefix_child_nodes = nil
+					node.parent_nodes.parent_node.prefix_child_nodes_hash = nil
+					node.parent_nodes.parent_node.prefix_child_nodes_hash_recoverable = false
+
 					node.parent_nodes.parent_node.mark_dirty()
 
 					//simplify
@@ -1247,22 +1252,15 @@ func (trie_db *TrieDB) commit_recursive(node *Node, k_v_map *sync.Map) (*hash.Ha
 	if node.dirty {
 
 		//
-		if node.prefix_child_nodes == nil && !node.prefix_child_nodes_hash_recoverable {
-			node.prefix_child_nodes_hash = nil
-		} else if node.prefix_child_nodes != nil && node.prefix_child_nodes.dirty {
+		if node.prefix_child_nodes != nil && node.prefix_child_nodes.dirty {
 			node.prefix_child_nodes.serialize()
 			trie_db.cal_nodes_hash(node.prefix_child_nodes)
-		} else {
-			//nothing to do
 		}
+
 		//
-		if node.folder_child_nodes == nil && !node.folder_child_nodes_hash_recoverable {
-			node.folder_child_nodes_hash = nil
-		} else if node.folder_child_nodes != nil && node.folder_child_nodes.dirty {
+		if node.folder_child_nodes != nil && node.folder_child_nodes.dirty {
 			node.folder_child_nodes.serialize()
 			trie_db.cal_nodes_hash(node.folder_child_nodes)
-		} else {
-			//nothing to do
 		}
 
 		//cal val hash
