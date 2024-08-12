@@ -23,18 +23,18 @@ type Node struct {
 
 	parent_nodes *nodes //nil for root node
 
-	prefix_child_nodes                *nodes
-	prefix_child_nodes_hash           *hash.Hash //nil for new node or dirty node
-	prefix_child_nodes_hash_recovered bool
+	prefix_child_nodes                  *nodes
+	prefix_child_nodes_hash             *hash.Hash //nil for new node or dirty node
+	prefix_child_nodes_hash_recoverable bool       //default false, once become false will never become true again
 
-	folder_child_nodes                *nodes
-	folder_child_nodes_hash           *hash.Hash //nil for new node or dirty node
-	folder_child_nodes_hash_recovered bool
+	folder_child_nodes                  *nodes
+	folder_child_nodes_hash             *hash.Hash //nil for new node or dirty node
+	folder_child_nodes_hash_recoverable bool       //default false, once become false will never become true again
 
-	val                []byte     //always nil for root node
-	val_hash           *hash.Hash //always nil for root node
-	val_hash_recovered bool
-	val_dirty          bool
+	val                  []byte     //always nil for root node
+	val_hash             *hash.Hash //always nil for root node
+	val_hash_recoverable bool       //default false, once become false will never become true again
+	val_dirty            bool
 
 	node_bytes []byte     //serialize(self) , nil for new node or dirty node
 	node_hash  *hash.Hash //hash(self.node_bytes) , nil for new node or dirty node
@@ -45,15 +45,15 @@ type Node struct {
 }
 
 func (n *Node) has_folder_child() bool {
-	return n.folder_child_nodes != nil || (!n.folder_child_nodes_hash_recovered && n.folder_child_nodes_hash != nil)
+	return n.folder_child_nodes != nil || (n.folder_child_nodes_hash_recoverable && n.folder_child_nodes_hash != nil)
 }
 
 func (n *Node) has_prefix_child() bool {
-	return n.prefix_child_nodes != nil || (!n.prefix_child_nodes_hash_recovered && n.prefix_child_nodes_hash != nil)
+	return n.prefix_child_nodes != nil || (n.prefix_child_nodes_hash_recoverable && n.prefix_child_nodes_hash != nil)
 }
 
 func (n *Node) has_val() bool {
-	return n.val != nil || (!n.val_hash_recovered && n.val_hash != nil)
+	return n.val != nil || (n.val_hash_recoverable && n.val_hash != nil)
 }
 
 func (n *Node) encode_node_type() uint8 {
@@ -132,6 +132,18 @@ func (n *Node) deserialize() {
 
 	if node_type&8 != 0 {
 		n.folder_child_nodes_hash = hash.NewHashFromBytes(n.node_bytes[offset : offset+32])
+	}
+
+	if n.val_hash != nil {
+		n.val_hash_recoverable = true
+	}
+
+	if n.folder_child_nodes_hash != nil {
+		n.folder_child_nodes_hash_recoverable = true
+	}
+
+	if n.prefix_child_nodes_hash != nil {
+		n.prefix_child_nodes_hash_recoverable = true
 	}
 
 }

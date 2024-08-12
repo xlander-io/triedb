@@ -223,9 +223,6 @@ func main() {
 
 	root_hash2, updated2, deleted2, _ := tdb2.Commit()
 
-	tdb2.GenDotString(true)
-	tdb2.GenDotFile("./test_graphviz.dot", false)
-
 	fmt.Println("commit root hash:", root_hash2.Hex())
 	fmt.Println("commit updated len:", len(updated2))
 	fmt.Println("commit deleted len:", len(deleted2))
