@@ -43,12 +43,12 @@ type vizNode struct {
 	HashIndex string
 	HashNode  string
 
-	HashChildrenPrefix      string
-	HashChildrenFolder      string
-	HashValue               string
-	RecoveredChildrenPrefix bool
-	RecoveredChildrenFolder bool
-	RecoveredValue          bool
+	HashChildrenPrefix        string
+	HashChildrenFolder        string
+	HashValue                 string
+	RecoverableChildrenPrefix bool
+	RecoverableChildrenFolder bool
+	RecoverableValue          bool
 
 	Bytes []byte
 	Dirty bool
@@ -129,9 +129,9 @@ func (vn *vizNode) fromTrieNode(n *Node) {
 	}
 	vn.Bytes = bytes.Clone(n.node_bytes)
 
-	vn.RecoveredChildrenPrefix = n.prefix_child_nodes_hash_recovered
-	vn.RecoveredChildrenFolder = n.folder_child_nodes_hash_recovered
-	vn.RecoveredValue = n.val_hash_recovered
+	vn.RecoverableChildrenPrefix = n.prefix_child_nodes_hash_recoverable
+	vn.RecoverableChildrenFolder = n.folder_child_nodes_hash_recoverable
+	vn.RecoverableValue = n.val_hash_recoverable
 	vn.Dirty = n.dirty
 
 	if !hash.IsNilHash(n.index_hash) {
@@ -275,9 +275,9 @@ func (vn *vizNode) makeTable() string {
 	hashChildrenFolder := TR(ALIGN("RIGHT"), FONT("folder children hash"), ALIGN("LEFT"), vn.HashChildrenFolder)
 	hashValue := TR(ALIGN("RIGHT"), FONT("value hash"), ALIGN("LEFT"), vn.HashValue)
 
-	recoveredChildrenPrefix := TR(ALIGN("RIGHT"), FONT("recovered prefix children hash"), ALIGN("LEFT"), strconv.FormatBool(vn.RecoveredChildrenPrefix))
-	recoveredChildrenFolder := TR(ALIGN("RIGHT"), FONT("recovered folder children hash"), ALIGN("LEFT"), strconv.FormatBool(vn.RecoveredChildrenFolder))
-	recoveredValue := TR(ALIGN("RIGHT"), FONT("recovered value hash"), ALIGN("LEFT"), strconv.FormatBool(vn.RecoveredValue))
+	recoveredChildrenPrefix := TR(ALIGN("RIGHT"), FONT("recoverable prefix children hash"), ALIGN("LEFT"), strconv.FormatBool(vn.RecoverableChildrenPrefix))
+	recoveredChildrenFolder := TR(ALIGN("RIGHT"), FONT("recoverable folder children hash"), ALIGN("LEFT"), strconv.FormatBool(vn.RecoverableChildrenFolder))
+	recoveredValue := TR(ALIGN("RIGHT"), FONT("recoverable value hash"), ALIGN("LEFT"), strconv.FormatBool(vn.RecoverableValue))
 
 	bytes := TR(ALIGN("RIGHT"), FONT("node bytes"), ALIGN("LEFT"), fmt.Sprint(vn.Bytes))
 	dirty := TR(ALIGN("RIGHT"), FONT("dirty"), ALIGN("LEFT"), strconv.FormatBool(vn.Dirty))
