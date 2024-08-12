@@ -201,7 +201,8 @@ func (ex Expect) makeTests(o *Node) []TEST {
 
 	if nil != o.prefix_child_nodes {
 		tests = append(tests, []TEST{
-			{"len(prefix_child_nodes)", ex.prefix_child_nodes_len, o.prefix_child_nodes.btree.Len(), ex.prefix_child_nodes_len == o.prefix_child_nodes.btree.Len()},
+			{"len(prefix_child_nodes)=n", ex.prefix_child_nodes_len, o.prefix_child_nodes.btree.Len(), ex.prefix_child_nodes_len == o.prefix_child_nodes.btree.Len()},
+			{"len(prefix_child_nodes)>0", ex.prefix_child_nodes_len, o.prefix_child_nodes.btree.Len(), o.prefix_child_nodes.btree.Len() > 0},
 			{"prefix_child_nodes.dirty", ex.prefix_child_nodes_dirty, o.prefix_child_nodes.dirty, ex.prefix_child_nodes_dirty == o.prefix_child_nodes.dirty},
 			{"prefix_child_nodes.parent_node", o, o.prefix_child_nodes.parent_node, o == o.prefix_child_nodes.parent_node},
 		}...)
@@ -209,7 +210,8 @@ func (ex Expect) makeTests(o *Node) []TEST {
 
 	if nil != o.folder_child_nodes {
 		tests = append(tests, []TEST{
-			{"len(folder_child_nodes)", ex.folder_child_nodes_len, o.folder_child_nodes.btree.Len(), ex.folder_child_nodes_len == o.folder_child_nodes.btree.Len()},
+			{"len(folder_child_nodes)=n", ex.folder_child_nodes_len, o.folder_child_nodes.btree.Len(), ex.folder_child_nodes_len == o.folder_child_nodes.btree.Len()},
+			{"len(folder_child_nodes)>0", ex.folder_child_nodes_len, o.folder_child_nodes.btree.Len(), o.folder_child_nodes.btree.Len() > 0},
 			{"folder_child_nodes.dirty", ex.folder_child_nodes_dirty, o.folder_child_nodes.dirty, ex.folder_child_nodes_dirty == o.folder_child_nodes.dirty},
 			{"folder_child_nodes.parent_node", o, o.folder_child_nodes.parent_node, o == o.folder_child_nodes.parent_node},
 		}...)
