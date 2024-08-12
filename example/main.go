@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/xlander-io/cache"
-	"github.com/xlander-io/hash"
 	"github.com/xlander-io/kv"
 	"github.com/xlander-io/kv_leveldb"
 	"github.com/xlander-io/triedb"
@@ -128,12 +127,12 @@ func main() {
 	b := kv.NewBatch()
 
 	for key, val := range updated {
-		fmt.Println("to update:", hash.NewHashFromBytes([]byte(key)).Hex())
+		//fmt.Println("to update:", hash.NewHashFromBytes([]byte(key)).Hex())
 		b.Put([]byte(key), val)
 	}
 
-	for key, val := range deleted {
-		fmt.Println("to del:", key, val.Hex())
+	for key, _ := range deleted {
+		//fmt.Println("to del:", key, val.Hex())
 		b.Delete([]byte(key))
 	}
 
@@ -210,12 +209,17 @@ func main() {
 
 	fmt.Println("///////////////////////")
 
-	del_items := update_items[1:]
+	// del_items := update_items[1:]
+	// for _, item := range del_items {
+	// 	tdb2.Del(item.path)
+	// }
+
+	del_items := update_items[:]
 	for _, item := range del_items {
 		tdb2.Del(item.path)
 	}
 
-	fmt.Println(tdb2.Put(triedb.Path([]byte("abc")), []byte("valabc"), true))
+	//fmt.Println(tdb2.Put(triedb.Path([]byte("abc")), []byte("valabc"), true))
 
 	root_hash2, updated2, deleted2, _ := tdb2.Commit()
 
@@ -231,12 +235,12 @@ func main() {
 	b2 := kv.NewBatch()
 
 	for key, val := range updated2 {
-		fmt.Println("to update:", hash.NewHashFromBytes([]byte(key)).Hex())
+		//fmt.Println("to update:", hash.NewHashFromBytes([]byte(key)).Hex())
 		b2.Put([]byte(key), val)
 	}
 
-	for key, val := range deleted2 {
-		fmt.Println("to del:", val.Hex())
+	for key, _ := range deleted2 {
+		//fmt.Println("to del:", val.Hex())
 		b2.Delete([]byte(key))
 	}
 
@@ -246,31 +250,33 @@ func main() {
 	}
 
 	kvdb2.Close()
-	/////
+	// 	/////
 
-	kvdb3, err := kv_leveldb.NewDB("./test.db")
-	if err != nil {
-		panic("new kvdb err:" + err.Error())
-	}
+	// 	kvdb3, err := kv_leveldb.NewDB("./test.db")
+	// 	if err != nil {
+	// 		panic("new kvdb err:" + err.Error())
+	// 	}
 
-	c3, err := cache.New(nil)
-	if err != nil {
-		panic(err)
-	}
+	// 	c3, err := cache.New(nil)
+	// 	if err != nil {
+	// 		panic(err)
+	// 	}
 
-	tdb3, err := triedb.NewTrieDB(kvdb3, c3, &triedb.TrieDBConfig{
-		Root_hash:           root_hash2,
-		Commit_thread_limit: 10,
-	})
+	// 	tdb3, err := triedb.NewTrieDB(kvdb3, c3, &triedb.TrieDBConfig{
+	// 		Root_hash:           root_hash2,
+	// 		Commit_thread_limit: 10,
+	// 	})
 
-	if err != nil {
-		panic(err)
-	}
+	// 	if err != nil {
+	// 		panic(err)
+	// 	}
 
-	result, _, _ := tdb3.Get(triedb.Path([]byte("abc")))
-	fmt.Println(string(result))
+	// 	result, _, _ := tdb3.Get(triedb.Path([]byte("abc")))
+	// 	fmt.Println(string(result))
 
-	result2, _, _ := tdb3.Get(triedb.Path([]byte("1"), []byte("23")))
-	fmt.Println(string(result2))
+	// 	result2, _, _ := tdb3.Get(triedb.Path([]byte("1"), []byte("23")))
+	// 	fmt.Println(string(result2))
+
+	// }
 
 }
