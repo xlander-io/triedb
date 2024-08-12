@@ -4473,7 +4473,7 @@ func TestMainWorkflow(t *testing.T) {
 						val_dirty:            false,
 
 						prefix_child_nodes:                  nil,
-						prefix_child_nodes_hash:             isNotNil{},
+						prefix_child_nodes_hash:             nil,
 						prefix_child_nodes_hash_recoverable: false,
 
 						folder_child_nodes:                  nil,
@@ -4742,11 +4742,11 @@ func TestMainWorkflow(t *testing.T) {
 
 						val:                  nil,
 						val_hash:             isNotNil{},
-						val_hash_recoverable: false,
+						val_hash_recoverable: true,
 						val_dirty:            false,
 
 						prefix_child_nodes:                  nil,
-						prefix_child_nodes_hash:             isNotNil{},
+						prefix_child_nodes_hash:             nil,
 						prefix_child_nodes_hash_recoverable: false,
 
 						folder_child_nodes:                  nil,
@@ -5022,8 +5022,8 @@ func TestMainWorkflow(t *testing.T) {
 						val_dirty:            false,
 
 						prefix_child_nodes:                  nil,
-						prefix_child_nodes_hash:             isNotNil{},
-						prefix_child_nodes_hash_recoverable: true,
+						prefix_child_nodes_hash:             nil,
+						prefix_child_nodes_hash_recoverable: false,
 
 						folder_child_nodes:                  nil,
 						folder_child_nodes_hash:             nil,
